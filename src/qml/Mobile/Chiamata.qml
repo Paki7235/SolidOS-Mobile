@@ -92,7 +92,7 @@ Rectangle {
         visible: ch.info.inArrivo === true
         Column {
             spacing: 8
-            Rectangle { width: 76; height: 76; radius: 38; color: "#ef4444"; Icona { anchors.centerIn: parent; nome: "call-stop-symbolic"; lato: 32 }
+            Rectangle { width: 76; height: 76; radius: 38; color: "#ef4444"; Icona { anchors.centerIn: parent; nome: "call-start-symbolic"; lato: 32; rotation: 135 }
                 MouseArea { anchors.fill: parent; onClicked: ponte.chiama0("riaggancia") } }
             Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Rifiuta"); color: "#ffffff"; font.family: Tema.font; font.pixelSize: tel.px(13) }
         }
@@ -110,7 +110,7 @@ Rectangle {
         anchors.bottom: parent.bottom; anchors.bottomMargin: 70
         width: 76; height: 76; radius: 38
         color: "#ef4444"
-        Icona { anchors.centerIn: parent; nome: "call-stop-symbolic"; lato: 32 }
+        Icona { anchors.centerIn: parent; nome: "call-start-symbolic"; lato: 32; rotation: 135 }
         MouseArea { anchors.fill: parent; onClicked: { ponte.chiama0("riaggancia"); ch.tastierino = false; ch.toni = "" } }
     }
 }
