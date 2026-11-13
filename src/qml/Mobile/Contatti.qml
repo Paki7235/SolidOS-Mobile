@@ -187,9 +187,9 @@ Rectangle {
                 visible: app.modifica
                 x: 16; y: 26; width: parent.width - 32
                 spacing: 24
-                TextField { id: campoNome; width: parent.width; height: 38; text: app.scelto ? app.scelto.nome || "" : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); background: Item {}; placeholderText: I18n.t("Nome e cognome"); placeholderTextColor: tel.pal.testo2 }
-                TextField { id: campoNumero; width: parent.width; height: 38; text: app.scelto ? app.scelto.numero || "" : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); background: Item {}; inputMethodHints: Qt.ImhDialableCharactersOnly; placeholderText: "+39 …"; placeholderTextColor: tel.pal.testo2 }
-                TextField { id: campoEmail; width: parent.width; height: 38; text: app.scelto ? app.scelto.email || "" : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); background: Item {}; inputMethodHints: Qt.ImhEmailCharactersOnly; placeholderText: "nome@esempio.it"; placeholderTextColor: tel.pal.testo2 }
+                TextField { id: campoNome; width: parent.width; height: 38; text: app.scelto ? app.scelto.nome || "" : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); placeholderText: I18n.t("Nome e cognome"); placeholderTextColor: tel.pal.testo2; background: Item {} }
+                TextField { id: campoNumero; width: parent.width; height: 38; text: app.scelto ? app.scelto.numero || "" : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); inputMethodHints: Qt.ImhDialableCharactersOnly; placeholderText: "+39 …"; placeholderTextColor: tel.pal.testo2; background: Item {} }
+                TextField { id: campoEmail; width: parent.width; height: 38; text: app.scelto ? app.scelto.email || "" : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); inputMethodHints: Qt.ImhEmailCharactersOnly; placeholderText: "nome@esempio.it"; placeholderTextColor: tel.pal.testo2; background: Item {} }
                 TextField { id: campoNote; width: parent.width; height: 38; text: app.scelto ? app.scelto.note || "" : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); background: Item {} }
             }
         }
