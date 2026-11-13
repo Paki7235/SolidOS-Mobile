@@ -7,6 +7,8 @@ Vetro {
     id: scheda
     property var n: ({})
     property bool compatta: false
+    property bool pieno: false          // banner: fondo quasi pieno per leggerlo su qualsiasi schermata
+    color: pieno ? (tel.chiaro ? Qt.rgba(0.98, 0.98, 1, 0.97) : Qt.rgba(0.12, 0.14, 0.2, 0.97)) : tel.pal.vetro
     width: parent ? parent.width : 300
     height: contenuto.implicitHeight + 24
     radius: 22

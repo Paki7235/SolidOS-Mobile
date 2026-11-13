@@ -82,11 +82,19 @@ Item {
         leftPadding: 46; rightPadding: 46
         spacing: parent.width - 92 - 104
         Repeater {
-            model: [{ i: "flashlight-symbolic", t: I18n.t("Torcia") }, { i: "camera-photo-symbolic", t: I18n.t("Fotocamera") }]
+            model: [{ i: "torcia", t: I18n.t("Torcia") }, { i: "camera-photo-symbolic", t: I18n.t("Fotocamera") }]
             Vetro {
                 required property var modelData
                 width: 52; height: 52; radius: 26
-                Icona { anchors.centerIn: parent; nome: parent.modelData.i; lato: 22 }
+                Icona { anchors.centerIn: parent; visible: parent.modelData.i !== "torcia"; nome: parent.modelData.i; lato: 22 }
+                // Torcia disegnata (non tutti i temi di icone ce l'hanno)
+                Item {
+                    visible: parent.modelData.i === "torcia"
+                    anchors.centerIn: parent; width: 14; height: 24
+                    Rectangle { width: 14; height: 7; radius: 2; color: tel.pal.testo }
+                    Rectangle { y: 6; x: 3; width: 8; height: 17; radius: 2; color: tel.pal.testo }
+                    Rectangle { y: 10; x: 6; width: 2; height: 4; radius: 1; color: tel.chiaro ? "#ffffff" : "#1b2140" }
+                }
                 MouseArea { anchors.fill: parent; onClicked: tel.avviso(parent.modelData.t + ": " + I18n.t("arriva con il telefono vero")) }
             }
         }
