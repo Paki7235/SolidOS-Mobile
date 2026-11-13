@@ -62,6 +62,14 @@ def crea_app(nome_app: str, argv: list[str] | None = None):
     font = QFont(branding.get("FONT_UI", "Inter"))
     font.setPointSize(int(branding.get("FONT_UI_DIMENSIONE", "10") or 10))
     app.setFont(font)
+    # Percorsi standard dei temi di icone: senza sessione grafica (o con alcune piattaforme)
+    # Qt cerca solo al proprio interno e ogni icona diventerebbe un quadrato bianco
+    percorsi = list(QIcon.themeSearchPaths())
+    dati = os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":")
+    for p in [str(Path.home() / ".local/share/icons"), str(Path.home() / ".icons")] + [d.rstrip("/") + "/icons" for d in dati if d]:
+        if p not in percorsi and Path(p).is_dir():
+            percorsi.append(p)
+    QIcon.setThemeSearchPaths(percorsi)
     app.setWindowIcon(QIcon.fromTheme(f"{branding.id_os()}-logo-chiaro"))
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     return app
