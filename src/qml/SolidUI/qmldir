@@ -1,0 +1,20 @@
+module SolidUI
+Finestra 1.0 Finestra.qml
+Pulsante 1.0 Pulsante.qml
+Interruttore 1.0 Interruttore.qml
+CampoTesto 1.0 CampoTesto.qml
+CampoRicerca 1.0 CampoRicerca.qml
+Scheda 1.0 Scheda.qml
+Titolo 1.0 Titolo.qml
+Testo 1.0 Testo.qml
+Icona 1.0 Icona.qml
+Separatore 1.0 Separatore.qml
+Cursore 1.0 Cursore.qml
+Scelta 1.0 Scelta.qml
+VoceElenco 1.0 VoceElenco.qml
+BarraProgresso 1.0 BarraProgresso.qml
+Messaggio 1.0 Messaggio.qml
+RigaImpostazione 1.0 RigaImpostazione.qml
+Barra 1.0 Barra.qml
+PassiGuidati 1.0 PassiGuidati.qml
+FotoAccount 1.0 FotoAccount.qml
