@@ -21,7 +21,9 @@ jobs:
           sudo apt-get install -y -qq --no-install-recommends \
             python3-pyqt6 python3-pyqt6.qtquick qml6-module-qtquick qml6-module-qtquick-controls \
             qml6-module-qtquick-layouts qml6-module-qtquick-window qml6-module-qtquick-templates \
-            qml6-module-qtqml-workerscript qt6-svg-plugins libqt6svg6 papirus-icon-theme fonts-inter fonts-league-spartan fonts-noto-core >/dev/null
+            qml6-module-qtqml-workerscript papirus-icon-theme fonts-inter fonts-league-spartan fonts-noto-core >/dev/null
+          # Disegno delle icone SVG (il nome del pacchetto cambia tra Debian e Ubuntu)
+          apt-cache search --names-only 'qt6.*svg' | cut -d' ' -f1 | tee /dev/stderr | xargs sudo apt-get install -y -qq --no-install-recommends >/dev/null
 
       - name: Controllo del codice Python
         run: python3 -m compileall -q src
