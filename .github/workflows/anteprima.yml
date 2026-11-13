@@ -25,6 +25,22 @@ jobs:
           # Disegno delle icone SVG (il nome del pacchetto cambia tra Debian e Ubuntu)
           apt-cache search --names-only 'qt6.*svg' | cut -d' ' -f1 | tee /dev/stderr | xargs sudo apt-get install -y -qq --no-install-recommends >/dev/null
 
+      - name: Diagnosi delle icone
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          find / -name "libqsvgicon*.so" 2>/dev/null | head -3
+          dpkg -S libqsvgicon.so 2>/dev/null | head -3 || true
+          python3 - <<'PY'
+          from PyQt6.QtGui import QGuiApplication, QIcon
+          app = QGuiApplication([])
+          QIcon.setThemeName("Papirus-Dark")
+          print("percorsi:", QIcon.themeSearchPaths())
+          for n in ("firefox", "system-search-symbolic", "preferences-system", "application-x-executable"):
+              i = QIcon.fromTheme(n)
+              print(n, "trovata" if not i.isNull() else "MANCA", i.availableSizes()[:3])
+          PY
+
       - name: Controllo del codice Python
         run: python3 -m compileall -q src
 
