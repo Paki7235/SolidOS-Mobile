@@ -120,23 +120,24 @@ Window {
         MouseArea { anchors.fill: parent; onClicked: tel.chiudiTutto() }
     }
     Notifiche {
-        anchors.fill: parent
+        anchors.left: parent.left; anchors.right: parent.right
+        height: parent.height
         y: tel.notifiche ? 0 : -tel.height
-        visible: tel.notifiche || y > -tel.height
+        visible: tel.notifiche || y > -tel.height + 1
         Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
     }
     CentroControllo {
         anchors.left: parent.left; anchors.right: parent.right
         height: parent.height
         y: tel.controllo ? 0 : -tel.height
-        visible: tel.controllo || y > -tel.height
+        visible: tel.controllo || y > -tel.height + 1
         Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
     }
     Personalizza {
         anchors.left: parent.left; anchors.right: parent.right
         height: parent.height
         y: tel.personalizza ? 0 : tel.height
-        visible: tel.personalizza || y < tel.height
+        visible: tel.personalizza || y < tel.height - 1
         Behavior on y { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
     }
 

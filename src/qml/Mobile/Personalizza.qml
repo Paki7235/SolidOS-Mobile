@@ -92,6 +92,13 @@ Rectangle {
                         border.width: 3
                         border.color: tel.imp.sfondo === modelData ? tel.accento : "transparent"
                         clip: true
+                        Rectangle {
+                            anchors.fill: parent; anchors.margins: 3; radius: 9
+                            gradient: Gradient {
+                                GradientStop { position: 0.0; color: tel.chiaro ? "#eef1ff" : "#0b1230" }
+                                GradientStop { position: 1.0; color: tel.chiaro ? "#c9d4ff" : "#3f4fb8" }
+                            }
+                        }
                         Image {
                             anchors.fill: parent; anchors.margins: 3
                             source: "file://" + tel.sfondi + "/" + parent.modelData + (tel.chiaro ? "-chiaro" : "") + ".png"
