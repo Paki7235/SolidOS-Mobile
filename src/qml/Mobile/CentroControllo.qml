@@ -111,7 +111,7 @@ Item {
             model: [
                 { i: "system-lock-screen-symbolic", f: function () { tel.controllo = false; tel.schermata = "blocco" } },
                 { i: "preferences-system-symbolic", f: function () { tel.controllo = false; tel.apri({ "id": Tema.idSistema + "-impostazioni" }) } },
-                { i: "camera-photo-symbolic", f: function () { tel.avviso(I18n.t("Fotocamera: arriva con il telefono vero")) } },
+                { i: "weather-clear-night-symbolic", f: function () { tel.nonDisturbare(!tel.imp.non_disturbare); tel.avviso(tel.imp.non_disturbare ? I18n.t("Non disturbare attivo") : I18n.t("Non disturbare spento")) } },
                 { i: "accessories-calculator-symbolic", f: function () { tel.apri({ "id": Tema.idSistema + "-calcolatrice" }) } }
             ]
             Vetro {

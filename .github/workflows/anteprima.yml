@@ -39,7 +39,7 @@ jobs:
           errori=0
           for tema in scuro chiaro; do
             if [ "$tema" = chiaro ]; then export NUCLEO_TEMA_ICONE=Papirus-Light; else export NUCLEO_TEMA_ICONE=Papirus-Dark; fi
-            for sch in blocco home libreria controllo notifiche personalizza telefono recenti messaggi conversazione chiamata; do
+            for sch in blocco home libreria controllo notifiche personalizza telefono recenti messaggi conversazione chiamata contatti scheda banner; do
               timeout 40 scripts/anteprima.sh --schermata=$sch --tema=$tema --foto="$PWD/foto/$tema-$sch.png" >log.txt 2>&1 || true
               if [ -s "foto/$tema-$sch.png" ]; then echo "OK   $tema $sch"; else echo "ERRORE $tema $sch"; errori=$((errori+1)); fi
               grep -iE "error|referenceerror|typeerror|is not defined|cannot" log.txt | grep -v "QStandardPaths" | head -10 || true

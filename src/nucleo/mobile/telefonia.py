@@ -119,19 +119,92 @@ def contatti() -> list[dict]:
     return sorted(elenco, key=lambda c: c.get("nome", "").lower())
 
 
-def salva_contatto(nome: str, numero: str, ident: str = "") -> dict:
-    nome, numero = nome.strip(), numero.strip()
+def salva_contatto(nome: str, numero: str, ident: str = "", email: str = "", note: str = "") -> dict:
+    nome, numero, email = nome.strip(), numero.strip(), email.strip()
     if not nome or not normalizza(numero):
         return {"ok": False, "messaggio": T("Scrivi nome e numero")}
     with _blocco:
         elenco = _leggi("contatti.json", ESEMPIO_CONTATTI if DEMO else [])
         voce = next((c for c in elenco if c["id"] == ident), None)
         if voce:
-            voce.update(nome=nome, numero=numero)
+            voce.update(nome=nome, numero=numero, email=email, note=note.strip())
         else:
-            elenco.append({"id": uuid.uuid4().hex[:10], "nome": nome, "numero": numero, "preferito": False})
+            voce = {"id": uuid.uuid4().hex[:10], "nome": nome, "numero": numero, "email": email,
+                    "note": note.strip(), "preferito": False}
+            elenco.append(voce)
         _scrivi("contatti.json", elenco)
-    return {"ok": True, "messaggio": T("Contatto salvato")}
+    return {"ok": True, "messaggio": T("Contatto salvato"), "id": voce["id"]}
+
+
+# ── vCard (.vcf): il formato dei contatti di Android, iPhone, Gmail e Outlook ──
+def _valore_vcard(riga: str) -> str:
+    valore = riga.split(":", 1)[1] if ":" in riga else ""
+    return valore.replace("\\,", ",").replace("\\;", ";").replace("\\n", " ").strip()
+
+
+def importa_vcard(percorso: str) -> dict:
+    """Importa tutti i contatti di un file .vcf (anche con molti contatti dentro)."""
+    try:
+        testo = Path(percorso.removeprefix("file://")).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return {"ok": False, "messaggio": T("Impossibile leggere il file")}
+    # righe spezzate (continuano con uno spazio all'inizio) riunite
+    testo = re.sub(r"\r?\n[ \t]", "", testo)
+    nuovi = 0
+    with _blocco:
+        elenco = _leggi("contatti.json", ESEMPIO_CONTATTI if DEMO else [])
+        for blocco in re.findall(r"BEGIN:VCARD(.*?)END:VCARD", testo, re.S | re.I):
+            nome = numero = email = ""
+            for riga in blocco.splitlines():
+                chiave = riga.split(":", 1)[0].upper()
+                if chiave.startswith("FN"):
+                    nome = _valore_vcard(riga)
+                elif chiave.startswith("N") and not nome and not chiave.startswith("NOTE") and not chiave.startswith("NICK"):
+                    parti = _valore_vcard(riga).split(";")
+                    nome = " ".join(x for x in (parti[1] if len(parti) > 1 else "", parti[0]) if x)
+                elif chiave.startswith("TEL") and not numero:
+                    numero = _valore_vcard(riga).removeprefix("tel:")
+                elif chiave.startswith("EMAIL") and not email:
+                    email = _valore_vcard(riga)
+            if not nome or not normalizza(numero) or any(_uguali(c["numero"], numero) for c in elenco):
+                continue
+            elenco.append({"id": uuid.uuid4().hex[:10], "nome": nome, "numero": numero, "email": email,
+                           "note": "", "preferito": False})
+            nuovi += 1
+        _scrivi("contatti.json", elenco)
+    return {"ok": True, "messaggio": T("{n} contatti importati", n=nuovi) if nuovi != 1 else T("1 contatto importato")}
+
+
+def cerca_vcard() -> list[dict]:
+    """File .vcf in Scaricati, Documenti e nella cartella personale (per «Importa»)."""
+    from ..sistema import cartella_utente
+
+    trovati = []
+    for cartella in (cartella_utente("DOWNLOAD", "Scaricati"), cartella_utente("DOCUMENTS", "Documenti"), Path.home()):
+        try:
+            for f in sorted(Path(cartella).glob("*.vcf")):
+                trovati.append({"percorso": str(f), "nome": f.name, "cartella": Path(cartella).name})
+        except OSError:
+            continue
+    return trovati[:30]
+
+
+def esporta_vcard() -> dict:
+    from ..sistema import cartella_utente
+
+    cartella = cartella_utente("DOCUMENTS", "Documenti")
+    cartella.mkdir(parents=True, exist_ok=True)
+    f = cartella / "contatti.vcf"
+    righe = []
+    for c in contatti():
+        sicuro = lambda x: (x or "").replace(",", "\\,").replace(";", "\\;")
+        righe += ["BEGIN:VCARD", "VERSION:3.0", f"FN:{sicuro(c['nome'])}", f"N:;{sicuro(c['nome'])};;;",
+                  f"TEL;TYPE=CELL:{c['numero']}"]
+        if c.get("email"):
+            righe.append(f"EMAIL:{c['email']}")
+        righe.append("END:VCARD")
+    f.write_text("\r\n".join(righe) + "\r\n", encoding="utf-8")
+    return {"ok": True, "messaggio": T("Contatti salvati in {f}", f=f"{cartella.name}/contatti.vcf")}
 
 
 def preferito(ident: str, si: bool) -> None:
@@ -207,6 +280,7 @@ class Chiamate:
         self.muto = False
         self.vivavoce = False
         self._demo_stato = ""
+        self.persa = lambda numero: None     # avviso di chiamata persa (dato dall'interfaccia)
 
     def stato(self) -> dict:
         if not self.percorso and not DEMO:
@@ -299,6 +373,8 @@ class Chiamate:
             durata = int(time.time() - self.risposta) if self.risposta else 0
             tipo = self.direzione if self.risposta or self.direzione == "uscita" else "persa"
             _registra(self.numero, tipo, durata)
+            if tipo == "persa":
+                self.persa(self.numero)
         if self.muto:
             self.imposta_muto(False)
         self.percorso, self.numero, self.risposta, self._demo_stato = "", "", 0.0, ""
@@ -327,14 +403,15 @@ def _archivio_sms() -> dict:
     return _leggi("messaggi.json", _esempio_messaggi() if DEMO else {})
 
 
-def sincronizza_sms() -> int:
-    """Copia nell'archivio gli SMS ricevuti dal modem e li toglie dal modem (che ha poco spazio)."""
+def sincronizza_sms() -> list[tuple[str, str]]:
+    """Copia nell'archivio gli SMS ricevuti dal modem e li toglie dal modem (che ha poco spazio).
+    Restituisce i nuovi messaggi come (numero, testo)."""
     if DEMO:
-        return 0
+        return []
     m = _modem()
     if not m:
-        return 0
-    nuovi = 0
+        return []
+    nuovi: list[tuple[str, str]] = []
     with _blocco:
         archivio = _archivio_sms()
         for percorso in _mmcli("-m", m, "--messaging-list-sms").get("modem.messaging.sms", []):
@@ -350,7 +427,7 @@ def sincronizza_sms() -> int:
             chiave = next((k for k in archivio if _uguali(k, numero)), numero)
             archivio.setdefault(chiave, []).append({"testo": cont.get("text", ""), "mio": False, "quando": quando, "nuovo": True})
             subprocess.run(["mmcli", "-m", m, f"--messaging-delete-sms={percorso}"], capture_output=True, timeout=15)
-            nuovi += 1
+            nuovi.append((numero, cont.get("text", "")))
         if nuovi:
             _scrivi("messaggi.json", archivio)
     return nuovi

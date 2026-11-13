@@ -53,15 +53,26 @@ Item {
         }
     }
 
-    Text {
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: 380
-        width: parent.width - 60
-        horizontalAlignment: Text.AlignHCenter
-        wrapMode: Text.Wrap
-        text: I18n.t("Nessuna notifica")
-        color: tel.pal.testo2
-        font.family: Tema.font; font.pixelSize: tel.px(14)
+    Column {
+        x: 14; y: 370
+        width: parent.width - 28
+        spacing: 8
+        Repeater {
+            model: tel.elencoNotifiche.slice(0, 3)
+            SchedaNotifica { required property var modelData; n: modelData; compatta: true }
+        }
+        Text {
+            visible: tel.elencoNotifiche.length > 3
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: I18n.t("e altre") + " " + (tel.elencoNotifiche.length - 3)
+            color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13)
+        }
+        Text {
+            visible: tel.elencoNotifiche.length === 0
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: tel.imp.non_disturbare ? I18n.t("Non disturbare attivo") : I18n.t("Nessuna notifica")
+            color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(14)
+        }
     }
 
     // Torcia e fotocamera

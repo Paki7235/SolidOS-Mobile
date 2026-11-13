@@ -25,6 +25,7 @@ PREDEFINITE = {
     "icone": 1,               # 0 piccole, 1 normali, 2 grandi
     "navigazione": "gesti",   # gesti | tasti
     "dock": ["telefono", "messaggi", "web", "musica"],
+    "non_disturbare": False,
 }
 
 # Categorie del menu di sistema → cartelle della Libreria app
@@ -49,7 +50,74 @@ ALIAS = {
 IN_ARRIVO = {
     "telefono": {"id": "interno:telefono", "nome": T("Telefono"), "icona": "call-start", "categorie": ["Telephony"]},
     "messaggi": {"id": "interno:messaggi", "nome": T("Messaggi"), "icona": "internet-chat", "categorie": ["Chat"]},
+    "contatti": {"id": "interno:contatti", "nome": T("Contatti"), "icona": "x-office-address-book", "categorie": ["ContactManagement"]},
 }
+
+
+class CentroNotifiche:
+    """Le notifiche del telefono: quelle delle app (server D-Bus standard, come la shell del PC)
+    più quelle del telefono stesso (SMS, chiamate perse). Se un altro server è già attivo
+    (es. anteprima dentro SolidOS per PC) restano solo quelle del telefono."""
+
+    def __init__(self, avvisa):
+        self._avvisa = avvisa
+        self.server = None
+        self.interne: list[dict] = []
+        self._prossimo = 100000
+        self.non_disturbare = False
+
+    def avvia(self) -> None:
+        try:
+            import dbus
+
+            from ..dbusutil import inizializza
+            from .notifiche import ServerNotifiche
+
+            inizializza()
+            self.server = ServerNotifiche(dbus.SessionBus(), lambda e, d: self._avvisa(e, d))
+            self.server.non_disturbare = self.non_disturbare
+            self.server.storico = self.interne + self.server.storico
+        except Exception:  # noqa: BLE001 — niente bus di sessione o nome già preso
+            self.server = None
+
+    def imposta_non_disturbare(self, si: bool) -> None:
+        self.non_disturbare = bool(si)
+        if self.server:
+            self.server.non_disturbare = self.non_disturbare
+
+    def elenco(self) -> list:
+        return list(self.server.storico) if self.server else list(self.interne)
+
+    def aggiungi(self, app: str, titolo: str, testo: str, icona: str = "", apri: str = "") -> None:
+        azioni = [{"chiave": "apri:" + apri, "testo": T("Apri")}] if apri else []
+        if self.server:
+            coppie = [x for a in azioni for x in (a["chiave"], a["testo"])]
+            self.server.Notify(app, 0, icona, titolo, testo, coppie, {"x-apri": apri} if apri else {}, -1)
+            return
+        self._prossimo += 1
+        n = {"id": self._prossimo, "app": app, "icona": icona, "titolo": titolo, "testo": testo, "azioni": azioni,
+             "urgenza": 1, "valore": -1, "residente": False, "transitoria": False, "scadenza": 6000,
+             "ora": time.strftime("%H:%M")}
+        self.interne.insert(0, n)
+        del self.interne[60:]
+        self._avvisa("notifica", {"notifica": n, "mostra": not self.non_disturbare})
+
+    def chiudi(self, ident: int) -> None:
+        if self.server:
+            self.server.rimuovi_da_storico(int(ident))
+            self.server.chiudi(int(ident))
+        self.interne = [n for n in self.interne if n["id"] != int(ident)]
+
+    def svuota(self) -> None:
+        if self.server:
+            for n in list(self.server.storico):
+                self.server.chiudi(int(n["id"]))
+            self.server.svuota_storico()
+        self.interne = []
+
+    def azione(self, ident: int, chiave: str) -> None:
+        if self.server and not chiave.startswith("apri:"):
+            self.server.azione(int(ident), chiave)
 
 
 def _impostazioni_file() -> Path:
@@ -100,6 +168,40 @@ def _batteria() -> dict:
 class BackendMobile(Backend):
     def __init__(self):
         self._app: list[dict] | None = None
+        self.centro = CentroNotifiche(lambda e, d: self.emetti(e, d))
+        self.centro.non_disturbare = bool(self.impostazioni().get("non_disturbare"))
+        from . import telefonia
+
+        if telefonia.DEMO:
+            self.centro.aggiungi(T("Messaggi"), "Mamma", "A che ora arrivi stasera? Ho preparato la cena", "internet-chat", "messaggi")
+            self.centro.aggiungi(T("Telefono"), T("Chiamata persa"), "Giulia Rossi", "call-start", "telefono")
+            self.centro.aggiungi(T("Calendario"), T("Riunione con Marco"), T("Tra un'ora · Studio"), "x-office-calendar")
+
+    # ── Notifiche ────────────────────────────────────────────────────────
+    def notifiche(self) -> list:
+        return self.centro.elenco()
+
+    def chiudiNotifica(self, ident: int) -> None:
+        self.centro.chiudi(int(ident))
+
+    def svuotaNotifiche(self) -> None:
+        self.centro.svuota()
+
+    def azioneNotifica(self, ident: int, chiave: str) -> None:
+        self.centro.azione(int(ident), chiave)
+
+    def nonDisturbare(self, si: bool) -> None:
+        self.centro.imposta_non_disturbare(bool(si))
+        self.imposta("non_disturbare", bool(si))
+
+    def controllaSms(self) -> int:
+        """Nuovi SMS dal modem → archivio e notifica (chiamato dall'interfaccia ogni 20 secondi)."""
+        from . import telefonia
+
+        arrivati = telefonia.sincronizza_sms()
+        for numero, testo in arrivati:
+            self.centro.aggiungi(T("Messaggi"), telefonia.nome_di(numero) or numero, testo, "internet-chat", "messaggi")
+        return len(arrivati)
 
     # ── Personalizza ─────────────────────────────────────────────────────
     def impostazioni(self) -> dict:
@@ -156,7 +258,7 @@ class BackendMobile(Backend):
 
     def home(self) -> list:
         """Le app della Home: quelle di SolidOS più usate, nell'ordine del design."""
-        ordine = ["fotocamera", "foto", "note", "file", "dove", "musica", "store", "vicina", "calcolatrice", "impostazioni"]
+        ordine = ["fotocamera", "foto", "contatti", "note", "file", "dove", "musica", "store", "vicina", "calcolatrice", "impostazioni"]
         risultato = [a for a in (self._per_id(x) for x in ordine) if a]
         dock = set(self.impostazioni()["dock"])
         for a in self.app():
@@ -260,10 +362,25 @@ class BackendMobile(Backend):
 
         return telefonia.contatti()
 
-    def salvaContatto(self, nome: str, numero: str, ident: str = "") -> dict:
+    def salvaContatto(self, nome: str, numero: str, ident: str = "", email: str = "", note: str = "") -> dict:
         from . import telefonia
 
-        return telefonia.salva_contatto(nome, numero, ident)
+        return telefonia.salva_contatto(nome, numero, ident, email, note)
+
+    def cercaVcard(self) -> list:
+        from . import telefonia
+
+        return telefonia.cerca_vcard()
+
+    def importaVcard(self, percorso: str) -> dict:
+        from . import telefonia
+
+        return telefonia.importa_vcard(percorso)
+
+    def esportaVcard(self) -> dict:
+        from . import telefonia
+
+        return telefonia.esporta_vcard()
 
     def preferito(self, ident: str, si: bool) -> None:
         from . import telefonia
@@ -290,6 +407,8 @@ class BackendMobile(Backend):
 
         if not hasattr(self, "_ch"):
             self._ch = telefonia.Chiamate()
+            self._ch.persa = lambda numero: self.centro.aggiungi(
+                T("Telefono"), T("Chiamata persa"), telefonia.nome_di(numero) or numero, "call-start", "telefono")
         return self._ch
 
     def chiama(self, numero: str) -> dict:
@@ -344,7 +463,10 @@ def main() -> int:
             from PyQt6.QtGui import QIcon
 
             QIcon.setThemeName(os.environ["NUCLEO_TEMA_ICONE"])
-        return {"ponte": crea_ponte(BackendMobile())}
+        backend = BackendMobile()
+        ponte = crea_ponte(backend)
+        backend.centro.avvia()
+        return {"ponte": ponte}
 
     return esegui_app("mobile", "Mobile/Main.qml", contesto)
 

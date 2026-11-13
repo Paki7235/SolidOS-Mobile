@@ -53,6 +53,15 @@ Window {
         running: true; repeat: true
         onTriggered: ponte.avvia("chiamata", [], "chiamata")
     }
+    // ── Notifiche ─────────────────────────────────────────────────────────
+    property var elencoNotifiche: ponte.chiama0("notifiche")
+    property var banner: null
+    function aggiornaNotifiche() { elencoNotifiche = ponte.chiama0("notifiche") }
+    function chiudiNotifica(id) { ponte.chiama("chiudiNotifica", [id]); aggiornaNotifiche(); if (banner && banner.id === id) banner = null }
+    function nonDisturbare(si) { ponte.chiama("nonDisturbare", [si]); imp = ponte.chiama0("impostazioni") }
+    Timer { interval: 20000; running: true; repeat: true; onTriggered: ponte.avvia("controllaSms", [], "sms") }
+    Timer { id: fineBanner; onTriggered: tel.banner = null }
+
     function chiama(numero) {
         var r = ponte.chiama("chiama", [numero])
         if (!r.ok) { avviso(r.messaggio); return }
@@ -64,6 +73,12 @@ Window {
     Timer { interval: 15000; running: true; repeat: true; onTriggered: { tel.adesso = new Date(); ponte.avvia("stato", [], "stato") } }
     Connections {
         target: ponte
+        function onEvento(nome, d) {
+            if (nome === "notifica") {
+                tel.aggiornaNotifiche()
+                if (d.mostra) { tel.banner = d.notifica; fineBanner.interval = d.notifica.scadenza > 0 ? d.notifica.scadenza : 6000; fineBanner.restart() }
+            } else if (nome === "chiusa") tel.aggiornaNotifiche()
+        }
         function onCompletato(id, r) {
             if (id === "stato") tel.stato = r
             else if (id === "chiamata") {
@@ -97,6 +112,9 @@ Window {
         else if (a.schermata === "recenti") { appInterna = "telefono"; telefonoApp.scheda = "recenti" }
         else if (a.schermata === "messaggi") appInterna = "messaggi"
         else if (a.schermata === "conversazione") { appInterna = "messaggi"; var c = ponte.chiama0("conversazioni"); if (c.length) messaggiApp.apri(c[0].numero) }
+        else if (a.schermata === "contatti") appInterna = "contatti"
+        else if (a.schermata === "scheda") { appInterna = "contatti"; var cs = ponte.chiama0("contatti"); if (cs.length) contattiApp.apri(cs[1] || cs[0]) }
+        else if (a.schermata === "banner") { schermata = "home"; var nn = ponte.chiama0("notifiche"); if (nn.length) banner = nn[0] }
         else if (a.schermata === "chiamata") { var cc = ponte.chiama0("contatti"); if (cc.length) chiama(cc[0].numero) }
     }
     // --foto=PERCORSO: salva una foto della schermata ed esce (prova automatica)
@@ -144,6 +162,14 @@ Window {
         height: parent.height
         y: tel.appInterna === "telefono" ? 0 : tel.height
         visible: tel.appInterna === "telefono" || y < tel.height - 1
+        Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+    }
+    Contatti {
+        id: contattiApp
+        anchors.left: parent.left; anchors.right: parent.right
+        height: parent.height
+        y: tel.appInterna === "contatti" ? 0 : tel.height
+        visible: tel.appInterna === "contatti" || y < tel.height - 1
         Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
     }
     Messaggi {
@@ -205,6 +231,19 @@ Window {
     }
 
     BarraStato { anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; z: 60 }
+
+    // ── Banner: la notifica appena arrivata scende dall'alto (non sul blocco: lì c'è l'elenco) ──
+    SchedaNotifica {
+        id: schedaBanner
+        z: 80
+        x: 10
+        width: tel.width - 20
+        compatta: true
+        n: tel.banner || ({})
+        y: tel.banner && tel.schermata !== "blocco" && !tel.notifiche ? 54 : -height - 20
+        visible: y > -height - 20
+        Behavior on y { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+    }
 
     // ── Chiamata: sopra a tutto (anche al blocco), riducibile a pillola verde ──
     Chiamata {
