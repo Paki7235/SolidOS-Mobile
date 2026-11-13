@@ -15,12 +15,24 @@ Item {
         color: tel.pal.testo
         font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold
     }
+    // Pillola della fotocamera: durante una chiamata ridotta si allarga e mostra la durata
+    readonly property bool inChiamata: tel.chiamataInfo.attiva === true && tel.chiamataRidotta
     Rectangle {
         id: pillola
         anchors.horizontalCenter: parent.horizontalCenter
         y: 11
-        width: 124; height: 36; radius: 18
+        width: barra.inChiamata ? 200 : 124; height: 36; radius: 18
         color: "#000000"
+        Behavior on width { NumberAnimation { duration: 200 } }
+        Row {
+            visible: barra.inChiamata
+            anchors.verticalCenter: parent.verticalCenter
+            x: 14; spacing: 8
+            Rectangle { width: 22; height: 22; radius: 11; color: "#22c55e"; anchors.verticalCenter: parent.verticalCenter
+                Text { anchors.centerIn: parent; text: "✆"; color: "#ffffff"; font.pixelSize: 13 } }
+            Text { anchors.verticalCenter: parent.verticalCenter; text: tel.chiamataInfo.testo || ""; color: "#22c55e"; font.family: Tema.font; font.pixelSize: 14; font.weight: Font.DemiBold }
+        }
+        MouseArea { anchors.fill: parent; enabled: barra.inChiamata; onClicked: tel.chiamataRidotta = false }
     }
     Row {
         anchors.right: parent.right; anchors.rightMargin: 28

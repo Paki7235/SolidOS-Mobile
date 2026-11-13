@@ -44,12 +44,33 @@ Window {
     property bool notifiche: false
     property bool controllo: false
     property bool personalizza: false
+    property string appInterna: ""               // telefono | messaggi (app dentro l'interfaccia)
+    property var chiamataInfo: ({ attiva: false })
+    property bool chiamataRidotta: false
+    // Chiamate: controllo ogni secondo durante la chiamata, ogni 3 secondi per quelle in arrivo
+    Timer {
+        interval: tel.chiamataInfo.attiva ? 1000 : 3000
+        running: true; repeat: true
+        onTriggered: ponte.avvia("chiamata", [], "chiamata")
+    }
+    function chiama(numero) {
+        var r = ponte.chiama("chiama", [numero])
+        if (!r.ok) { avviso(r.messaggio); return }
+        chiamataRidotta = false
+        chiamataInfo = ponte.chiama0("chiamata")
+    }
     property var stato: ponte.chiama0("stato")
     property date adesso: new Date()
     Timer { interval: 15000; running: true; repeat: true; onTriggered: { tel.adesso = new Date(); ponte.avvia("stato", [], "stato") } }
     Connections {
         target: ponte
-        function onCompletato(id, r) { if (id === "stato") tel.stato = r }
+        function onCompletato(id, r) {
+            if (id === "stato") tel.stato = r
+            else if (id === "chiamata") {
+                if (r.inArrivo && !tel.chiamataInfo.inArrivo) tel.chiamataRidotta = false
+                tel.chiamataInfo = r
+            }
+        }
     }
     function ora() { return Qt.formatTime(adesso, "H:mm") }
     function giorno() {
@@ -58,7 +79,8 @@ Window {
     }
     function apri(app) {
         var r = ponte.chiama("avvia", [app.id])
-        if (!r.ok) avviso(r.messaggio)
+        if (r.interna) { chiudiTutto(); appInterna = r.interna }
+        else if (!r.ok) avviso(r.messaggio)
     }
     function avviso(testo) { messaggio.testo = testo; messaggio.opacity = 1; nascondi.restart() }
     function chiudiTutto() { notifiche = false; controllo = false; personalizza = false }
@@ -71,6 +93,11 @@ Window {
         else if (a.schermata === "controllo") controllo = true
         else if (a.schermata === "notifiche") notifiche = true
         else if (a.schermata === "personalizza") personalizza = true
+        else if (a.schermata === "telefono") appInterna = "telefono"
+        else if (a.schermata === "recenti") { appInterna = "telefono"; telefonoApp.scheda = "recenti" }
+        else if (a.schermata === "messaggi") appInterna = "messaggi"
+        else if (a.schermata === "conversazione") { appInterna = "messaggi"; var c = ponte.chiama0("conversazioni"); if (c.length) messaggiApp.apri(c[0].numero) }
+        else if (a.schermata === "chiamata") { var cc = ponte.chiama0("contatti"); if (cc.length) chiama(cc[0].numero) }
     }
     // --foto=PERCORSO: salva una foto della schermata ed esce (prova automatica)
     Timer {
@@ -108,6 +135,24 @@ Window {
         anchors.fill: parent
         visible: tel.schermata === "blocco"
         onSblocca: tel.schermata = "home"
+    }
+
+    // ── App interne (Telefono, Messaggi): pagine a tutto schermo che salgono dal basso ──
+    Telefono {
+        id: telefonoApp
+        anchors.left: parent.left; anchors.right: parent.right
+        height: parent.height
+        y: tel.appInterna === "telefono" ? 0 : tel.height
+        visible: tel.appInterna === "telefono" || y < tel.height - 1
+        Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+    }
+    Messaggi {
+        id: messaggiApp
+        anchors.left: parent.left; anchors.right: parent.right
+        height: parent.height
+        y: tel.appInterna === "messaggi" ? 0 : tel.height
+        visible: tel.appInterna === "messaggi" || y < tel.height - 1
+        Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
     }
 
     // Velo scuro sotto le tendine
@@ -161,6 +206,14 @@ Window {
 
     BarraStato { anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; z: 60 }
 
+    // ── Chiamata: sopra a tutto (anche al blocco), riducibile a pillola verde ──
+    Chiamata {
+        anchors.fill: parent
+        z: 90
+        info: tel.chiamataInfo
+        visible: tel.chiamataInfo.attiva === true && (!tel.chiamataRidotta || tel.chiamataInfo.inArrivo === true)
+    }
+
     // ── Navigazione: barretta dei gesti o tre tasti ───────────────────────
     Item {
         id: navigazione
@@ -179,15 +232,15 @@ Window {
             target: null
             enabled: tel.imp.navigazione !== "tasti"
             xAxis.enabled: false
-            onActiveChanged: if (!active && translation.y < -30) { tel.chiudiTutto(); home.pagina = 0 }
+            onActiveChanged: if (!active && translation.y < -30) { tel.chiudiTutto(); tel.appInterna = ""; home.pagina = 0 }
         }
         Row {
             visible: tel.imp.navigazione === "tasti"
             anchors.centerIn: parent
             spacing: 80
             Repeater {
-                model: [{ i: "go-previous-symbolic", f: function () { if (tel.notifiche || tel.controllo || tel.personalizza) tel.chiudiTutto(); else home.pagina = 0 } },
-                        { i: "go-home-symbolic", f: function () { tel.chiudiTutto(); home.pagina = 0 } },
+                model: [{ i: "go-previous-symbolic", f: function () { if (tel.notifiche || tel.controllo || tel.personalizza) tel.chiudiTutto(); else if (tel.appInterna) tel.appInterna = ""; else home.pagina = 0 } },
+                        { i: "go-home-symbolic", f: function () { tel.chiudiTutto(); tel.appInterna = ""; home.pagina = 0 } },
                         { i: "view-app-grid-symbolic", f: function () { tel.chiudiTutto(); home.pagina = 1 } }]
                 Item {
                     required property var modelData

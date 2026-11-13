@@ -45,10 +45,10 @@ ALIAS = {
 }
 
 
-# App del telefono che arrivano con la telefonia (fase M2): nel Dock si vedono già
+# App interne all'interfaccia (si aprono subito e non occupano memoria in più)
 IN_ARRIVO = {
-    "telefono": {"id": "in-arrivo:telefono", "nome": T("Telefono"), "icona": "call-start", "categorie": []},
-    "messaggi": {"id": "in-arrivo:messaggi", "nome": T("Messaggi"), "icona": "internet-chat", "categorie": []},
+    "telefono": {"id": "interno:telefono", "nome": T("Telefono"), "icona": "call-start", "categorie": ["Telephony"]},
+    "messaggi": {"id": "interno:messaggi", "nome": T("Messaggi"), "icona": "internet-chat", "categorie": ["Chat"]},
 }
 
 
@@ -183,8 +183,8 @@ class BackendMobile(Backend):
         return cartelle
 
     def avvia(self, ident: str) -> dict:
-        if ident.startswith("in-arrivo:"):
-            return {"ok": False, "messaggio": T("Arriva con la telefonia: chiamate e SMS dal telefono")}
+        if ident.startswith("interno:"):
+            return {"ok": True, "interna": ident.split(":", 1)[1]}
         from ..sistema import avvia_desktop
 
         ok = avvia_desktop(ident)
@@ -248,6 +248,86 @@ class BackendMobile(Backend):
         from ..hw import audio
 
         audio.imposta_volume(int(valore))
+
+    # ── Telefonia: chiamate, rubrica, registro, SMS ──────────────────────
+    def modem(self) -> dict:
+        from . import telefonia
+
+        return telefonia.stato_modem()
+
+    def contatti(self) -> list:
+        from . import telefonia
+
+        return telefonia.contatti()
+
+    def salvaContatto(self, nome: str, numero: str, ident: str = "") -> dict:
+        from . import telefonia
+
+        return telefonia.salva_contatto(nome, numero, ident)
+
+    def preferito(self, ident: str, si: bool) -> None:
+        from . import telefonia
+
+        telefonia.preferito(ident, si)
+
+    def eliminaContatto(self, ident: str) -> None:
+        from . import telefonia
+
+        telefonia.elimina_contatto(ident)
+
+    def registro(self) -> list:
+        from . import telefonia
+
+        return telefonia.registro()
+
+    def cancellaRegistro(self) -> None:
+        from . import telefonia
+
+        telefonia.cancella_registro()
+
+    def _chiamate(self):
+        from . import telefonia
+
+        if not hasattr(self, "_ch"):
+            self._ch = telefonia.Chiamate()
+        return self._ch
+
+    def chiama(self, numero: str) -> dict:
+        return self._chiamate().chiama(numero)
+
+    def chiamata(self) -> dict:
+        return self._chiamate().stato()
+
+    def rispondi(self) -> None:
+        self._chiamate().rispondi()
+
+    def riaggancia(self) -> None:
+        self._chiamate().riaggancia()
+
+    def tono(self, cifra: str) -> None:
+        self._chiamate().tono(cifra)
+
+    def muto(self, si: bool) -> None:
+        self._chiamate().imposta_muto(si)
+
+    def vivavoce(self, si: bool) -> None:
+        self._chiamate().imposta_vivavoce(si)
+
+    def conversazioni(self) -> list:
+        from . import telefonia
+
+        telefonia.sincronizza_sms()
+        return telefonia.conversazioni()
+
+    def conversazione(self, numero: str) -> dict:
+        from . import telefonia
+
+        return telefonia.conversazione(numero)
+
+    def inviaSms(self, numero: str, testo: str) -> dict:
+        from . import telefonia
+
+        return telefonia.invia_sms(numero, testo)
 
     def blocca(self) -> None:
         from ..sistema import avvia
