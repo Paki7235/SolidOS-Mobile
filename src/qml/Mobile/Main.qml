@@ -31,7 +31,7 @@ Window {
         readonly property color vetro: tel.chiaro ? Qt.rgba(1, 1, 1, 0.62) : Qt.rgba(1, 1, 1, 0.14)
         readonly property color vetroBordo: tel.chiaro ? Qt.rgba(1, 1, 1, 0.85) : Qt.rgba(1, 1, 1, 0.16)
         readonly property color traccia: tel.chiaro ? Qt.rgba(0.06, 0.09, 0.19, 0.12) : Qt.rgba(1, 1, 1, 0.22)
-        readonly property color velo: tel.chiaro ? Qt.rgba(0.93, 0.94, 0.98, 0.72) : Qt.rgba(0.02, 0.03, 0.08, 0.62)
+        readonly property color velo: tel.chiaro ? Qt.rgba(0.93, 0.94, 0.98, 0.9) : Qt.rgba(0.02, 0.03, 0.08, 0.8)
         readonly property color pieno: tel.chiaro ? "#0f1630" : "#ffffff"
         readonly property color suPieno: tel.chiaro ? "#ffffff" : "#1b2140"
     }

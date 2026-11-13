@@ -14,12 +14,15 @@ Item {
 
     MouseArea { anchors.fill: parent; onClicked: tel.controllo = false }
 
-    Grid {
-        x: 20; y: 58
-        columns: 4
-        spacing: 14
+    // Disposizione a moduli su una griglia di 4 colonne (lato = una cella, passo = cella + spazio)
+    readonly property real passo: lato + 14
+    readonly property real x0: 20
+    readonly property real y0: 58
+    Item {
+        anchors.fill: parent
         // Connessioni (2×2)
         Vetro {
+            x: cc.x0; y: cc.y0
             width: cc.lato * 2 + 14; height: width; radius: 26
             Grid {
                 anchors.centerIn: parent
@@ -41,8 +44,9 @@ Item {
                 }
             }
         }
-        // Spazi / Personalizza
+        // Questo telefono / Personalizza
         Vetro {
+            x: cc.x0 + 2 * cc.passo; y: cc.y0
             width: cc.lato * 2 + 14; height: width; radius: 26
             Column {
                 anchors.fill: parent; anchors.margins: 16
@@ -63,6 +67,8 @@ Item {
             Vetro {
                 id: cursore
                 required property var modelData
+                required property int index
+                x: cc.x0 + index * cc.passo; y: cc.y0 + 2 * cc.passo
                 readonly property int valore: cc[modelData.chiave]
                 width: cc.lato; height: cc.lato * 2 + 14; radius: 26
                 clip: true
@@ -88,6 +94,7 @@ Item {
         }
         // Rete attuale
         Vetro {
+            x: cc.x0 + 2 * cc.passo; y: cc.y0 + 2 * cc.passo
             width: cc.lato * 2 + 14; height: cc.lato; radius: 26
             Row {
                 anchors.verticalCenter: parent.verticalCenter
@@ -109,6 +116,10 @@ Item {
             ]
             Vetro {
                 required property var modelData
+                required property int index
+                // due accanto alla rete (sotto), due nella riga successiva
+                x: cc.x0 + (index < 2 ? (2 + index) : (index - 2)) * cc.passo
+                y: cc.y0 + (index < 2 ? 3 : 4) * cc.passo
                 width: cc.lato; height: cc.lato; radius: 26
                 Icona { anchors.centerIn: parent; nome: parent.modelData.i; lato: 24 }
                 MouseArea { anchors.fill: parent; onClicked: parent.modelData.f() }
