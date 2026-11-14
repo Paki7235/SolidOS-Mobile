@@ -113,6 +113,8 @@ Window {
         else if (a.schermata === "messaggi") appInterna = "messaggi"
         else if (a.schermata === "conversazione") { appInterna = "messaggi"; var c = ponte.chiama0("conversazioni"); if (c.length) messaggiApp.apri(c[0].numero) }
         else if (a.schermata === "contatti") appInterna = "contatti"
+        else if (a.schermata === "impostazioni") appInterna = "impostazioni"
+        else if (["wifi", "bluetooth", "rete", "suoni", "schermo", "batteria", "info"].indexOf(a.schermata) >= 0) { appInterna = "impostazioni"; impostazioniApp.apri(a.schermata) }
         else if (a.schermata === "scheda") { appInterna = "contatti"; var cs = ponte.chiama0("contatti"); if (cs.length) contattiApp.apri(cs[1] || cs[0]) }
         else if (a.schermata === "banner") { schermata = "home"; var nn = ponte.chiama0("notifiche"); if (nn.length) banner = nn[0] }
         else if (a.schermata === "chiamata") { var cc = ponte.chiama0("contatti"); if (cc.length) chiama(cc[0].numero) }
@@ -162,6 +164,14 @@ Window {
         height: parent.height
         y: tel.appInterna === "telefono" ? 0 : tel.height
         visible: tel.appInterna === "telefono" || y < tel.height - 1
+        Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+    }
+    Impostazioni {
+        id: impostazioniApp
+        anchors.left: parent.left; anchors.right: parent.right
+        height: parent.height
+        y: tel.appInterna === "impostazioni" ? 0 : tel.height
+        visible: tel.appInterna === "impostazioni" || y < tel.height - 1
         Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
     }
     Contatti {

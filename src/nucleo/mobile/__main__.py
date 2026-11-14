@@ -26,6 +26,15 @@ PREDEFINITE = {
     "navigazione": "gesti",   # gesti | tasti
     "dock": ["telefono", "messaggi", "web", "musica"],
     "non_disturbare": False,
+    "vibrazione": True,
+    "silenzioso": False,
+    "suoneria": "Alba",
+    "blocco_auto": 2,          # minuti prima che lo schermo si spenga (0 = mai)
+    "sempre_acceso": False,
+    "dati_mobili": True,
+    "roaming": False,
+    "sim_dati": "1",
+    "risparmio": False,
 }
 
 # Categorie del menu di sistema → cartelle della Libreria app
@@ -51,6 +60,7 @@ IN_ARRIVO = {
     "telefono": {"id": "interno:telefono", "nome": T("Telefono"), "icona": "call-start", "categorie": ["Telephony"]},
     "messaggi": {"id": "interno:messaggi", "nome": T("Messaggi"), "icona": "internet-chat", "categorie": ["Chat"]},
     "contatti": {"id": "interno:contatti", "nome": T("Contatti"), "icona": "x-office-address-book", "categorie": ["ContactManagement"]},
+    "impostazioni": {"id": "interno:impostazioni", "nome": T("Impostazioni"), "icona": "preferences-system", "categorie": ["Settings"]},
 }
 
 
@@ -447,6 +457,97 @@ class BackendMobile(Backend):
         from . import telefonia
 
         return telefonia.invia_sms(numero, testo)
+
+    # ── Impostazioni del telefono ────────────────────────────────────────
+    def wifiStato(self, scansiona: bool = False) -> dict:
+        from . import impostazioni
+
+        return impostazioni.wifi(bool(scansiona))
+
+    def wifiAcceso(self, si: bool) -> None:
+        from . import impostazioni
+
+        impostazioni.imposta_wifi(si)
+
+    def connettiWifi(self, ssid: str, password: str) -> dict:
+        from . import impostazioni
+
+        return impostazioni.connetti_wifi(ssid, password)
+
+    def dimenticaWifi(self, ssid: str) -> dict:
+        from . import impostazioni
+
+        return impostazioni.dimentica_wifi(ssid)
+
+    def btStato(self) -> dict:
+        from . import impostazioni
+
+        return impostazioni.bluetooth()
+
+    def btAcceso(self, si: bool) -> None:
+        from . import impostazioni
+
+        impostazioni.imposta_bluetooth(si)
+
+    def btCerca(self) -> list:
+        from . import impostazioni
+
+        return impostazioni.cerca_bluetooth()
+
+    def btAzione(self, indirizzo: str, azione: str) -> dict:
+        from . import impostazioni
+
+        return impostazioni.azione_bluetooth(indirizzo, azione)
+
+    def reteMobile(self) -> dict:
+        from . import impostazioni
+
+        return impostazioni.rete_mobile(self.impostazioni())
+
+    def datiMobili(self, si: bool) -> dict:
+        from . import impostazioni
+
+        self.imposta("dati_mobili", bool(si))
+        return impostazioni.imposta_dati(bool(si))
+
+    def sbloccaSim(self, pin: str) -> dict:
+        from . import impostazioni
+
+        return impostazioni.sblocca_sim(pin)
+
+    def volumeSuoni(self) -> int:
+        from . import impostazioni
+
+        return impostazioni.volume()
+
+    def impostaVolumeSuoni(self, valore: int) -> None:
+        from . import impostazioni
+
+        impostazioni.imposta_volume(valore)
+
+    def batteriaInfo(self) -> dict:
+        from . import impostazioni
+
+        return impostazioni.batteria(self.impostazioni())
+
+    def risparmio(self, si: bool) -> None:
+        from . import impostazioni
+
+        self.imposta("risparmio", bool(si))
+        impostazioni.imposta_risparmio(bool(si))
+
+    def infoTelefono(self) -> dict:
+        from . import impostazioni
+
+        return impostazioni.info()
+
+    def solidId(self) -> dict:
+        try:
+            from .. import solidid
+
+            return {**solidid.utente(), "disponibile": solidid.disponibile()}
+        except Exception:  # noqa: BLE001
+            return {"collegato": False, "disponibile": False}
 
     def blocca(self) -> None:
         from ..sistema import avvia
