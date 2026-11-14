@@ -49,6 +49,8 @@ tar -C "$RADICE" --exclude='__pycache__' -czf "$APORTS/main/solidos-mobile/solid
 python3 "$PMB" -y checksum solidos-mobile hisi-wlan
 
 echo "== kernel, pacchetti e immagine (ci vuole un po')"
+# Il firmware del Wi-Fi è tra i pacchetti archiviati: va costruito a mano
+python3 "$PMB" -y --details-to-stdout build --arch aarch64 firmware-huawei-warsaw
 python3 "$PMB" -y --details-to-stdout install --password "$PASSWORD" --no-sshd --no-fde
 python3 "$PMB" -y export "$LAVORO/esporta"
 
