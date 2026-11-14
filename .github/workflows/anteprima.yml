@@ -21,7 +21,7 @@ jobs:
           sudo apt-get install -y -qq --no-install-recommends \
             python3-pyqt6 python3-pyqt6.qtquick qml6-module-qtquick qml6-module-qtquick-controls \
             qml6-module-qtquick-layouts qml6-module-qtquick-window qml6-module-qtquick-templates \
-            qml6-module-qtqml-workerscript papirus-icon-theme fonts-inter fonts-league-spartan fonts-noto-core >/dev/null
+            qml6-module-qtqml-workerscript qml6-module-qtmultimedia papirus-icon-theme fonts-inter fonts-league-spartan fonts-noto-core >/dev/null
           # Disegno delle icone SVG (il nome del pacchetto cambia tra Debian e Ubuntu)
           apt-cache search --names-only 'qt6.*svg' | cut -d' ' -f1 | tee /dev/stderr | xargs sudo apt-get install -y -qq --no-install-recommends >/dev/null
 
@@ -41,7 +41,7 @@ jobs:
           errori=0
           for tema in scuro chiaro; do
             if [ "$tema" = chiaro ]; then export NUCLEO_TEMA_ICONE=Papirus-Light; else export NUCLEO_TEMA_ICONE=Papirus-Dark; fi
-            for sch in blocco home libreria controllo notifiche personalizza telefono recenti messaggi conversazione chiamata contatti scheda banner impostazioni wifi rete batteria info solidid sicurezza dove bloccato codice; do
+            for sch in blocco home libreria controllo notifiche personalizza telefono recenti messaggi conversazione chiamata contatti scheda banner impostazioni wifi rete batteria info solidid sicurezza dove bloccato codice calcolatrice note file foto musica fotocamera store vicina condividi; do
               timeout 40 scripts/anteprima.sh --schermata=$sch --tema=$tema --foto="$PWD/foto/$tema-$sch.png" >log.txt 2>&1 || true
               if [ -s "foto/$tema-$sch.png" ]; then echo "OK   $tema $sch"; else echo "ERRORE $tema $sch"; errori=$((errori+1)); tail -n 25 log.txt | sed 's/^/    | /'; fi
               grep -iE "error|referenceerror|typeerror|is not defined|cannot" log.txt | grep -v "QStandardPaths" | head -10 || true

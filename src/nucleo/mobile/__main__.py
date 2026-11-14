@@ -13,6 +13,7 @@ from pathlib import Path
 
 from .. import branding
 from ..i18n import T
+from . import strumenti
 from ..ponte import Backend, crea_ponte
 from ..sistema import config_utente, leggi_json, scrivi_json
 
@@ -24,7 +25,7 @@ PREDEFINITE = {
     "orologio": "League Spartan",
     "icone": 1,               # 0 piccole, 1 normali, 2 grandi
     "navigazione": "gesti",   # gesti | tasti
-    "dock": ["telefono", "messaggi", "web", "musica"],
+    "dock": ["telefono", "messaggi", "fotocamera", "musica"],
     "non_disturbare": False,
     "vibrazione": True,
     "silenzioso": False,
@@ -62,6 +63,14 @@ IN_ARRIVO = {
     "contatti": {"id": "interno:contatti", "nome": T("Contatti"), "icona": "x-office-address-book", "categorie": ["ContactManagement"]},
     "dove": {"id": "interno:dove", "nome": T("Dov'è"), "icona": "find-location", "categorie": ["Utility"]},
     "impostazioni": {"id": "interno:impostazioni", "nome": T("Impostazioni"), "icona": "preferences-system", "categorie": ["Settings"]},
+    "fotocamera": {"id": "interno:fotocamera", "nome": T("Fotocamera"), "icona": "camera-photo", "categorie": ["Photography"]},
+    "foto": {"id": "interno:foto", "nome": T("Foto"), "icona": "multimedia-photo-viewer", "categorie": ["Graphics", "Photography"]},
+    "musica": {"id": "interno:musica", "nome": T("Musica"), "icona": "multimedia-audio-player", "categorie": ["Audio", "Player"]},
+    "note": {"id": "interno:note", "nome": T("Note"), "icona": "accessories-text-editor", "categorie": ["Office", "TextEditor"]},
+    "file": {"id": "interno:file", "nome": T("File"), "icona": "system-file-manager", "categorie": ["FileManager", "Utility"]},
+    "calcolatrice": {"id": "interno:calcolatrice", "nome": T("Calcolatrice"), "icona": "accessories-calculator", "categorie": ["Calculator", "Utility"]},
+    "store": {"id": "interno:store", "nome": T("Store"), "icona": "system-software-install", "categorie": ["System"]},
+    "vicina": {"id": "interno:vicina", "nome": T("Vicina"), "icona": "folder-publicshare", "categorie": ["Network", "FileTransfer"]},
 }
 
 
@@ -256,7 +265,8 @@ class BackendMobile(Backend):
     # ── App ──────────────────────────────────────────────────────────────
     def app(self) -> list:
         if self._app is None:
-            self._app = _app_installate()
+            # App interne del telefono + app installate (.desktop), in ordine alfabetico
+            self._app = sorted(list(IN_ARRIVO.values()) + _app_installate(), key=lambda a: a["nome"].lower())
         return self._app
 
     def _per_id(self, breve: str) -> dict | None:
@@ -710,6 +720,90 @@ class BackendMobile(Backend):
 
     def indicazioni(self, lat: float, lon: float) -> None:
         self._dove().indicazioni(lat, lon)
+
+    # ── App di base (strumenti.py) ───────────────────────────────────────
+    def calcola(self, espressione: str) -> dict:
+        return strumenti.calcola(espressione)
+
+    def note(self, cerca: str = "") -> list:
+        return strumenti.note(cerca)
+
+    def leggiNota(self, ident: str) -> dict:
+        return strumenti.leggi_nota(ident)
+
+    def salvaNota(self, ident: str, testo: str) -> str:
+        return strumenti.salva_nota(ident, testo)
+
+    def fissaNota(self, ident: str, si: bool) -> None:
+        strumenti.fissa_nota(ident, si)
+
+    def eliminaNota(self, ident: str) -> None:
+        strumenti.elimina_nota(ident)
+
+    def luoghiFile(self) -> list:
+        return strumenti.luoghi()
+
+    def elencoFile(self, percorso: str, nascosti: bool = False) -> dict:
+        return strumenti.elenco_file(percorso, nascosti)
+
+    def nuovaCartella(self, dove: str, nome: str) -> dict:
+        return strumenti.nuova_cartella(dove, nome)
+
+    def rinominaFile(self, percorso: str, nome: str) -> dict:
+        return strumenti.rinomina(percorso, nome)
+
+    def cestinaFile(self, percorso: str) -> dict:
+        return strumenti.cestina(percorso)
+
+    def leggiTesto(self, percorso: str) -> str:
+        return strumenti.leggi_testo(percorso)
+
+    def foto(self) -> list:
+        return strumenti.foto()
+
+    def nuovaFoto(self) -> str:
+        return strumenti.nuova_foto()
+
+    def sfondoFoto(self, percorso: str) -> dict:
+        self.imposta("sfondo", percorso)
+        return {"ok": True, "messaggio": T("Sfondo cambiato")}
+
+    def musica(self) -> list:
+        return strumenti.musica()
+
+    def storeConsigliate(self) -> dict:
+        return strumenti.store_consigliate()
+
+    def storeCerca(self, testo: str) -> list:
+        return strumenti.store_cerca(testo)
+
+    def storeInstalla(self, ident: str) -> dict:
+        r = strumenti.store_installa(ident)
+        self._app = None
+        return r
+
+    def storeRimuovi(self, ident: str) -> dict:
+        r = strumenti.store_rimuovi(ident)
+        self._app = None
+        return r
+
+    def vicinaStato(self) -> dict:
+        return strumenti.vicina_stato()
+
+    def vicinaScopri(self) -> None:
+        strumenti.vicina_scopri()
+
+    def vicinaVisibilita(self, modalita: str) -> None:
+        strumenti.vicina_visibilita(modalita)
+
+    def vicinaInvia(self, file, dispositivo: str) -> dict:
+        return strumenti.vicina_invia(list(file), dispositivo)
+
+    def vicinaQr(self) -> dict:
+        return strumenti.vicina_qr()
+
+    def vicinaFermaQr(self) -> None:
+        strumenti.vicina_ferma_qr()
 
     def blocca(self) -> None:
         from ..sistema import avvia

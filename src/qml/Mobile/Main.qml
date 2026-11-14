@@ -103,6 +103,13 @@ Window {
         if (r.interna) { chiudiTutto(); appInterna = r.interna }
         else if (!r.ok) avviso(r.messaggio)
     }
+    // Passaggi tra app: file da mandare con Vicina, brano da suonare, testo negli appunti
+    property var daCondividere: []
+    property string branoDaSuonare: ""
+    function condividi(percorsi) { daCondividere = percorsi; chiudiTutto(); appInterna = "vicina" }
+    function copia(testo) { appunti.text = testo; appunti.selectAll(); appunti.copy() }
+    function ricaricaApp() { home.app = ponte.chiama0("home"); home.dock = ponte.chiama0("dock") }
+    TextEdit { id: appunti; visible: false }
     function avviso(testo) { messaggio.testo = testo; messaggio.opacity = 1; nascondi.restart() }
     function chiudiTutto() { notifiche = false; controllo = false; personalizza = false }
     Component.onCompleted: {
@@ -122,6 +129,8 @@ Window {
         else if (a.schermata === "conversazione") { appInterna = "messaggi"; var c = ponte.chiama0("conversazioni"); if (c.length) messaggiApp.apri(c[0].numero) }
         else if (a.schermata === "contatti") appInterna = "contatti"
         else if (a.schermata === "dove") appInterna = "dove"
+        else if (["calcolatrice", "note", "file", "foto", "musica", "fotocamera", "store", "vicina"].indexOf(a.schermata) >= 0) appInterna = a.schermata
+        else if (a.schermata === "condividi") condividi(ponte.chiama0("foto").slice(0, 2).map(function (f) { return f.percorso }))
         else if (a.schermata === "impostazioni") appInterna = "impostazioni"
         else if (["wifi", "bluetooth", "rete", "suoni", "schermo", "batteria", "info", "solidid", "sicurezza"].indexOf(a.schermata) >= 0) { appInterna = "impostazioni"; impostazioniApp.apri(a.schermata) }
         else if (a.schermata === "scheda") { appInterna = "contatti"; var cs = ponte.chiama0("contatti"); if (cs.length) contattiApp.apri(cs[1] || cs[0]) }
@@ -148,7 +157,9 @@ Window {
     readonly property string sfondi: ponte.chiama0("cartellaSfondi")
     Image {
         anchors.fill: parent
-        source: "file://" + tel.sfondi + "/" + tel.imp.sfondo + (tel.chiaro ? "-chiaro" : "") + ".png"
+        // Sfondo di sistema (nome) oppure una foto scelta in Foto (percorso completo)
+        source: tel.imp.sfondo.charAt(0) === "/" ? "file://" + tel.imp.sfondo
+                : "file://" + tel.sfondi + "/" + tel.imp.sfondo + (tel.chiaro ? "-chiaro" : "") + ".png"
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         sourceSize.height: 1080
@@ -208,6 +219,29 @@ Window {
         visible: tel.appInterna === "messaggi" || y < tel.height - 1
         Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
     }
+
+    // ── App di base: caricate solo quando servono (meno memoria) ─────────
+    component PaginaApp: Loader {
+        property string nome: ""
+        property bool resta: false          // Musica: continua a suonare quando la chiudi
+        property bool usata: false
+        anchors.left: parent.left; anchors.right: parent.right
+        height: parent.height
+        y: tel.appInterna === nome ? 0 : tel.height
+        visible: tel.appInterna === nome || y < tel.height - 1
+        active: tel.appInterna === nome || visible || (resta && usata)
+        onActiveChanged: if (active) usata = true
+        asynchronous: false
+        Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+    }
+    PaginaApp { nome: "calcolatrice"; source: "Calcolatrice.qml" }
+    PaginaApp { nome: "note"; source: "Note.qml" }
+    PaginaApp { nome: "file"; source: "FileApp.qml" }
+    PaginaApp { nome: "foto"; source: "Foto.qml" }
+    PaginaApp { nome: "musica"; source: "Musica.qml"; resta: true }
+    PaginaApp { nome: "fotocamera"; source: "Fotocamera.qml" }
+    PaginaApp { nome: "store"; source: "Store.qml" }
+    PaginaApp { nome: "vicina"; source: "Vicina.qml" }
 
     // Velo scuro sotto le tendine
     Rectangle {

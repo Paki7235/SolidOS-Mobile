@@ -7,7 +7,8 @@ url="https://github.com/Paki7235/SolidOS-Mobile"
 arch="noarch"
 license="GPL-3.0-or-later"
 depends="
-	python3 py3-qt6 qt6-qtbase qt6-qtdeclarative qt6-qtsvg
+	python3 py3-qt6 qt6-qtbase qt6-qtdeclarative qt6-qtsvg qt6-qtmultimedia
+	py3-dbus-next py3-cryptography py3-zeroconf py3-qrcode flatpak
 	py3-dbus py3-gobject3 py3-aiohttp dbus
 	papirus-icon-theme font-inter font-noto
 	networkmanager networkmanager-cli networkmanager-wifi modemmanager

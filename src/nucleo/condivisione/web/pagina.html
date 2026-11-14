@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{NOME}} · Condivisione Vicina</title>
+<style>
+  :root { color-scheme: light dark; --accento: #3B82F6; }
+  body { font-family: -apple-system, system-ui, Roboto, sans-serif; margin: 0; padding: 20px; max-width: 560px; margin-inline: auto; }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  p.sotto { opacity: .7; margin: 0 0 20px; }
+  .scheda { border: 1px solid rgba(128,128,128,.35); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+  label.pulsante, button { display: block; width: 100%; box-sizing: border-box; text-align: center; padding: 14px; border-radius: 12px;
+    border: 0; background: var(--accento); color: #fff; font-size: 1.05rem; font-weight: 600; cursor: pointer; }
+  input[type=file] { display: none; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(128,128,128,.2); }
+  li a { color: var(--accento); font-weight: 600; text-decoration: none; }
+  progress { width: 100%; height: 14px; margin-top: 12px; }
+  #messaggio { margin-top: 12px; min-height: 1.4em; }
+  .piccolo { font-size: .85rem; opacity: .65; text-align: center; margin-top: 24px; }
+</style>
+</head>
+<body>
+  <h1>Condivisione Vicina</h1>
+  <p class="sotto">Collegato a <strong>{{DISPOSITIVO}}</strong></p>
+
+  <div class="scheda" id="ricevi" hidden>
+    <label class="pulsante" for="scelta">Scegli foto o file da inviare</label>
+    <input type="file" id="scelta" multiple>
+    <progress id="barra" value="0" max="100" hidden></progress>
+    <div id="messaggio"></div>
+  </div>
+
+  <div class="scheda" id="scarica" hidden>
+    <strong>File condivisi dal computer</strong>
+    <ul id="elenco"></ul>
+  </div>
+
+  <p class="piccolo" id="scadenza"></p>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const dim = (b) => b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.ceil(b / 1024) + ' KB';
+
+async function stato() {
+  const r = await fetch('/stato');
+  if (!r.ok) { document.body.innerHTML = '<p>' + await r.text() + '</p>'; return; }
+  const s = await r.json();
+  $('ricevi').hidden = !s.ricevi;
+  $('scarica').hidden = s.file.length === 0;
+  $('elenco').innerHTML = '';
+  for (const f of s.file) {
+    const li = document.createElement('li');
+    li.innerHTML = '<span></span><a>Scarica</a>';
+    li.firstChild.textContent = f.nome + ' · ' + dim(f.dimensione);
+    li.lastChild.href = '/scarica/' + f.indice;
+    $('elenco').appendChild(li);
+  }
+  const min = Math.max(0, Math.round(s.scadenza / 60));
+  $('scadenza').textContent = 'Il collegamento scade tra ' + min + ' minuti. Resta solo nella rete locale.';
+}
+
+$('scelta').addEventListener('change', async (e) => {
+  const file = Array.from(e.target.files);
+  if (!file.length) return;
+  $('messaggio').textContent = 'In attesa di conferma sul computer…';
+  const r = await fetch('/richiesta', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ file: file.map(f => ({ nome: f.name, dimensione: f.size })) }) });
+  const esito = await r.json();
+  if (!esito.ok) { $('messaggio').textContent = 'Il computer ha rifiutato i file.'; return; }
+  const dati = new FormData();
+  file.forEach(f => dati.append('file', f, f.name));
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/carica/' + esito.id);
+  $('barra').hidden = false;
+  xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) $('barra').value = ev.loaded * 100 / ev.total; };
+  xhr.onload = () => { $('messaggio').textContent = xhr.status === 200 ? '✅ Inviati ' + file.length + ' file' : 'Invio non riuscito'; $('barra').hidden = true; };
+  xhr.onerror = () => { $('messaggio').textContent = 'Connessione interrotta'; };
+  $('messaggio').textContent = 'Invio in corso…';
+  xhr.send(dati);
+});
+
+stato();
+setInterval(stato, 30000);
+</script>
+</body>
+</html>
