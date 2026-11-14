@@ -8,14 +8,13 @@
 set -eu
 RADICE=$(cd "$(dirname "$0")/.." && pwd)
 LAVORO="$HOME/.local/var/pmbootstrap"
-APORTS="$LAVORO/cache_git/pmaports"
+APORTS="$HOME/pmaports"    # fuori dalla cartella di lavoro: pmbootstrap la crea da solo
 PMB="$HOME/pmbootstrap/pmbootstrap.py"
 USCITA="$RADICE/uscita"
 PASSWORD="${SOLIDOS_PASSWORD:-solidos}"
 
 echo "== pmbootstrap e pmaports"
-[ -d "$HOME/pmbootstrap" ] || git clone -q --depth 1 --branch 3.12.1 https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git "$HOME/pmbootstrap"
-mkdir -p "$LAVORO/cache_git"
+[ -d "$HOME/pmbootstrap" ] || git -c advice.detachedHead=false clone -q --depth 1 --branch 3.12.1 https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git "$HOME/pmbootstrap"
 [ -d "$APORTS" ] || git clone -q https://gitlab.postmarketos.org/postmarketOS/pmaports.git "$APORTS"
 
 mkdir -p "$HOME/.config"
