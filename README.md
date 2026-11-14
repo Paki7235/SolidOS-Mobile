@@ -26,9 +26,11 @@ App del telefono (tutte dentro l'interfaccia, si aprono subito):
 
 ## Installarlo su un telefono
 
-Primo telefono: **Huawei P10 Lite** → guida passo passo in [docs/installa-p10-lite.md](docs/installa-p10-lite.md).
-L'immagine si costruisce su GitHub (scheda **Actions** › **Telefono P10 Lite**) e finisce nelle
-**Releases** come un solo file zip.
+Telefoni supportati: **OnePlus 6 e 6T, Google Pixel 3a, Fairphone 4, SHIFT6mq, PinePhone Pro**
+(chiamate, SMS, audio e grafica funzionanti) e **Huawei P10 Lite** (solo interfaccia e Wi-Fi).
+Guida: [docs/installa-telefono.md](docs/installa-telefono.md) · P10 Lite: [docs/installa-p10-lite.md](docs/installa-p10-lite.md).
+Le immagini si costruiscono su GitHub (scheda **Actions** › **Telefoni**) e finiscono nelle
+**Releases**: un solo file zip per ogni telefono.
 
 ## Provarlo
 

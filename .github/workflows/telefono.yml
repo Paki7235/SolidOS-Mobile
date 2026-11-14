@@ -1,9 +1,13 @@
-# Costruisce l'immagine di SolidOS Mobile per il Huawei P10 Lite (postmarketOS "huawei-warsaw")
-# e la pubblica nelle Releases come UN SOLO file zip.
-name: Telefono P10 Lite
+# Costruisce SolidOS Mobile per i telefoni supportati (postmarketOS) e pubblica nelle
+# Releases UN SOLO file zip per ogni telefono.
+name: Telefoni
 
 on:
   workflow_dispatch:
+    inputs:
+      telefoni:
+        description: "Codici dei telefoni (JSON), es. [\"huawei-warsaw\"]"
+        default: '["huawei-warsaw","oneplus-enchilada","oneplus-fajita","google-sargo","fairphone-fp4","shift-axolotl","pine64-pinephonepro"]'
   push:
     tags: ["telefono-v*"]
 
@@ -14,6 +18,10 @@ jobs:
   immagine:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        device: ${{ fromJSON(github.event.inputs.telefoni || '["huawei-warsaw","oneplus-enchilada","oneplus-fajita","google-sargo","fairphone-fp4","shift-axolotl","pine64-pinephonepro"]') }}
     steps:
       - uses: actions/checkout@v4
 
@@ -22,8 +30,8 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq --no-install-recommends zip git openssl >/dev/null
 
-      - name: Costruisci
-        run: telefono/costruisci.sh
+      - name: Costruisci per ${{ matrix.device }}
+        run: telefono/costruisci.sh "${{ matrix.device }}"
 
       - name: Registro di pmbootstrap (se qualcosa va storto)
         if: failure()
@@ -33,8 +41,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="${GITHUB_REF_NAME}"
-          case "$TAG" in telefono-v*) ;; *) TAG="telefono-$(date +%Y%m%d-%H%M)";; esac
-          gh release create "$TAG" uscita/SolidOS-Mobile-P10-Lite.zip \
-            --title "SolidOS Mobile per Huawei P10 Lite ($TAG)" \
-            --notes-file telefono/LEGGIMI.txt
+          ZIP=$(cat uscita/nome-zip.txt); NOME=$(cat uscita/nome-telefono.txt)
+          TAG="telefono-${{ matrix.device }}-$(date +%Y%m%d-%H%M)"
+          gh release create "$TAG" "uscita/$ZIP" \
+            --title "SolidOS Mobile per $NOME ($(date +%d/%m/%Y))" \
+            --notes-file uscita/LEGGIMI.txt

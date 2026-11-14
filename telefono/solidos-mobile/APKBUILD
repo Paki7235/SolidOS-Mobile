@@ -9,7 +9,7 @@ license="GPL-3.0-or-later"
 depends="
 	python3 py3-qt6 qt6-qtbase qt6-qtdeclarative qt6-qtsvg qt6-qtmultimedia
 	py3-dbus-next py3-cryptography py3-zeroconf py3-qrcode flatpak
-	hisi-wlan
+	cage qt6-qtwayland callaudiod pipewire wireplumber
 	py3-dbus py3-gobject3 py3-aiohttp dbus
 	papirus-icon-theme font-inter font-noto
 	networkmanager networkmanager-cli networkmanager-wifi modemmanager
@@ -30,6 +30,9 @@ package() {
 	mkdir -p "$pkgdir"/usr/share/solidos-mobile
 	cp -r "$srcdir"/src/nucleo "$pkgdir"/usr/share/solidos-mobile/
 	cp -r "$srcdir"/src/qml "$pkgdir"/usr/share/solidos-mobile/
+	cp -r "$srcdir"/src/dati/icone "$pkgdir"/usr/share/solidos-mobile/icone
+	mkdir -p "$pkgdir"/usr/share/icons
+	cp -r "$srcdir"/src/dati/icone/hicolor "$pkgdir"/usr/share/icons/
 	install -Dm644 "$srcdir"/branding.env "$pkgdir"/usr/share/solidos-mobile/branding.env
 	install -Dm755 "$srcdir"/solidos-mobile-sessione "$pkgdir"/usr/bin/solidos-mobile-sessione
 	install -Dm755 "$srcdir"/solidos-mobile-prepara "$pkgdir"/usr/libexec/solidos-mobile-prepara

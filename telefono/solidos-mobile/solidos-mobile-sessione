@@ -1,17 +1,35 @@
 #!/bin/sh
-# Sessione di SolidOS Mobile: Qt disegna direttamente sul framebuffer, tocco da evdev.
-export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+# Sessione di SolidOS Mobile.
+# - Telefoni con grafica moderna (DRM/KMS: OnePlus 6, Pixel 3a, Fairphone, PinePhone…):
+#   l'interfaccia gira dentro «cage» (Wayland), con la grafica accelerata e le app
+#   dello Store che si aprono a tutto schermo sopra di essa.
+# - Telefoni vecchi solo con framebuffer (Huawei P10 Lite): Qt disegna direttamente
+#   sullo schermo, tocco da evdev.
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 export HOME="${HOME:-$(getent passwd "$(id -un)" | cut -d: -f6)}"
 export LANG=it_IT.UTF-8
-export QT_QPA_PLATFORM="linuxfb:fb=/dev/fb0:nographicsmodeswitch"
-export QT_QPA_GENERIC_PLUGINS=evdevtouch
-export QT_QPA_FB_HIDECURSOR=1
-export QT_QUICK_BACKEND=software
 export QT_MEDIA_BACKEND=ffmpeg
-# 1080×1920 → circa 432×768 punti: misure uguali a quelle provate
-export QT_SCALE_FACTOR="${SOLIDOS_SCALA:-2.5}"
 export NUCLEO_BRANDING=/usr/share/solidos-mobile/branding.env
 export NUCLEO_QML=/usr/share/solidos-mobile/qml
 export NUCLEO_TEMA_ICONE="${NUCLEO_TEMA_ICONE:-Papirus-Dark}"
 export PYTHONPATH=/usr/share/solidos-mobile
+
+# Larghezza dello schermo in pixel (DRM o framebuffer) → scala: l'interfaccia è pensata
+# per circa 400 punti di larghezza
+larghezza=""
+for m in /sys/class/drm/card*-*/modes; do
+	[ -s "$m" ] && larghezza=$(head -n1 "$m" | cut -dx -f1) && break
+done
+[ -z "$larghezza" ] && [ -r /sys/class/graphics/fb0/virtual_size ] && larghezza=$(cut -d, -f1 /sys/class/graphics/fb0/virtual_size)
+scala=$(awk -v l="${larghezza:-1080}" 'BEGIN { s = l / 420; s = int(s * 4 + 0.5) / 4; if (s < 1) s = 1; print s }')
+export QT_SCALE_FACTOR="${SOLIDOS_SCALA:-$scala}"
+
+if ls /dev/dri/card* >/dev/null 2>&1 && command -v cage >/dev/null; then
+	export QT_QPA_PLATFORM=wayland
+	exec dbus-run-session -- cage -d -s -- python3 -m nucleo.mobile --schermo-intero
+fi
+export QT_QPA_PLATFORM="linuxfb:fb=/dev/fb0:nographicsmodeswitch"
+export QT_QPA_GENERIC_PLUGINS=evdevtouch
+export QT_QPA_FB_HIDECURSOR=1
+export QT_QUICK_BACKEND=software
 exec dbus-run-session -- python3 -m nucleo.mobile --schermo-intero

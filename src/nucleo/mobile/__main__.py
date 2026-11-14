@@ -61,7 +61,7 @@ IN_ARRIVO = {
     "telefono": {"id": "interno:telefono", "nome": T("Telefono"), "icona": "call-start", "categorie": ["Telephony"]},
     "messaggi": {"id": "interno:messaggi", "nome": T("Messaggi"), "icona": "internet-chat", "categorie": ["Chat"]},
     "contatti": {"id": "interno:contatti", "nome": T("Contatti"), "icona": "x-office-address-book", "categorie": ["ContactManagement"]},
-    "dove": {"id": "interno:dove", "nome": T("Dov'è"), "icona": "find-location", "categorie": ["Utility"]},
+    "dove": {"id": "interno:dove", "nome": T("Dov'è"), "icona": "nucleo-dove", "categorie": ["Utility"]},
     "impostazioni": {"id": "interno:impostazioni", "nome": T("Impostazioni"), "icona": "preferences-system", "categorie": ["Settings"]},
     "fotocamera": {"id": "interno:fotocamera", "nome": T("Fotocamera"), "icona": "camera-photo", "categorie": ["Photography"]},
     "foto": {"id": "interno:foto", "nome": T("Foto"), "icona": "multimedia-photo-viewer", "categorie": ["Graphics", "Photography"]},

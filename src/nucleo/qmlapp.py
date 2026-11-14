@@ -66,7 +66,9 @@ def crea_app(nome_app: str, argv: list[str] | None = None):
     # Qt cerca solo al proprio interno e ogni icona diventerebbe un quadrato bianco
     percorsi = list(QIcon.themeSearchPaths())
     dati = os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":")
-    for p in [str(Path.home() / ".local/share/icons"), str(Path.home() / ".icons")] + [d.rstrip("/") + "/icons" for d in dati if d]:
+    # Icone proprie del sistema (es. Dov'è), accanto alla cartella dei QML
+    proprie = [str(CARTELLA_QML.parent / "icone"), str(CARTELLA_QML.parent / "dati" / "icone")]
+    for p in [str(Path.home() / ".local/share/icons"), str(Path.home() / ".icons")] + [d.rstrip("/") + "/icons" for d in dati if d] + proprie:
         if p not in percorsi and Path(p).is_dir():
             percorsi.append(p)
     QIcon.setThemeSearchPaths(percorsi)
