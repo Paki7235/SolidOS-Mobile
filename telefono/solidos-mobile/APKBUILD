@@ -9,6 +9,7 @@ license="GPL-3.0-or-later"
 depends="
 	python3 py3-qt6 qt6-qtbase qt6-qtdeclarative qt6-qtsvg qt6-qtmultimedia
 	py3-dbus-next py3-cryptography py3-zeroconf py3-qrcode flatpak
+	hisi-wlan
 	py3-dbus py3-gobject3 py3-aiohttp dbus
 	papirus-icon-theme font-inter font-noto
 	networkmanager networkmanager-cli networkmanager-wifi modemmanager
@@ -19,7 +20,9 @@ options="!check"
 source="
 	solidos-mobile.tar.gz
 	solidos-mobile.initd
+	solidos-mobile.service
 	solidos-mobile-sessione
+	solidos-mobile-prepara
 	"
 builddir="$srcdir"
 
@@ -29,5 +32,10 @@ package() {
 	cp -r "$srcdir"/src/qml "$pkgdir"/usr/share/solidos-mobile/
 	install -Dm644 "$srcdir"/branding.env "$pkgdir"/usr/share/solidos-mobile/branding.env
 	install -Dm755 "$srcdir"/solidos-mobile-sessione "$pkgdir"/usr/bin/solidos-mobile-sessione
+	install -Dm755 "$srcdir"/solidos-mobile-prepara "$pkgdir"/usr/libexec/solidos-mobile-prepara
 	install -Dm755 "$srcdir"/solidos-mobile.initd "$pkgdir"/etc/init.d/solidos-mobile
+	# systemd (predefinito in postmarketOS): parte da solo all'accensione
+	install -Dm644 "$srcdir"/solidos-mobile.service "$pkgdir"/usr/lib/systemd/system/solidos-mobile.service
+	mkdir -p "$pkgdir"/usr/lib/systemd/system/multi-user.target.wants
+	ln -s ../solidos-mobile.service "$pkgdir"/usr/lib/systemd/system/multi-user.target.wants/solidos-mobile.service
 }

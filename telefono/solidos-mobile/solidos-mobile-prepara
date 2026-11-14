@@ -1,0 +1,13 @@
+#!/bin/sh
+# Preparazione dello schermo prima dell'interfaccia (gira come root).
+# Il P10 Lite parte con la luminosità a zero: la alziamo (0-9960) e la rendiamo
+# regolabile dal gruppo video.
+for f in /sys/class/leds/lcd_backlight0/brightness /sys/class/backlight/*/brightness; do
+	[ -e "$f" ] || continue
+	echo 4000 > "$f" 2>/dev/null
+	chgrp video "$f" 2>/dev/null && chmod g+w "$f" 2>/dev/null
+done
+# La console di testo non deve disegnare sopra l'interfaccia
+echo 0 > /sys/class/graphics/fbcon/cursor_blink 2>/dev/null
+for v in /sys/class/vtconsole/vtcon*/bind; do echo 0 > "$v" 2>/dev/null; done
+exit 0

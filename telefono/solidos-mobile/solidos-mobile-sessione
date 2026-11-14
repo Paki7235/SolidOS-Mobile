@@ -7,6 +7,7 @@ export QT_QPA_PLATFORM="linuxfb:fb=/dev/fb0:nographicsmodeswitch"
 export QT_QPA_GENERIC_PLUGINS=evdevtouch
 export QT_QPA_FB_HIDECURSOR=1
 export QT_QUICK_BACKEND=software
+export QT_MEDIA_BACKEND=ffmpeg
 # 1080×1920 → circa 432×768 punti: misure uguali a quelle provate
 export QT_SCALE_FACTOR="${SOLIDOS_SCALA:-2.5}"
 export NUCLEO_BRANDING=/usr/share/solidos-mobile/branding.env

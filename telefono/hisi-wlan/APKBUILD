@@ -1,0 +1,19 @@
+# Accende il driver Wi-Fi HiSilicon dei kernel Android (Huawei P10 Lite e simili).
+# Ripreso da postmarketOS pmaports (main/hisi-wlan, GPL-3.0-or-later), tolto nel 2026
+# perché usato solo da dispositivi archiviati; qui con l'unità systemd.
+pkgname=hisi-wlan
+pkgver=5
+pkgrel=0
+pkgdesc="Avvio del driver Wi-Fi HiSilicon (kernel Android)"
+url="https://gitlab.postmarketos.org/postmarketOS/pmaports"
+arch="noarch"
+license="GPL-3.0-or-later"
+options="!check"
+source="hisi-wlan.initd hisi-wlan.service"
+
+package() {
+	install -Dm755 "$srcdir"/hisi-wlan.initd "$pkgdir"/etc/init.d/hisi-wlan
+	install -Dm644 "$srcdir"/hisi-wlan.service "$pkgdir"/usr/lib/systemd/system/hisi-wlan.service
+	mkdir -p "$pkgdir"/usr/lib/systemd/system/multi-user.target.wants
+	ln -s ../hisi-wlan.service "$pkgdir"/usr/lib/systemd/system/multi-user.target.wants/hisi-wlan.service
+}

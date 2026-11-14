@@ -1,0 +1,18 @@
+[Unit]
+Description=Interfaccia di SolidOS Mobile
+After=systemd-user-sessions.service dbus.service NetworkManager.service ModemManager.service
+Conflicts=getty@tty1.service
+
+[Service]
+User=solid
+PAMName=login
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+ExecStartPre=+/usr/libexec/solidos-mobile-prepara
+ExecStart=/usr/bin/solidos-mobile-sessione
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

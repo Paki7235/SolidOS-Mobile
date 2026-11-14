@@ -13,15 +13,16 @@ Rectangle {
     readonly property var brano: attuale >= 0 ? brani[attuale] : null
     readonly property color sezione: tel.chiaro ? "#ffffff" : "#1b1f2b"
     readonly property color linea: tel.chiaro ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.08)
-    readonly property bool suona: lettore.playbackState === MediaPlayer.PlayingState
+    readonly property bool suona: lettore !== null && lettore.playbackState === MediaPlayer.PlayingState
 
     function aggiorna() { brani = ponte.chiama0("musica") }
     function suonaIndice(i) {
         if (i < 0 || i >= brani.length) return
         attuale = i
         if (!brani[i].uri) { tel.avviso(I18n.t("Brano di esempio: aggiungi la tua musica nella cartella Musica")); return }
-        lettore.source = brani[i].uri
-        lettore.play()
+        var l = lettoreAttivo()
+        l.source = brani[i].uri
+        l.play()
     }
     function suonaFile(percorso) {
         aggiorna()
@@ -32,11 +33,24 @@ Rectangle {
     Component.onCompleted: { aggiorna(); if (tel.branoDaSuonare) { suonaFile(tel.branoDaSuonare); tel.branoDaSuonare = "" } }
     Connections { target: tel; function onBranoDaSuonareChanged() { if (tel.branoDaSuonare) { app.suonaFile(tel.branoDaSuonare); tel.branoDaSuonare = "" } } }
 
-    MediaPlayer {
-        id: lettore
-        audioOutput: AudioOutput {}
-        onMediaStatusChanged: if (mediaStatus === MediaPlayer.EndOfMedia) app.suonaIndice(app.attuale + 1)
-        onErrorOccurred: function (errore, testo) { tel.avviso(I18n.t("Impossibile riprodurre il brano")) }
+    // Il lettore nasce solo al primo Play: senza scheda audio non blocca l'interfaccia
+    Loader {
+        id: motore
+        active: false
+        sourceComponent: MediaPlayer {
+            audioOutput: AudioOutput {}
+            onMediaStatusChanged: if (mediaStatus === MediaPlayer.EndOfMedia) app.suonaIndice(app.attuale + 1)
+            onErrorOccurred: function (errore, testo) { tel.avviso(I18n.t("Impossibile riprodurre il brano")) }
+        }
+    }
+    readonly property var lettore: motore.item
+    readonly property real posizione: lettore ? lettore.position : 0
+    readonly property real durata: lettore ? lettore.duration : 0
+    function lettoreAttivo() { motore.active = true; return motore.item }
+    function playPausa() {
+        if (suona) lettore.pause()
+        else if (lettore && lettore.source != "") lettore.play()
+        else suonaIndice(attuale)
     }
 
     // ══ Elenco ═══════════════════════════════════════════════════════════
@@ -90,7 +104,7 @@ Rectangle {
         Row {
             anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter
             spacing: 18
-            Text { text: app.suona ? "❚❚" : "▶"; color: tel.pal.testo; font.pixelSize: 22; MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: app.suona ? lettore.pause() : (lettore.source != "" ? lettore.play() : app.suonaIndice(app.attuale)) } }
+            Text { text: app.suona ? "❚❚" : "▶"; color: tel.pal.testo; font.pixelSize: 22; MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: app.playPausa() } }
             Text { text: "⏭"; color: tel.pal.testo; font.pixelSize: 22; MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: app.suonaIndice(app.attuale + 1) } }
         }
     }
@@ -124,19 +138,19 @@ Rectangle {
             // Avanzamento (si può toccare per spostarsi)
             Rectangle {
                 width: parent.width; height: 6; radius: 3; color: tel.pal.traccia
-                Rectangle { width: lettore.duration > 0 ? parent.width * lettore.position / lettore.duration : 0; height: 6; radius: 3; color: tel.pal.testo }
-                MouseArea { anchors.fill: parent; anchors.margins: -12; onClicked: function (m) { if (lettore.duration > 0) lettore.position = lettore.duration * Math.max(0, Math.min(1, (m.x - 12) / parent.width)) } }
+                Rectangle { width: app.durata > 0 ? parent.width * app.posizione / app.durata : 0; height: 6; radius: 3; color: tel.pal.testo }
+                MouseArea { anchors.fill: parent; anchors.margins: -12; onClicked: function (m) { if (app.durata > 0) app.lettore.position = app.durata * Math.max(0, Math.min(1, (m.x - 12) / parent.width)) } }
             }
             Item {
                 width: parent.width; height: 18
-                Text { text: app.tempo(lettore.position); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
-                Text { anchors.right: parent.right; text: app.tempo(lettore.duration); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
+                Text { text: app.tempo(app.posizione); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
+                Text { anchors.right: parent.right; text: app.tempo(app.durata); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
             }
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 48
-                Text { text: "⏮"; color: tel.pal.testo; font.pixelSize: 34; MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: lettore.position > 3000 ? lettore.position = 0 : app.suonaIndice(app.attuale - 1) } }
-                Text { text: app.suona ? "❚❚" : "▶"; color: tel.pal.testo; font.pixelSize: 44; MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: app.suona ? lettore.pause() : (lettore.source != "" ? lettore.play() : app.suonaIndice(app.attuale)) } }
+                Text { text: "⏮"; color: tel.pal.testo; font.pixelSize: 34; MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: app.posizione > 3000 ? app.lettore.position = 0 : app.suonaIndice(app.attuale - 1) } }
+                Text { text: app.suona ? "❚❚" : "▶"; color: tel.pal.testo; font.pixelSize: 44; MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: app.playPausa() } }
                 Text { text: "⏭"; color: tel.pal.testo; font.pixelSize: 34; MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: app.suonaIndice(app.attuale + 1) } }
             }
         }

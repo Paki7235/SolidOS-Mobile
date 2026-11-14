@@ -23,7 +23,7 @@ cat > "$HOME/.config/pmbootstrap_v3.cfg" <<CFG
 aports = $APORTS
 work = $LAVORO
 device = huawei-warsaw
-ui = none
+ui = console
 user = solid
 hostname = solidos
 timezone = Europe/Rome
@@ -40,12 +40,13 @@ CFG
 mkdir -p "$LAVORO"
 python3 -c "import sys; sys.path.insert(0, '$HOME/pmbootstrap'); import pmb.config; print(pmb.config.work_version)" > "$LAVORO/version"
 
-echo "== pacchetto solidos-mobile"
-DEST="$APORTS/main/solidos-mobile"
-rm -rf "$DEST" && mkdir -p "$DEST"
-cp "$RADICE"/telefono/solidos-mobile/* "$DEST"/
-tar -C "$RADICE" --exclude='__pycache__' -czf "$DEST/solidos-mobile.tar.gz" src branding.env
-python3 "$PMB" -y checksum solidos-mobile
+echo "== pacchetti solidos-mobile e hisi-wlan"
+for p in solidos-mobile hisi-wlan; do
+	rm -rf "$APORTS/main/$p" && mkdir -p "$APORTS/main/$p"
+	cp "$RADICE/telefono/$p"/* "$APORTS/main/$p"/
+done
+tar -C "$RADICE" --exclude='__pycache__' -czf "$APORTS/main/solidos-mobile/solidos-mobile.tar.gz" src branding.env
+python3 "$PMB" -y checksum solidos-mobile hisi-wlan
 
 echo "== kernel, pacchetti e immagine (ci vuole un po')"
 python3 "$PMB" -y --details-to-stdout install --password "$PASSWORD" --no-sshd --no-fde

@@ -1,0 +1,12 @@
+[Unit]
+Description=Accende il driver Wi-Fi HiSilicon
+After=systemd-udev-settle.service systemd-modules-load.service
+Before=NetworkManager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c 'echo init > /sys/hisys/boot/plat; echo init > /sys/hisys/boot/wifi'
+
+[Install]
+WantedBy=multi-user.target
