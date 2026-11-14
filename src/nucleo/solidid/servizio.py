@@ -211,7 +211,10 @@ class Servizio:
         f.parent.mkdir(parents=True, exist_ok=True)
         f.write_text(messaggio.strip()[:200] or T("Questo dispositivo è stato bloccato dal proprietario."), encoding="utf-8")
         await self.esegui(lambda: aggiorna_stato(None, bloccato=True, messaggio_blocco=messaggio[:200] or None))
-        await self.esegui(lambda: subprocess.run([branding.comando("blocca")], check=False, timeout=30))
+        # Sul telefono l'interfaccia controlla questo file e passa subito alla schermata di blocco
+        (f.parent / "blocca-ora").touch()
+        if shutil.which(branding.comando("blocca")):
+            await self.esegui(lambda: subprocess.run([branding.comando("blocca")], check=False, timeout=30))
 
     async def avvia(self) -> int:
         if sessione_live() or not collegato() or not sessione().get("trova", True):

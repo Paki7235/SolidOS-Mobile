@@ -6,6 +6,28 @@ import SolidUI
 Item {
     id: blocco
     signal sblocca()
+    property bool chiedeCodice: false       // tastierino del codice visibile
+    property string codice: ""
+    property string errore: ""
+    // Si entra: con il codice se impostato, poi si toglie l'eventuale blocco di «Dov'è»
+    function entra() {
+        if (ponte.chiama0("haCodice")) { chiedeCodice = true; codice = ""; errore = ""; return }
+        fatto()
+    }
+    function fatto() {
+        chiedeCodice = false; codice = ""; errore = ""
+        if (tel.messaggioRemoto) { ponte.chiama0("sbloccatoRemoto"); tel.messaggioRemoto = "" }
+        blocco.sblocca()
+    }
+    function cifra(c) {
+        if (codice.length >= 8) return
+        codice += c; errore = ""
+        if (codice.length >= ponte.chiama0("lunghezzaCodice")) {
+            var r = ponte.chiama("verificaCodice", [codice])
+            if (r.ok) fatto()
+            else { errore = r.messaggio; codice = "" }
+        }
+    }
 
     Column {
         anchors.horizontalCenter: parent.horizontalCenter
@@ -57,8 +79,22 @@ Item {
         x: 14; y: 370
         width: parent.width - 28
         spacing: 8
+        visible: !blocco.chiedeCodice
+        // Messaggio del proprietario mandato da «Dov'è»
+        Rectangle {
+            visible: tel.messaggioRemoto !== ""
+            width: parent.width; height: remoto.implicitHeight + 28; radius: 20
+            color: tel.chiaro ? "#fff1f1" : "#3a1c22"
+            border.color: "#ef4444"; border.width: 1
+            Column {
+                id: remoto
+                x: 16; y: 14; width: parent.width - 32; spacing: 4
+                Text { text: I18n.t("Telefono bloccato dal proprietario"); color: "#ef4444"; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Bold }
+                Text { width: parent.width; wrapMode: Text.Wrap; text: tel.messaggioRemoto; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(17); font.weight: Font.DemiBold }
+            }
+        }
         Repeater {
-            model: tel.elencoNotifiche.slice(0, 3)
+            model: tel.messaggioRemoto ? [] : tel.elencoNotifiche.slice(0, 3)
             SchedaNotifica { required property var modelData; n: modelData; compatta: true }
         }
         Text {
@@ -117,7 +153,61 @@ Item {
             width: 134; height: 5; radius: 3
             color: tel.pal.testo
         }
-        DragHandler { target: null; xAxis.enabled: false; onActiveChanged: if (!active && translation.y < -40) blocco.sblocca() }
-        TapHandler { onDoubleTapped: blocco.sblocca() }
+        visible: !blocco.chiedeCodice
+        DragHandler { target: null; xAxis.enabled: false; onActiveChanged: if (!active && translation.y < -40) blocco.entra() }
+        TapHandler { onDoubleTapped: blocco.entra() }
+    }
+
+    // ── Tastierino del codice di sblocco ─────────────────────────────────
+    Rectangle {
+        anchors.fill: parent
+        visible: blocco.chiedeCodice
+        color: tel.pal.velo
+        MouseArea { anchors.fill: parent }
+        Column {
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 130
+            spacing: 16
+            Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Inserisci il codice"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(20); font.weight: Font.DemiBold }
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 14
+                Repeater {
+                    model: ponte.chiama0("lunghezzaCodice")
+                    Rectangle {
+                        required property int index
+                        width: 14; height: 14; radius: 7
+                        color: index < blocco.codice.length ? tel.pal.testo : "transparent"
+                        border.color: tel.pal.testo; border.width: 1.5
+                    }
+                }
+            }
+            Text { anchors.horizontalCenter: parent.horizontalCenter; height: 20; text: blocco.errore; color: "#ef4444"; font.family: Tema.font; font.pixelSize: tel.px(14) }
+        }
+        Grid {
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 300
+            columns: 3; rowSpacing: 18; columnSpacing: 26
+            Repeater {
+                model: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"]
+                Rectangle {
+                    required property string modelData
+                    width: 78; height: 78; radius: 39
+                    color: modelData === "" || modelData === "⌫" ? "transparent" : tel.pal.vetro
+                    border.color: modelData === "" || modelData === "⌫" ? "transparent" : tel.pal.vetroBordo
+                    Text { anchors.centerIn: parent; text: parent.modelData; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: parent.modelData === "⌫" ? 26 : 32 }
+                    MouseArea {
+                        anchors.fill: parent; enabled: parent.modelData !== ""
+                        onClicked: parent.modelData === "⌫" ? blocco.codice = blocco.codice.slice(0, -1) : blocco.cifra(parent.modelData)
+                    }
+                }
+            }
+        }
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 50
+            text: I18n.t("Annulla"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
+            MouseArea { anchors.fill: parent; anchors.margins: -12; onClicked: blocco.chiedeCodice = false }
+        }
     }
 }

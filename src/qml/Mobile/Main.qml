@@ -47,6 +47,9 @@ Window {
     property string appInterna: ""               // telefono | messaggi (app dentro l'interfaccia)
     property var chiamataInfo: ({ attiva: false })
     property bool chiamataRidotta: false
+    // Blocco a distanza da «Dov'è»: messaggio del proprietario sulla schermata di blocco
+    property string messaggioRemoto: ""
+    Timer { interval: 2000; running: true; repeat: true; onTriggered: ponte.avvia("richiestaBlocco", [], "blocco-remoto") }
     // Chiamate: controllo ogni secondo durante la chiamata, ogni 3 secondi per quelle in arrivo
     Timer {
         interval: tel.chiamataInfo.attiva ? 1000 : 3000
@@ -81,6 +84,9 @@ Window {
         }
         function onCompletato(id, r) {
             if (id === "stato") tel.stato = r
+            else if (id === "blocco-remoto") {
+                if (r.blocca) { tel.messaggioRemoto = r.messaggio; tel.chiudiTutto(); tel.appInterna = ""; tel.schermata = "blocco" }
+            }
             else if (id === "chiamata") {
                 if (r.inArrivo && !tel.chiamataInfo.inArrivo) tel.chiamataRidotta = false
                 tel.chiamataInfo = r
@@ -103,6 +109,8 @@ Window {
         var a = ponte.chiama0("avvio")
         if (a.tema) imp = Object.assign({}, imp, { tema: a.tema })
         if (!a.schermata || a.schermata === "blocco") return
+        if (a.schermata === "bloccato") { messaggioRemoto = I18n.t("Se lo trovi chiama il 333 123 4567. Grazie!"); return }
+        if (a.schermata === "codice") { bloccoSchermata.chiedeCodice = true; return }
         schermata = "home"
         if (a.schermata === "libreria") home.pagina = 1
         else if (a.schermata === "controllo") controllo = true
@@ -113,8 +121,9 @@ Window {
         else if (a.schermata === "messaggi") appInterna = "messaggi"
         else if (a.schermata === "conversazione") { appInterna = "messaggi"; var c = ponte.chiama0("conversazioni"); if (c.length) messaggiApp.apri(c[0].numero) }
         else if (a.schermata === "contatti") appInterna = "contatti"
+        else if (a.schermata === "dove") appInterna = "dove"
         else if (a.schermata === "impostazioni") appInterna = "impostazioni"
-        else if (["wifi", "bluetooth", "rete", "suoni", "schermo", "batteria", "info", "solidid"].indexOf(a.schermata) >= 0) { appInterna = "impostazioni"; impostazioniApp.apri(a.schermata) }
+        else if (["wifi", "bluetooth", "rete", "suoni", "schermo", "batteria", "info", "solidid", "sicurezza"].indexOf(a.schermata) >= 0) { appInterna = "impostazioni"; impostazioniApp.apri(a.schermata) }
         else if (a.schermata === "scheda") { appInterna = "contatti"; var cs = ponte.chiama0("contatti"); if (cs.length) contattiApp.apri(cs[1] || cs[0]) }
         else if (a.schermata === "banner") { schermata = "home"; var nn = ponte.chiama0("notifiche"); if (nn.length) banner = nn[0] }
         else if (a.schermata === "chiamata") { var cc = ponte.chiama0("contatti"); if (cc.length) chiama(cc[0].numero) }
@@ -152,6 +161,7 @@ Window {
         visible: tel.schermata === "home"
     }
     Blocco {
+        id: bloccoSchermata
         anchors.fill: parent
         visible: tel.schermata === "blocco"
         onSblocca: tel.schermata = "home"
@@ -164,6 +174,14 @@ Window {
         height: parent.height
         y: tel.appInterna === "telefono" ? 0 : tel.height
         visible: tel.appInterna === "telefono" || y < tel.height - 1
+        Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+    }
+    Dove {
+        id: doveApp
+        anchors.left: parent.left; anchors.right: parent.right
+        height: parent.height
+        y: tel.appInterna === "dove" ? 0 : tel.height
+        visible: tel.appInterna === "dove" || y < tel.height - 1
         Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
     }
     Impostazioni {

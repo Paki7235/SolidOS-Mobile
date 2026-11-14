@@ -20,6 +20,7 @@ Rectangle {
     property var account: ({})
     property int volume: 50
     property int luce: 70
+    property bool codice: false         // c'è un codice di sblocco
 
     function apri(p) {
         pagina = p
@@ -31,6 +32,7 @@ Rectangle {
         else if (p === "batteria") batteria = ponte.chiama0("batteriaInfo")
         else if (p === "info") info = ponte.chiama0("infoTelefono")
         else if (p === "solidid") account = ponte.chiama0("solidId")
+        else if (p === "sicurezza") codice = ponte.chiama0("haCodice")
     }
     function riepilogo() {
         wifi = ponte.chiama0("wifiStato")
@@ -38,6 +40,7 @@ Rectangle {
         mobile = ponte.chiama0("reteMobile")
         batteria = ponte.chiama0("batteriaInfo")
         account = ponte.chiama0("solidId")
+        codice = ponte.chiama0("haCodice")
     }
     onVisibleChanged: if (visible) riepilogo()
     Component.onCompleted: riepilogo()
@@ -158,7 +161,7 @@ Rectangle {
     Text {
         x: 20; y: imp.pagina === "" ? 56 : 84
         text: ({ "": I18n.t("Impostazioni"), wifi: "Wi-Fi", bluetooth: "Bluetooth", rete: I18n.t("Rete mobile"), suoni: I18n.t("Suoni e vibrazione"),
-                 schermo: I18n.t("Schermo"), notifiche: I18n.t("Notifiche"), batteria: I18n.t("Batteria"), solidid: "Solid ID", info: I18n.t("Info sul telefono") })[imp.pagina]
+                 schermo: I18n.t("Schermo"), notifiche: I18n.t("Notifiche"), batteria: I18n.t("Batteria"), solidid: "Solid ID", sicurezza: I18n.t("Codice di sblocco"), info: I18n.t("Info sul telefono") })[imp.pagina]
         color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(imp.pagina === "" ? 30 : 26); font.weight: Font.Bold
     }
 
@@ -198,6 +201,7 @@ Rectangle {
                 }
                 Gruppo {
                     Riga { icona: "battery-good-symbolic"; coloreIcona: "#22c55e"; titolo: I18n.t("Batteria"); valore: (imp.batteria.livello || 0) + "%"; onScelta: imp.apri("batteria") }
+                    Riga { icona: "system-lock-screen-symbolic"; coloreIcona: "#ef4444"; titolo: I18n.t("Codice di sblocco"); valore: imp.codice ? I18n.t("Sì") : I18n.t("No"); onScelta: imp.apri("sicurezza") }
                     Riga { icona: "help-about-symbolic"; coloreIcona: "#6b7385"; titolo: I18n.t("Info sul telefono"); ultima: true; onScelta: imp.apri("info") }
                 }
             }
@@ -513,6 +517,18 @@ Rectangle {
                 }
             }
 
+            // ══ Codice di sblocco ═══════════════════════════════════════
+            Column {
+                visible: imp.pagina === "sicurezza"
+                width: parent.width
+                Gruppo {
+                    Riga { visible: !imp.codice; titolo: I18n.t("Imposta un codice"); ultima: true; onScelta: codiceDlg.apri("imposta") }
+                    Riga { visible: imp.codice; titolo: I18n.t("Cambia il codice"); onScelta: codiceDlg.apri("cambia") }
+                    Riga { visible: imp.codice; titolo: I18n.t("Togli il codice"); ultima: true; onScelta: codiceDlg.apri("togli") }
+                }
+                Nota { text: I18n.t("Il codice (da 4 a 8 cifre) serve per entrare nel telefono dalla schermata di blocco. Dopo 5 tentativi sbagliati bisogna aspettare sempre di più. Se blocchi il telefono da «Dov'è», per riaprirlo serve questo codice.") }
+            }
+
             // ══ Info sul telefono ════════════════════════════════════════
             Column {
                 visible: imp.pagina === "info"
@@ -550,6 +566,38 @@ Rectangle {
                 spacing: 10; anchors.right: parent.right
                 Pulsante { text: I18n.t("Annulla"); onClicked: esciSid.close() }
                 Pulsante { text: I18n.t("Esci"); pericoloso: true; onClicked: { var r = ponte.chiama0("sidEsci"); tel.avviso(r.messaggio); esciSid.close(); imp.account = ponte.chiama0("solidId") } }
+            }
+        }
+    }
+    // ── Codice di sblocco: imposta, cambia o togli ───────────────────────
+    Popup {
+        id: codiceDlg
+        property string modo: "imposta"
+        function apri(m) { modo = m; open() }
+        anchors.centerIn: parent
+        width: parent.width - 40; modal: true; padding: 18
+        background: Rectangle { radius: 20; color: imp.sezione }
+        onOpened: { cAttuale.text = ""; cNuovo.text = ""; cRipeti.text = ""; cEsito.text = "" }
+        Column {
+            width: parent.width; spacing: 12
+            Text { text: ({ imposta: I18n.t("Nuovo codice"), cambia: I18n.t("Cambia il codice"), togli: I18n.t("Togli il codice") })[codiceDlg.modo]; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(17); font.weight: Font.Bold }
+            CampoTesto { id: cAttuale; visible: codiceDlg.modo !== "imposta"; width: parent.width; echoMode: TextInput.Password; inputMethodHints: Qt.ImhDigitsOnly; placeholderText: I18n.t("Codice attuale") }
+            CampoTesto { id: cNuovo; visible: codiceDlg.modo !== "togli"; width: parent.width; echoMode: TextInput.Password; inputMethodHints: Qt.ImhDigitsOnly; placeholderText: I18n.t("Nuovo codice (4-8 cifre)") }
+            CampoTesto { id: cRipeti; visible: codiceDlg.modo !== "togli"; width: parent.width; echoMode: TextInput.Password; inputMethodHints: Qt.ImhDigitsOnly; placeholderText: I18n.t("Ripeti il nuovo codice") }
+            Text { id: cEsito; visible: text !== ""; width: parent.width; wrapMode: Text.Wrap; color: "#ef4444"; font.family: Tema.font; font.pixelSize: tel.px(13) }
+            Row {
+                spacing: 10; anchors.right: parent.right
+                Pulsante { text: I18n.t("Annulla"); onClicked: codiceDlg.close() }
+                Pulsante {
+                    text: codiceDlg.modo === "togli" ? I18n.t("Togli") : I18n.t("Salva")
+                    principale: codiceDlg.modo !== "togli"; pericoloso: codiceDlg.modo === "togli"
+                    onClicked: {
+                        if (codiceDlg.modo !== "togli" && cNuovo.text !== cRipeti.text) { cEsito.text = I18n.t("I due codici non sono uguali"); return }
+                        var r = ponte.chiama("impostaCodice", [cAttuale.text, codiceDlg.modo === "togli" ? "" : cNuovo.text])
+                        if (!r.ok) { cEsito.text = r.messaggio; return }
+                        tel.avviso(r.messaggio); codiceDlg.close(); imp.codice = ponte.chiama0("haCodice")
+                    }
+                }
             }
         }
     }

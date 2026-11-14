@@ -60,6 +60,7 @@ IN_ARRIVO = {
     "telefono": {"id": "interno:telefono", "nome": T("Telefono"), "icona": "call-start", "categorie": ["Telephony"]},
     "messaggi": {"id": "interno:messaggi", "nome": T("Messaggi"), "icona": "internet-chat", "categorie": ["Chat"]},
     "contatti": {"id": "interno:contatti", "nome": T("Contatti"), "icona": "x-office-address-book", "categorie": ["ContactManagement"]},
+    "dove": {"id": "interno:dove", "nome": T("Dov'è"), "icona": "find-location", "categorie": ["Utility"]},
     "impostazioni": {"id": "interno:impostazioni", "nome": T("Impostazioni"), "icona": "preferences-system", "categorie": ["Settings"]},
 }
 
@@ -566,6 +567,12 @@ class BackendMobile(Backend):
         return self._sid().imposta_trova(bool(si))
 
     def sidDispositivi(self) -> dict:
+        from . import telefonia
+
+        if telefonia.DEMO:
+            return {"ok": True, "dispositivi": [
+                {"id": "b", "nome": "Telefono di Pasquale", "tipo": "telefono", "batteria": 82, "questo": True},
+                {"id": "a", "nome": "Portatile di Pasquale", "tipo": "portatile", "batteria": 76, "questo": False}]}
         try:
             sid = self._sid()
             questo = sid.sessione().get("dispositivo_id", "")
@@ -574,12 +581,135 @@ class BackendMobile(Backend):
             return {"ok": False, "messaggio": str(e), "dispositivi": []}
 
     def solidId(self) -> dict:
+        from . import telefonia
+
+        if telefonia.DEMO:   # solo per le foto della prova
+            return {"collegato": True, "disponibile": True, "nome": "Pasquale", "email": "pasquale@esempio.it", "trova": True}
         try:
             from .. import solidid
 
             return {**solidid.utente(), "disponibile": solidid.disponibile()}
         except Exception:  # noqa: BLE001
             return {"collegato": False, "disponibile": False}
+
+    # ── Codice di sblocco (PIN del telefono) ─────────────────────────────
+    def _file_codice(self) -> Path:
+        return config_utente("codice.json")
+
+    def haCodice(self) -> bool:
+        return bool(leggi_json(self._file_codice(), {}).get("hash"))
+
+    @staticmethod
+    def _hash(codice: str, sale: str) -> str:
+        import hashlib
+
+        return hashlib.pbkdf2_hmac("sha256", codice.encode(), bytes.fromhex(sale), 200_000).hex()
+
+    def verificaCodice(self, codice: str) -> dict:
+        dati = leggi_json(self._file_codice(), {})
+        if not dati.get("hash"):
+            return {"ok": True}
+        attesa = dati.get("bloccato_fino", 0) - time.time()
+        if attesa > 0:
+            return {"ok": False, "messaggio": T("Troppi tentativi: riprova tra {s} secondi", s=int(attesa) + 1)}
+        if self._hash(codice, dati["sale"]) == dati["hash"]:
+            dati["errori"] = 0
+            scrivi_json(self._file_codice(), dati)
+            return {"ok": True}
+        dati["errori"] = dati.get("errori", 0) + 1
+        if dati["errori"] >= 5:
+            dati["bloccato_fino"] = time.time() + 30 * 2 ** min(dati["errori"] - 5, 6)
+        scrivi_json(self._file_codice(), dati)
+        return {"ok": False, "messaggio": T("Codice sbagliato")}
+
+    def impostaCodice(self, attuale: str, nuovo: str) -> dict:
+        import secrets
+
+        if self.haCodice() and not self.verificaCodice(attuale)["ok"]:
+            return {"ok": False, "messaggio": T("Il codice attuale non è giusto")}
+        if nuovo == "":
+            scrivi_json(self._file_codice(), {})
+            return {"ok": True, "messaggio": T("Codice tolto: il telefono si apre senza codice")}
+        if not nuovo.isdigit() or not 4 <= len(nuovo) <= 8:
+            return {"ok": False, "messaggio": T("Il codice deve avere da 4 a 8 cifre")}
+        sale = secrets.token_hex(16)
+        f = self._file_codice()
+        scrivi_json(f, {"sale": sale, "hash": self._hash(nuovo, sale), "errori": 0, "lunghezza": len(nuovo)})
+        os.chmod(f, 0o600)
+        return {"ok": True, "messaggio": T("Codice di sblocco impostato")}
+
+    def lunghezzaCodice(self) -> int:
+        return int(leggi_json(self._file_codice(), {}).get("lunghezza", 6))
+
+    # ── Blocco a distanza da «Dov'è» ─────────────────────────────────────
+    def _cartella_blocco(self) -> Path:
+        base = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / branding.id_os() / "blocco"
+        base.mkdir(parents=True, exist_ok=True)
+        return base
+
+    def richiestaBlocco(self) -> dict:
+        """Controllato ogni 2 secondi: «Dov'è» chiede di bloccare il telefono?"""
+        base = self._cartella_blocco()
+        messaggio = ""
+        try:
+            messaggio = (base / "messaggio-remoto").read_text(encoding="utf-8").strip()
+        except OSError:
+            pass
+        ora = (base / "blocca-ora").exists()
+        if ora:
+            (base / "blocca-ora").unlink(missing_ok=True)
+        return {"blocca": ora, "messaggio": messaggio}
+
+    def sbloccatoRemoto(self) -> None:
+        try:
+            from ..solidid.servizio import sbloccato
+
+            sbloccato()
+        except Exception:  # noqa: BLE001
+            (self._cartella_blocco() / "messaggio-remoto").unlink(missing_ok=True)
+
+    # ── Dov'è (stessa logica dell'app del PC) ────────────────────────────
+    def _dove(self):
+        if not hasattr(self, "_bd"):
+            from ..apps.dove import BackendDove
+
+            self._bd = BackendDove()
+        return self._bd
+
+    def doveDispositivi(self) -> dict:
+        from . import telefonia
+
+        if telefonia.DEMO:
+            return {"ok": True, "dispositivi": [
+                {"id": "a", "nome": "Portatile di Pasquale", "tipo": "portatile", "icona": "computer-laptop", "modello": "Lenovo ThinkPad",
+                 "questo": False, "stato": "adesso · 76% ⚡", "posizione": True, "lat": 41.8986, "lon": 12.4769, "precisione": 60,
+                 "fonte": "wifi", "quandoPosizione": "adesso", "bloccato": False, "trova": True},
+                {"id": "b", "nome": "Telefono di Pasquale", "tipo": "telefono", "icona": "phone", "modello": "Huawei P10 Lite",
+                 "questo": True, "stato": "Questo telefono · 82%", "posizione": True, "lat": 41.9028, "lon": 12.4964, "precisione": 15,
+                 "fonte": "gps", "quandoPosizione": "adesso", "bloccato": False, "trova": True}]}
+        r = self._dove().dispositivi()
+        for d in r.get("dispositivi", []):
+            if d.get("questo"):
+                d["stato"] = d["stato"].replace(T("Questo computer"), T("Questo telefono"))
+        return r
+
+    def doveComando(self, dispositivo: str, tipo: str, messaggio: str = "") -> dict:
+        from . import telefonia
+
+        if telefonia.DEMO:
+            return {"ok": True, "id": 1}
+        return self._dove().comando(dispositivo, tipo, messaggio)
+
+    def doveStatoComando(self, ident: int) -> str:
+        from . import telefonia
+
+        return "eseguito" if telefonia.DEMO else self._dove().statoComando(ident)
+
+    def tessere(self, elenco, stile: str = "chiaro") -> dict:
+        return self._dove().tessere(elenco, stile)
+
+    def indicazioni(self, lat: float, lon: float) -> None:
+        self._dove().indicazioni(lat, lon)
 
     def blocca(self) -> None:
         from ..sistema import avvia
