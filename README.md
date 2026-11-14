@@ -16,8 +16,19 @@ Prima versione dell'**interfaccia del telefono**:
 - **Personalizza**: tema scuro/chiaro, grandezza del testo, colore, sfondo, orologio, grandezza delle icone,
   navigazione a gesti o a tre tasti. Le scelte restano in `~/.config/solidos/mobile.json`.
 
-Da fare: telefonia (chiamate, SMS, dati mobili con ModemManager), notifiche di sistema, fotocamera,
-immagine installabile sui telefoni supportati. Il piano completo è in [docs/ECOSISTEMA.md](docs/ECOSISTEMA.md).
+App del telefono (tutte dentro l'interfaccia, si aprono subito):
+
+- **Telefono, Messaggi, Contatti** (ModemManager; contatti in vCard), **Notifiche** di sistema.
+- **Impostazioni**: Wi-Fi, Bluetooth, rete mobile e SIM, suoni, schermo, batteria, codice di sblocco, Solid ID.
+- **Dov'è**: mappa dei dispositivi del Solid ID, fai suonare, blocca con un messaggio, indicazioni.
+- **Note, File, Foto, Musica, Fotocamera, Calcolatrice**.
+- **Store** (app da Flathub, installate per l'utente) e **Vicina** (file con PC e telefoni: LocalSend, Quick Share, QR).
+
+## Installarlo su un telefono
+
+Primo telefono: **Huawei P10 Lite** → guida passo passo in [docs/installa-p10-lite.md](docs/installa-p10-lite.md).
+L'immagine si costruisce su GitHub (scheda **Actions** › **Telefono P10 Lite**) e finisce nelle
+**Releases** come un solo file zip.
 
 ## Provarlo
 

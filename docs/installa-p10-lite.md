@@ -6,7 +6,11 @@ partizioni (`kernel` e `ramdisk`): Android e i tuoi dati restano nella memoria
 interna. Lo sblocco del bootloader, però, cancella tutto.
 
 > **Cosa funziona:** schermo, tocco, Wi-Fi, Solid ID e Dov'è (con la posizione dal Wi-Fi).
-> **Cosa non funziona ancora:** chiamate, SMS, dati mobili, audio, Bluetooth, GPS e fotocamera.
+> Funzionano anche le app di SolidOS: Note, File, Foto, Calcolatrice, Contatti,
+> Impostazioni e Vicina (manda e ricevi file con il PC).
+> **Cosa non funziona ancora:** chiamate, SMS, dati mobili, audio (quindi Musica resta muta),
+> Bluetooth, GPS e fotocamera. Le app dello Store (Flathub) si installano, ma non si aprono:
+> il P10 Lite non ha un driver grafico moderno, quindi gira solo l'interfaccia di SolidOS.
 > Il kernel di postmarketOS per questo telefono è vecchio (4.4) e non più mantenuto.
 > Per ora il P10 Lite è un telefono di prova, non da usare tutti i giorni.
 
