@@ -25,7 +25,7 @@ case $DEVICE in
 	*)                   NOME="$DEVICE";          FILE="$DEVICE" ;;
 esac
 EXTRA="solidos-mobile"
-[ "$DEVICE" = huawei-warsaw ] && EXTRA="$EXTRA hisi-wlan"
+[ "$DEVICE" = huawei-warsaw ] && EXTRA="$EXTRA,hisi-wlan"
 
 echo "== $NOME ($DEVICE): pmbootstrap e pmaports"
 [ -d "$HOME/pmbootstrap" ] || git -c advice.detachedHead=false clone -q --depth 1 --branch 3.12.1 https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git "$HOME/pmbootstrap"
