@@ -441,7 +441,7 @@ Rectangle {
                         }
                         Item {
                             width: parent.width; height: 54
-                            TextField { id: sidPw; x: 16; width: parent.width - 32; anchors.verticalCenter: parent.verticalCenter; echoMode: TextInput.Password; placeholderText: paginaSid.modo === "crea" ? I18n.t("Password (almeno 8 caratteri)") : I18n.t("Password"); placeholderTextColor: tel.pal.testo2; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); background: Item {}; onAccepted: vaiSid.premi() }
+                            TextField { id: sidPw; x: 16; width: parent.width - 32; anchors.verticalCenter: parent.verticalCenter; echoMode: TextInput.Password; placeholderText: paginaSid.modo === "crea" ? I18n.t("Password (almeno 8 caratteri)") : I18n.t("Password"); placeholderTextColor: tel.pal.testo2; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); onAccepted: vaiSid.premi(); background: Item {} }
                         }
                     }
                     Text { visible: paginaSid.esito !== ""; x: 32; width: imp.width - 64; topPadding: 10; wrapMode: Text.Wrap; text: paginaSid.esito; color: paginaSid.errore ? "#ef4444" : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13) }
