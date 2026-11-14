@@ -69,6 +69,8 @@ Rectangle {
         property bool ultima: false
         property bool interruttore: false
         property bool acceso: false
+        property int segnale: -1          // Wi-Fi: tacche disegnate (0-100), -1 = niente
+        property bool lucchetto: false
         signal scelta()
         signal cambiato(bool si)
         width: parent ? parent.width : 300; height: 54
@@ -86,6 +88,29 @@ Rectangle {
             text: r.valore; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(15)
         }
         Text { visible: r.freccia && !r.interruttore; anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; text: "›"; color: tel.pal.testo2; font.pixelSize: 24 }
+        Row {
+            visible: r.segnale >= 0
+            anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter
+            spacing: 8
+            Item {
+                visible: r.lucchetto
+                width: 10; height: 13; anchors.verticalCenter: parent.verticalCenter
+                Rectangle { x: 2; width: 6; height: 8; radius: 3; color: "transparent"; border.color: tel.pal.testo2; border.width: 1.6 }
+                Rectangle { y: 5; width: 10; height: 8; radius: 2; color: tel.pal.testo2 }
+            }
+            Row {
+                spacing: 2; anchors.verticalCenter: parent.verticalCenter
+                Repeater {
+                    model: 4
+                    Rectangle {
+                        required property int index
+                        anchors.bottom: parent.bottom
+                        width: 4; height: 5 + index * 3; radius: 1
+                        color: r.segnale >= [1, 25, 45, 70][index] ? tel.pal.testo : tel.pal.traccia
+                    }
+                }
+            }
+        }
         Rectangle {
             visible: r.interruttore
             anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter
@@ -194,7 +219,7 @@ Rectangle {
                             required property var modelData
                             required property int index
                             titolo: (modelData.connessa ? "✓  " : "") + modelData.ssid
-                            valore: (modelData.protetta ? "🔒 " : "") + (modelData.segnale >= 70 ? "▂▄▆█" : modelData.segnale >= 45 ? "▂▄▆" : modelData.segnale >= 25 ? "▂▄" : "▂")
+                            segnale: modelData.segnale; lucchetto: modelData.protetta
                             freccia: false
                             ultima: index === (imp.wifi.reti || []).length - 1
                             onScelta: {
