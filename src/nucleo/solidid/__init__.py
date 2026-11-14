@@ -242,10 +242,22 @@ def _servizio(attivo: bool) -> None:
 
     unita = f"{branding.id_os()}-solidid.service"
     try:
-        subprocess.run(["systemctl", "--user", "start" if attivo else "stop", unita],
-                       timeout=10, check=False, capture_output=True)
+        r = subprocess.run(["systemctl", "--user", "start" if attivo else "stop", unita],
+                           timeout=10, check=False, capture_output=True)
+        riuscito = r.returncode == 0
     except (OSError, subprocess.SubprocessError):
-        pass
+        riuscito = False
+    if riuscito:
+        return
+    # Senza il servizio di sistema (anteprima, prime versioni del telefono): processo a parte
+    import sys
+
+    if attivo:
+        if subprocess.run(["pgrep", "-f", "nucleo.solidid servizio"], capture_output=True).returncode != 0:
+            subprocess.Popen([sys.executable, "-m", "nucleo.solidid", "servizio"], start_new_session=True,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        subprocess.run(["pkill", "-f", "nucleo.solidid servizio"], capture_output=True)
 
 
 # ── Questo dispositivo ───────────────────────────────────────────────────────
@@ -272,8 +284,13 @@ def _leggi(p: str) -> str:
         return ""
 
 
+def _batterie() -> list[Path]:
+    base = Path("/sys/class/power_supply")
+    return sorted(base.glob("BAT*")) + sorted(p for p in base.glob("*battery*") if not p.name.startswith("BAT"))
+
+
 def batteria() -> tuple[int | None, bool | None]:
-    for b in sorted(Path("/sys/class/power_supply").glob("BAT*")):
+    for b in _batterie():
         cap = _leggi(str(b / "capacity"))
         stato = _leggi(str(b / "status"))
         if cap.isdigit():
@@ -281,7 +298,21 @@ def batteria() -> tuple[int | None, bool | None]:
     return None, None
 
 
+# SolidOS Mobile: questo dispositivo è un telefono (NUCLEO_TIPO_DISPOSITIVO per cambiarlo, es. «tablet»)
+TIPO_DISPOSITIVO = os.environ.get("NUCLEO_TIPO_DISPOSITIVO", "telefono")
+
+
 def info_dispositivo() -> dict:
+    if TIPO_DISPOSITIVO in ("telefono", "tablet"):
+        import pwd
+
+        modello = (_leggi("/sys/firmware/devicetree/base/model").strip("\x00") or platform.machine())[:120]
+        persona = (pwd.getpwuid(os.getuid()).pw_gecos.split(",")[0] or "").split(" ")[0]
+        tipo_nome = T("Telefono") if TIPO_DISPOSITIVO == "telefono" else T("Tablet")
+        cap, carica = batteria()
+        return {"nome": (T("{t} di {p}", t=tipo_nome, p=persona) if persona else modello)[:80], "tipo": TIPO_DISPOSITIVO,
+                "modello": modello, "sistema": f"{branding.nome()} Mobile {branding.get('OS_VERSION', '')}"[:80],
+                "batteria": cap, "in_carica": carica}
     produttore = _leggi("/sys/class/dmi/id/sys_vendor")
     prodotto = _leggi("/sys/class/dmi/id/product_name")
     if produttore.lower() in ("to be filled by o.e.m.", "system manufacturer", "default string"):

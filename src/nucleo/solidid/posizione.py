@@ -34,8 +34,35 @@ def _reti_wifi() -> list[dict]:
     return reti[:30]
 
 
+def _gps() -> dict | None:
+    """Posizione dal GPS del modem del telefono (ModemManager), se c'è e ha il segnale."""
+    import shutil
+
+    if not shutil.which("mmcli"):
+        return None
+    try:
+        elenco = json.loads(subprocess.run(["mmcli", "-J", "-L"], capture_output=True, text=True, timeout=10).stdout or "{}")
+        modem = (elenco.get("modem-list") or [""])[0]
+        if not modem:
+            return None
+        subprocess.run(["mmcli", "-m", modem, "--location-enable-gps-raw", "--location-enable-gps-nmea"],
+                       capture_output=True, timeout=15)
+        dati = json.loads(subprocess.run(["mmcli", "-J", "-m", modem, "--location-get"], capture_output=True,
+                                         text=True, timeout=30).stdout or "{}")
+        gps = dati.get("modem", {}).get("location", {}).get("gps", {})
+        lat, lon = gps.get("latitude", "--"), gps.get("longitude", "--")
+        if lat in ("--", "") or lon in ("--", ""):
+            return None
+        return {"lat": float(lat), "lon": float(lon), "precisione": 15.0, "fonte": "gps"}
+    except (OSError, ValueError, subprocess.SubprocessError, IndexError):
+        return None
+
+
 def trova() -> dict | None:
-    """{lat, lon, precisione (metri), fonte: wifi|ip} oppure None."""
+    """{lat, lon, precisione (metri), fonte: gps|wifi|ip} oppure None."""
+    gps = _gps()
+    if gps:
+        return gps
     reti = _reti_wifi()
     corpo = {"considerIp": True}
     if len(reti) >= 2:

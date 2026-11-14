@@ -541,6 +541,38 @@ class BackendMobile(Backend):
 
         return impostazioni.info()
 
+    # ── Solid ID dal telefono ────────────────────────────────────────────
+    def _sid(self):
+        from .. import solidid
+
+        return solidid
+
+    def sidAccedi(self, email: str, password: str) -> dict:
+        return self._sid().accedi(email, password)
+
+    def sidCrea(self, nome: str, email: str, password: str) -> dict:
+        return self._sid().crea(nome, email, password)
+
+    def sidReinvia(self, email: str) -> dict:
+        return self._sid().reinvia_conferma(email)
+
+    def sidPassword(self, email: str) -> dict:
+        return self._sid().password_dimenticata(email)
+
+    def sidEsci(self) -> dict:
+        return self._sid().esci()
+
+    def sidTrova(self, si: bool) -> dict:
+        return self._sid().imposta_trova(bool(si))
+
+    def sidDispositivi(self) -> dict:
+        try:
+            sid = self._sid()
+            questo = sid.sessione().get("dispositivo_id", "")
+            return {"ok": True, "dispositivi": [{**d, "questo": d["id"] == questo} for d in sid.dispositivi()]}
+        except Exception as e:  # noqa: BLE001
+            return {"ok": False, "messaggio": str(e), "dispositivi": []}
+
     def solidId(self) -> dict:
         try:
             from .. import solidid

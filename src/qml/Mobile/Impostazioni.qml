@@ -389,16 +389,128 @@ Rectangle {
             }
 
             // ══ Solid ID ═════════════════════════════════════════════════
+            // Senza accesso: Accedi / Crea account. Con l'accesso: account, Dov'è, dispositivi, Esci.
             Column {
+                id: paginaSid
                 visible: imp.pagina === "solidid"
                 width: parent.width
-                Gruppo {
-                    Riga { titolo: I18n.t("Account"); valore: imp.account.collegato ? (imp.account.email || "") : I18n.t("Non collegato"); freccia: false }
-                    Riga { titolo: I18n.t("Dov'è"); valore: imp.account.collegato ? (imp.account.trova ? I18n.t("Attivo") : I18n.t("Spento")) : "—"; freccia: false; ultima: true }
+                property string modo: "accedi"        // accedi | crea
+                property bool inCorso: false
+                property string esito: ""
+                property bool errore: false
+                property var dispositivi: []
+                function fatto(r) {
+                    inCorso = false; esito = r.messaggio || ""; errore = !r.ok
+                    imp.account = ponte.chiama0("solidId")
+                    if (imp.account.collegato) ponte.avvia("sidDispositivi", [], "imp-sid-disp")
                 }
-                Nota { text: imp.account.collegato
-                             ? I18n.t("Con il Solid ID ritrovi il telefono con «Dov'è» e lo colleghi ai tuoi PC con SolidOS.")
-                             : I18n.t("Accedi con lo stesso Solid ID del PC per ritrovare il telefono, vedere la batteria dei tuoi dispositivi e usare l'ecosistema. L'accesso dal telefono arriva nella prossima versione.") }
+                Connections {
+                    target: ponte
+                    function onCompletato(id, r) {
+                        if (id === "imp-sid") paginaSid.fatto(r)
+                        else if (id === "imp-sid-disp") paginaSid.dispositivi = r.dispositivi || []
+                    }
+                }
+                onVisibleChanged: if (visible && imp.account.collegato) ponte.avvia("sidDispositivi", [], "imp-sid-disp")
+
+                // ── Accesso o nuovo account ──────────────────────────────
+                Column {
+                    visible: !imp.account.collegato
+                    width: parent.width
+                    spacing: 0
+                    Item {
+                        width: parent.width; height: 110
+                        Rectangle {
+                            anchors.horizontalCenter: parent.horizontalCenter; y: 6
+                            width: 70; height: 70; radius: 35; color: tel.accento
+                            Icona { anchors.centerIn: parent; nome: "avatar-default-symbolic"; lato: 36 }
+                        }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; y: 84; text: paginaSid.modo === "accedi" ? I18n.t("Accedi al Solid ID") : I18n.t("Crea il tuo Solid ID"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(18); font.weight: Font.Bold }
+                    }
+                    Gruppo {
+                        Item {
+                            visible: paginaSid.modo === "crea"
+                            width: parent.width; height: visible ? 54 : 0
+                            TextField { id: sidNome; x: 16; width: parent.width - 32; anchors.verticalCenter: parent.verticalCenter; placeholderText: I18n.t("Nome"); placeholderTextColor: tel.pal.testo2; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); background: Item {} }
+                            Rectangle { anchors.bottom: parent.bottom; x: 16; width: parent.width - 16; height: 1; color: imp.linea }
+                        }
+                        Item {
+                            width: parent.width; height: 54
+                            TextField { id: sidEmail; x: 16; width: parent.width - 32; anchors.verticalCenter: parent.verticalCenter; placeholderText: I18n.t("Email"); placeholderTextColor: tel.pal.testo2; inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhNoAutoUppercase; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); background: Item {} }
+                            Rectangle { anchors.bottom: parent.bottom; x: 16; width: parent.width - 16; height: 1; color: imp.linea }
+                        }
+                        Item {
+                            width: parent.width; height: 54
+                            TextField { id: sidPw; x: 16; width: parent.width - 32; anchors.verticalCenter: parent.verticalCenter; echoMode: TextInput.Password; placeholderText: paginaSid.modo === "crea" ? I18n.t("Password (almeno 8 caratteri)") : I18n.t("Password"); placeholderTextColor: tel.pal.testo2; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); background: Item {}; onAccepted: vaiSid.premi() }
+                        }
+                    }
+                    Text { visible: paginaSid.esito !== ""; x: 32; width: imp.width - 64; topPadding: 10; wrapMode: Text.Wrap; text: paginaSid.esito; color: paginaSid.errore ? "#ef4444" : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13) }
+                    Item { width: 1; height: 14 }
+                    Rectangle {
+                        id: vaiSid
+                        function premi() {
+                            if (paginaSid.inCorso || !sidEmail.text || !sidPw.text) return
+                            paginaSid.inCorso = true; paginaSid.esito = ""
+                            if (paginaSid.modo === "accedi") ponte.avvia("sidAccedi", [sidEmail.text, sidPw.text], "imp-sid")
+                            else ponte.avvia("sidCrea", [sidNome.text, sidEmail.text, sidPw.text], "imp-sid")
+                        }
+                        x: 16; width: imp.width - 32; height: 50; radius: 14
+                        color: tel.accento; opacity: sidEmail.text && sidPw.text ? 1 : 0.5
+                        Text { anchors.centerIn: parent; text: paginaSid.inCorso ? I18n.t("Attendi…") : (paginaSid.modo === "accedi" ? I18n.t("Accedi") : I18n.t("Crea Solid ID")); color: "#ffffff"; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
+                        MouseArea { anchors.fill: parent; onClicked: vaiSid.premi() }
+                    }
+                    Item { width: 1; height: 10 }
+                    Gruppo {
+                        Riga { titolo: paginaSid.modo === "accedi" ? I18n.t("Non hai un Solid ID? Creane uno") : I18n.t("Hai già un Solid ID? Accedi"); onScelta: { paginaSid.modo = paginaSid.modo === "accedi" ? "crea" : "accedi"; paginaSid.esito = "" } }
+                        Riga { visible: paginaSid.modo === "accedi"; titolo: I18n.t("Password dimenticata?")
+                            onScelta: { if (!sidEmail.text) { paginaSid.esito = I18n.t("Scrivi prima la tua email"); paginaSid.errore = true } else { paginaSid.inCorso = true; ponte.avvia("sidPassword", [sidEmail.text], "imp-sid") } } }
+                        Riga { titolo: I18n.t("Reinvia l'email di conferma"); ultima: true
+                            onScelta: { if (!sidEmail.text) { paginaSid.esito = I18n.t("Scrivi prima la tua email"); paginaSid.errore = true } else { paginaSid.inCorso = true; ponte.avvia("sidReinvia", [sidEmail.text], "imp-sid") } } }
+                    }
+                    Nota { text: I18n.t("Usa lo stesso Solid ID del tuo PC con SolidOS: ritrovi il telefono con «Dov'è», vedi la batteria di tutti i tuoi dispositivi e li colleghi tra loro.") }
+                }
+
+                // ── Account collegato ────────────────────────────────────
+                Column {
+                    visible: imp.account.collegato === true
+                    width: parent.width
+                    Item {
+                        width: parent.width; height: 130
+                        Rectangle {
+                            anchors.horizontalCenter: parent.horizontalCenter; y: 4
+                            width: 76; height: 76; radius: 38; color: tel.accento
+                            Text { anchors.centerIn: parent; text: (imp.account.nome || imp.account.email || "?").charAt(0).toUpperCase(); color: "#ffffff"; font.family: Tema.font; font.pixelSize: 32; font.weight: Font.Bold }
+                        }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; y: 88; text: imp.account.nome || ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(20); font.weight: Font.Bold }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; y: 112; text: imp.account.email || ""; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
+                    }
+                    Gruppo {
+                        Riga { titolo: I18n.t("Dov'è"); interruttore: true; acceso: imp.account.trova === true; freccia: false; ultima: true
+                            onCambiato: function (si) { var r = ponte.chiama("sidTrova", [si]); tel.avviso(r.messaggio); imp.account = ponte.chiama0("solidId") } }
+                    }
+                    Nota { text: I18n.t("Con «Dov'è» attivo ritrovi il telefono sulla mappa dal PC, lo fai suonare o lo blocchi con un messaggio. La posizione arriva dal GPS o dalle reti Wi-Fi vicine.") }
+                    Titoletto { text: I18n.t("I tuoi dispositivi") }
+                    Gruppo {
+                        Repeater {
+                            model: paginaSid.dispositivi
+                            Riga {
+                                required property var modelData
+                                required property int index
+                                icona: modelData.tipo === "telefono" ? "phone-symbolic" : (modelData.tipo === "portatile" ? "computer-laptop-symbolic" : "computer-symbolic")
+                                coloreIcona: modelData.questo ? tel.accento : "#6b7385"
+                                titolo: modelData.nome + (modelData.questo ? " (" + I18n.t("questo") + ")" : "")
+                                valore: modelData.batteria !== null && modelData.batteria !== undefined ? modelData.batteria + "%" : ""
+                                freccia: false
+                                ultima: index === paginaSid.dispositivi.length - 1
+                            }
+                        }
+                        Riga { visible: paginaSid.dispositivi.length === 0; titolo: I18n.t("Caricamento…"); freccia: false; ultima: true }
+                    }
+                    Item { width: 1; height: 20 }
+                    Gruppo {
+                        Riga { titolo: I18n.t("Esci dal Solid ID"); freccia: false; ultima: true; onScelta: esciSid.open() }
+                    }
+                }
             }
 
             // ══ Info sul telefono ════════════════════════════════════════
@@ -425,6 +537,22 @@ Rectangle {
         }
     }
 
+    // ── Uscita dal Solid ID ──────────────────────────────────────────────
+    Popup {
+        id: esciSid
+        anchors.centerIn: parent
+        width: parent.width - 60; modal: true; padding: 20
+        background: Rectangle { radius: 20; color: imp.sezione }
+        Column {
+            width: parent.width; spacing: 14
+            Text { width: parent.width; wrapMode: Text.Wrap; text: I18n.t("Uscire dal Solid ID? Il telefono non comparirà più in «Dov'è»."); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
+            Row {
+                spacing: 10; anchors.right: parent.right
+                Pulsante { text: I18n.t("Annulla"); onClicked: esciSid.close() }
+                Pulsante { text: I18n.t("Esci"); pericoloso: true; onClicked: { var r = ponte.chiama0("sidEsci"); tel.avviso(r.messaggio); esciSid.close(); imp.account = ponte.chiama0("solidId") } }
+            }
+        }
+    }
     // ── Password del Wi-Fi ───────────────────────────────────────────────
     Popup {
         id: password
