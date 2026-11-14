@@ -36,6 +36,10 @@ jobs = $(nproc)
 [mirrors]
 CFG
 
+# Cartella di lavoro con il suo numero di versione (quello che farebbe "pmbootstrap init")
+mkdir -p "$LAVORO"
+python3 -c "import sys; sys.path.insert(0, '$HOME/pmbootstrap'); import pmb.config; print(pmb.config.work_version)" > "$LAVORO/version"
+
 echo "== pacchetto solidos-mobile"
 DEST="$APORTS/main/solidos-mobile"
 rm -rf "$DEST" && mkdir -p "$DEST"
