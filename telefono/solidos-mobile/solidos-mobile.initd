@@ -1,0 +1,29 @@
+#!/sbin/openrc-run
+# Avvia SolidOS Mobile sullo schermo del telefono (framebuffer, senza server grafico).
+description="Interfaccia di SolidOS Mobile"
+supervisor=supervise-daemon
+command=/usr/bin/solidos-mobile-sessione
+command_user="${SOLIDOS_UTENTE:-solid}"
+respawn_delay=2
+respawn_max=0
+output_log=/var/log/solidos-mobile.log
+error_log=/var/log/solidos-mobile.log
+
+depend() {
+	need dbus localmount
+	after networkmanager modemmanager bluetooth
+}
+
+start_pre() {
+	# Il P10 Lite parte con la luminosità a zero: la alziamo (0-9960)
+	for f in /sys/class/leds/lcd_backlight0/brightness /sys/class/backlight/*/brightness; do
+		[ -w "$f" ] && echo 4000 > "$f"
+		[ -e "$f" ] && chgrp video "$f" 2>/dev/null && chmod g+w "$f" 2>/dev/null
+	done
+	# La console di testo non deve disegnare sopra l'interfaccia
+	echo 0 > /sys/class/graphics/fbcon/cursor_blink 2>/dev/null
+	for v in /sys/class/vtconsole/vtcon*/bind; do echo 0 > "$v" 2>/dev/null; done
+	uid=$(id -u "$command_user")
+	mkdir -p /run/user/$uid && chown "$command_user" /run/user/$uid && chmod 700 /run/user/$uid
+	touch /var/log/solidos-mobile.log && chown "$command_user" /var/log/solidos-mobile.log
+}

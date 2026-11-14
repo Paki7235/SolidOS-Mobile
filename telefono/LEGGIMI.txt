@@ -1,0 +1,22 @@
+SolidOS Mobile per Huawei P10 Lite (WAS-LX1 / WAS-LX1A / WAS-LX2)
+================================================================
+
+Nel file zip:
+  kernel.img             -> va nella partizione "kernel" del telefono
+  ramdisk.img            -> va nella partizione "ramdisk" del telefono
+  solidos-mobile-sd.img  -> va scritto su una scheda microSD (il sistema parte da lì)
+
+Serve il bootloader SBLOCCATO (vedi la guida nel README del progetto).
+
+Comandi (telefono in modalità fastboot: spento, cavo USB collegato,
+tieni premuti Volume giù + Accensione):
+
+  fastboot flash kernel kernel.img
+  fastboot flash ramdisk ramdisk.img
+  fastboot reboot
+
+Utente: solid   Password: solidos   (cambiala dal terminale con: passwd)
+
+Funziona: schermo, tocco, Wi-Fi, Solid ID e Dov'è (via Wi-Fi).
+Non ancora: chiamate, SMS, dati mobili, audio, Bluetooth, GPS, fotocamera.
+Per tornare ad Android: riscrivi kernel e ramdisk originali di EMUI.

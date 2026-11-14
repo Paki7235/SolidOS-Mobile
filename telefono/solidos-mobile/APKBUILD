@@ -1,0 +1,32 @@
+# Pacchetto di SolidOS Mobile per postmarketOS (lo costruisce telefono/costruisci.sh).
+pkgname=solidos-mobile
+pkgver=0.1
+pkgrel=0
+pkgdesc="SolidOS Mobile: interfaccia del telefono"
+url="https://github.com/Paki7235/SolidOS-Mobile"
+arch="noarch"
+license="GPL-3.0-or-later"
+depends="
+	python3 py3-qt6 qt6-qtbase qt6-qtdeclarative qt6-qtsvg
+	py3-dbus py3-gobject3 py3-aiohttp dbus
+	papirus-icon-theme font-inter font-noto
+	networkmanager networkmanager-cli networkmanager-wifi modemmanager
+	bluez brightnessctl iw wpa_supplicant tzdata
+	"
+install="$pkgname.post-install"
+options="!check"
+source="
+	solidos-mobile.tar.gz
+	solidos-mobile.initd
+	solidos-mobile-sessione
+	"
+builddir="$srcdir"
+
+package() {
+	mkdir -p "$pkgdir"/usr/share/solidos-mobile
+	cp -r "$srcdir"/src/nucleo "$pkgdir"/usr/share/solidos-mobile/
+	cp -r "$srcdir"/src/qml "$pkgdir"/usr/share/solidos-mobile/
+	install -Dm644 "$srcdir"/branding.env "$pkgdir"/usr/share/solidos-mobile/branding.env
+	install -Dm755 "$srcdir"/solidos-mobile-sessione "$pkgdir"/usr/bin/solidos-mobile-sessione
+	install -Dm755 "$srcdir"/solidos-mobile.initd "$pkgdir"/etc/init.d/solidos-mobile
+}

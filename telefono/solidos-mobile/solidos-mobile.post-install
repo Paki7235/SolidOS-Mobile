@@ -1,0 +1,7 @@
+#!/bin/sh
+# Avvio automatico dell'interfaccia e della rete
+rc-update add solidos-mobile default 2>/dev/null
+rc-update add networkmanager default 2>/dev/null
+rc-update add modemmanager default 2>/dev/null
+rc-update add bluetooth default 2>/dev/null
+exit 0

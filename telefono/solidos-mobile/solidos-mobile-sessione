@@ -1,0 +1,16 @@
+#!/bin/sh
+# Sessione di SolidOS Mobile: Qt disegna direttamente sul framebuffer, tocco da evdev.
+export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+export HOME="${HOME:-$(getent passwd "$(id -un)" | cut -d: -f6)}"
+export LANG=it_IT.UTF-8
+export QT_QPA_PLATFORM="linuxfb:fb=/dev/fb0:nographicsmodeswitch"
+export QT_QPA_GENERIC_PLUGINS=evdevtouch
+export QT_QPA_FB_HIDECURSOR=1
+export QT_QUICK_BACKEND=software
+# 1080×1920 → circa 432×768 punti: misure uguali a quelle provate
+export QT_SCALE_FACTOR="${SOLIDOS_SCALA:-2.5}"
+export NUCLEO_BRANDING=/usr/share/solidos-mobile/branding.env
+export NUCLEO_QML=/usr/share/solidos-mobile/qml
+export NUCLEO_TEMA_ICONE="${NUCLEO_TEMA_ICONE:-Papirus-Dark}"
+export PYTHONPATH=/usr/share/solidos-mobile
+exec dbus-run-session -- python3 -m nucleo.mobile --schermo-intero

@@ -1,0 +1,41 @@
+# Costruisce l'immagine di SolidOS Mobile per il Huawei P10 Lite (postmarketOS "huawei-warsaw")
+# e la pubblica nelle Releases come UN SOLO file zip.
+name: Telefono P10 Lite
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["telefono-v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  immagine:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Strumenti
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends mkbootimg zip git openssl >/dev/null
+          which mkbootimg unpack_bootimg
+
+      - name: Costruisci
+        run: telefono/costruisci.sh
+
+      - name: Registro di pmbootstrap (se qualcosa va storto)
+        if: failure()
+        run: tail -n 300 ~/.local/var/pmbootstrap/log.txt || true
+
+      - name: Pubblica nelle Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          case "$TAG" in telefono-v*) ;; *) TAG="telefono-$(date +%Y%m%d-%H%M)";; esac
+          gh release create "$TAG" uscita/SolidOS-Mobile-P10-Lite.zip \
+            --title "SolidOS Mobile per Huawei P10 Lite ($TAG)" \
+            --notes-file telefono/LEGGIMI.txt
