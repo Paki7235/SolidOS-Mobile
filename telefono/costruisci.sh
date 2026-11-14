@@ -57,13 +57,13 @@ python3 "$PMB" -y export "$LAVORO/esporta"
 echo "== kernel e ramdisk separati (il P10 Lite non ha la partizione boot)"
 mkdir -p "$USCITA" && rm -rf "$USCITA"/*
 TMP=$(mktemp -d)
-BOOT=$(readlink -f "$LAVORO/esporta/boot.img")
-unpack_bootimg --boot_img "$BOOT" --out "$TMP" >/dev/null
-KERNEL="$TMP/kernel"
+KERNEL=$(readlink -f "$LAVORO/esporta/vmlinuz")
+RAMDISK=$(readlink -f "$LAVORO/esporta/initramfs")
 if [ "$(head -c 2 "$KERNEL" | od -An -tx1 | tr -d ' ')" != "1f8b" ]; then gzip -9 -c "$KERNEL" > "$TMP/kernel.gz"; KERNEL="$TMP/kernel.gz"; fi
-mkbootimg --kernel /dev/null --ramdisk "$TMP/ramdisk" --cmdline 'buildvariant=user' \
+BOOTIMG="python3 $RADICE/telefono/bootimg.py"
+$BOOTIMG --kernel - --ramdisk "$RAMDISK" --cmdline 'buildvariant=user' \
 	--os_version 8.0.0 --os_patch_level 2018-06-05 -o "$USCITA/ramdisk.img"
-mkbootimg --kernel "$KERNEL" --ramdisk /dev/null \
+$BOOTIMG --kernel "$KERNEL" --ramdisk - \
 	--cmdline 'loglevel=4 coherent_pool=512K page_tracker=on slub_min_objects=12 unmovable_isolate1=2:192M,3:224M,4:256M printktimer=0xfff0a000,0x534,0x538 androidboot.selinux=enforcing buildvariant=user' \
 	--base 0x00478000 --kernel_offset 0x00008000 --ramdisk_offset 0x07b88000 --second_offset 0x00e88000 \
 	--tags_offset 0x07988000 --os_version 8.0.0 --os_patch_level 2018-12-01 --pagesize 2048 -o "$USCITA/kernel.img"

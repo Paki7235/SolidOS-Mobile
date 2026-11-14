@@ -20,8 +20,7 @@ jobs:
       - name: Strumenti
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq --no-install-recommends mkbootimg zip git openssl >/dev/null
-          which mkbootimg unpack_bootimg
+          sudo apt-get install -y -qq --no-install-recommends zip git openssl >/dev/null
 
       - name: Costruisci
         run: telefono/costruisci.sh
