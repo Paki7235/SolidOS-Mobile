@@ -60,7 +60,9 @@ Vetro {
         id: trascina
         target: null
         yAxis.enabled: false
-        onActiveChanged: if (!active && Math.abs(translation.x) > scheda.width * 0.35) tel.chiudiNotifica(scheda.n.id)
+        property real ultimaX: 0
+        onTranslationChanged: if (active) ultimaX = translation.x
+        onActiveChanged: if (active) ultimaX = 0; else if (Math.abs(ultimaX) > scheda.width * 0.35) tel.chiudiNotifica(scheda.n.id)
     }
     Text {
         id: chiudi

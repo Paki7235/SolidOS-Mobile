@@ -284,9 +284,15 @@ Window {
             id: tendina
             target: null
             yAxis.enabled: true; xAxis.enabled: false
-            onActiveChanged: if (!active && translation.y > 50) {
-                if (centroid.pressPosition.x > parent.width * 0.6) tel.controllo = true
-                else tel.notifiche = true
+            property real ultimaY: 0
+            property real inizioX: 0
+            onTranslationChanged: if (active) ultimaY = translation.y
+            onActiveChanged: {
+                if (active) { ultimaY = 0; inizioX = centroid.pressPosition.x; return }
+                if (ultimaY > 50) {
+                    if (inizioX > parent.width * 0.6) tel.controllo = true
+                    else tel.notifiche = true
+                }
             }
         }
         TapHandler { onTapped: function (punto) { if (punto.position.x > parent.width * 0.6) tel.controllo = true; else tel.notifiche = true } }
@@ -334,7 +340,9 @@ Window {
             target: null
             enabled: tel.imp.navigazione !== "tasti"
             xAxis.enabled: false
-            onActiveChanged: if (!active && translation.y < -30) { tel.chiudiTutto(); tel.appInterna = ""; home.pagina = 0 }
+            property real ultimaY: 0
+            onTranslationChanged: if (active) ultimaY = translation.y
+            onActiveChanged: if (active) ultimaY = 0; else if (ultimaY < -30) { tel.chiudiTutto(); tel.appInterna = ""; home.pagina = 0 }
         }
         Row {
             visible: tel.imp.navigazione === "tasti"

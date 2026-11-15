@@ -154,7 +154,13 @@ Item {
             color: tel.pal.testo
         }
         visible: !blocco.chiedeCodice
-        DragHandler { target: null; xAxis.enabled: false; onActiveChanged: if (!active && translation.y < -40) blocco.entra() }
+        // Lo spostamento si ricorda mentre il dito si muove: al rilascio Qt lo azzera
+        DragHandler {
+            target: null; xAxis.enabled: false
+            property real ultimaY: 0
+            onTranslationChanged: if (active) ultimaY = translation.y
+            onActiveChanged: if (active) ultimaY = 0; else if (ultimaY < -40) blocco.entra()
+        }
         TapHandler { onDoubleTapped: blocco.entra() }
     }
 

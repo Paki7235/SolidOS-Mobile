@@ -155,6 +155,15 @@ def _provider_icone():
             lato = max(richiesta.width(), richiesta.height(), 0) or 48
             nome = ident.split("?")[0]
             icona = QIcon(nome) if nome.startswith("/") else QIcon.fromTheme(nome)
+            if icona.isNull() and not nome.startswith("/"):
+                # Icone proprie del sistema (es. Dov'è): Qt cerca le icone di riserva solo nella
+                # prima cartella «hicolor» che trova, quindi le nostre si cercano direttamente
+                for base in (CARTELLA_QML.parent / "icone", CARTELLA_QML.parent / "dati" / "icone"):
+                    trovata = next(iter(sorted(base.glob(f"**/{nome}.svg")) + sorted(base.glob(f"**/{nome}.png"))), None) \
+                        if base.is_dir() else None
+                    if trovata:
+                        icona = QIcon(str(trovata))
+                        break
             if icona.isNull():
                 icona = QIcon.fromTheme("application-x-executable")
             pixmap = icona.pixmap(QSize(lato, lato))
