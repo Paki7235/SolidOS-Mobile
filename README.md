@@ -42,6 +42,12 @@ scripts/anteprima.sh                                  # si apre una finestra gra
 scripts/anteprima.sh --schermata=home --tema=chiaro   # direttamente una schermata
 ```
 
+Sul **Mac** (prepara tutto da solo la prima volta, dentro la cartella del progetto):
+
+```sh
+scripts/anteprima-mac.sh
+```
+
 Ogni modifica pubblicata su GitHub fotografa da sola tutte le schermate, in tema scuro e chiaro
 (scheda **Actions** › **Anteprima** › artefatto «foto-schermate»).
 
