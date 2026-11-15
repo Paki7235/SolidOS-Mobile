@@ -46,3 +46,7 @@ jobs:
           gh release create "$TAG" "uscita/$ZIP" \
             --title "SolidOS Mobile per $NOME ($(date +%d/%m/%Y))" \
             --notes-file uscita/LEGGIMI.txt
+          # Un solo file per telefono: le versioni precedenti dello stesso telefono si tolgono
+          gh release list --limit 200 --json tagName -q '.[].tagName' \
+            | grep "^telefono-${{ matrix.device }}-" | grep -vx "$TAG" \
+            | while read -r vecchio; do gh release delete "$vecchio" --cleanup-tag -y; done
