@@ -22,6 +22,7 @@ case $DEVICE in
 	fairphone-fp4)       NOME="Fairphone 4";      FILE="Fairphone-4" ;;
 	shift-axolotl)       NOME="SHIFT6mq";         FILE="SHIFT6mq" ;;
 	pine64-pinephonepro) NOME="PinePhone Pro";    FILE="PinePhone-Pro" ;;
+	qemu-aarch64)        NOME="telefono virtuale (Mac con processore Apple)"; FILE="Virtuale-Mac" ;;
 	*)                   NOME="$DEVICE";          FILE="$DEVICE" ;;
 esac
 EXTRA="solidos-mobile"
@@ -101,6 +102,20 @@ if [ "$DEVICE" = huawei-warsaw ]; then
 		--tags_offset 0x07988000 --os_version 8.0.0 --os_patch_level 2018-12-01 --pagesize 2048 -o "$USCITA/kernel.img"
 	cp "$(readlink -f "$LAVORO/esporta/$DEVICE.img")" "$USCITA/solidos-mobile-sd.img"
 	cat "$RADICE/telefono/LEGGIMI.txt" >> "$LEGGIMI"
+elif [ "$DEVICE" = qemu-aarch64 ]; then
+	cp "$(readlink -f "$LAVORO/esporta/$DEVICE.img")" "$USCITA/solidos-mobile.img"
+	cp "$RADICE/telefono/avvia-mac.sh" "$USCITA/avvia-mac.sh"
+	{
+		echo "Per provare SolidOS Mobile completo sul Mac (processore Apple M1, M2, M3…):"
+		echo
+		echo "  1. Installa QEMU (una volta sola):   brew install qemu"
+		echo "  2. Estrai questo zip in una cartella e, nel Terminale, entra in quella cartella"
+		echo "  3. Avvia:                           sh avvia-mac.sh"
+		echo
+		echo "Si apre una finestra a forma di telefono. Il mouse fa da dito: trascina in su per entrare."
+		echo "Nel telefono virtuale funzionano interfaccia, app, Wi-Fi (simulato come rete) e Solid ID;"
+		echo "chiamate, SMS, fotocamera e sensori ovviamente no (non c'è un telefono vero)."
+	} >> "$LEGGIMI"
 elif [ "$METODO" = fastboot ]; then
 	cp "$(readlink -f "$LAVORO/esporta/boot.img")" "$USCITA/boot.img"
 	cp "$(readlink -f "$LAVORO/esporta/$DEVICE.img")" "$USCITA/solidos-mobile.img"
@@ -126,7 +141,7 @@ else
 fi
 
 ZIP="SolidOS-Mobile-$FILE.zip"
-(cd "$USCITA" && zip -9 -q "$ZIP" ./*.img LEGGIMI.txt)
+(cd "$USCITA" && zip -9 -q "$ZIP" ./*.img LEGGIMI.txt $(ls avvia-mac.sh 2>/dev/null))
 echo "$ZIP" > "$USCITA/nome-zip.txt"
 echo "$NOME" > "$USCITA/nome-telefono.txt"
 ls -lh "$USCITA"

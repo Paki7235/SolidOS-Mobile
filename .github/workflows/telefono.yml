@@ -7,7 +7,7 @@ on:
     inputs:
       telefoni:
         description: "Codici dei telefoni (JSON), es. [\"huawei-warsaw\"]"
-        default: '["huawei-warsaw","oneplus-enchilada","oneplus-fajita","google-sargo","fairphone-fp4","shift-axolotl","pine64-pinephonepro"]'
+        default: '["huawei-warsaw","oneplus-enchilada","oneplus-fajita","google-sargo","fairphone-fp4","shift-axolotl","pine64-pinephonepro","qemu-aarch64"]'
   push:
     tags: ["telefono-v*"]
 
@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        device: ${{ fromJSON(github.event.inputs.telefoni || '["huawei-warsaw","oneplus-enchilada","oneplus-fajita","google-sargo","fairphone-fp4","shift-axolotl","pine64-pinephonepro"]') }}
+        device: ${{ fromJSON(github.event.inputs.telefoni || '["huawei-warsaw","oneplus-enchilada","oneplus-fajita","google-sargo","fairphone-fp4","shift-axolotl","pine64-pinephonepro","qemu-aarch64"]') }}
     steps:
       - uses: actions/checkout@v4
 

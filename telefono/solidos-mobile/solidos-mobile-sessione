@@ -24,6 +24,12 @@ done
 scala=$(awk -v l="${larghezza:-1080}" 'BEGIN { s = l / 420; s = int(s * 4 + 0.5) / 4; if (s < 1) s = 1; print s }')
 export QT_SCALE_FACTOR="${SOLIDOS_SCALA:-$scala}"
 
+# Macchina virtuale (per provarlo sul computer): la scheda video virtuale non ha il 3D,
+# si disegna in software (altrimenti cage si ferma con lo schermo nero)
+if [ "$(systemd-detect-virt 2>/dev/null || echo none)" != none ]; then
+	export WLR_RENDERER=pixman WLR_NO_HARDWARE_CURSORS=1 QT_QUICK_BACKEND=software LIBGL_ALWAYS_SOFTWARE=1
+fi
+
 if ls /dev/dri/card* >/dev/null 2>&1 && command -v cage >/dev/null; then
 	export QT_QPA_PLATFORM=wayland
 	exec dbus-run-session -- cage -d -s -- python3 -m nucleo.mobile --schermo-intero
