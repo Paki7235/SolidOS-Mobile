@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" version="1">
+ <!-- SolidOS: messaggi -->
+ <path style="opacity:0.2" transform="translate(0,1)" d="M30 8h22c3.3 0 6 2.7 6 6v13c0 3.3-2.7 6-6 6h-1v6l-7-6H30c-3.3 0-6-2.7-6-6V14c0-3.3 2.7-6 6-6z"/>
+ <path style="fill:#55b65a" d="M30 8h22c3.3 0 6 2.7 6 6v13c0 3.3-2.7 6-6 6h-1v6l-7-6H30c-3.3 0-6-2.7-6-6V14c0-3.3 2.7-6 6-6z"/>
+ <path style="opacity:0.2;fill:#ffffff" d="M30 8h22c3.3 0 6 2.7 6 6v1c0-3.3-2.7-6-6-6H30c-3.3 0-6 2.7-6 6v-1c0-3.3 2.7-6 6-6z"/>
+ <path style="opacity:0.2" transform="translate(0,1)" d="M12 22h28c3.3 0 6 2.7 6 6v16c0 3.3-2.7 6-6 6H23l-9 7v-7h-2c-3.3 0-6-2.7-6-6V28c0-3.3 2.7-6 6-6z"/>
+ <path style="fill:#42a5f5" d="M12 22h28c3.3 0 6 2.7 6 6v16c0 3.3-2.7 6-6 6H23l-9 7v-7h-2c-3.3 0-6-2.7-6-6V28c0-3.3 2.7-6 6-6z"/>
+ <path style="opacity:0.2;fill:#ffffff" d="M12 22h28c3.3 0 6 2.7 6 6v1c0-3.3-2.7-6-6-6H12c-3.3 0-6 2.7-6 6v-1c0-3.3 2.7-6 6-6z"/>
+ <circle style="opacity:0.2" cx="16" cy="37" r="3"/>
+ <circle style="fill:#ffffff" cx="16" cy="36" r="3"/>
+ <circle style="opacity:0.2" cx="26" cy="37" r="3"/>
+ <circle style="fill:#ffffff" cx="26" cy="36" r="3"/>
+ <circle style="opacity:0.2" cx="36" cy="37" r="3"/>
+ <circle style="fill:#ffffff" cx="36" cy="36" r="3"/>
+</svg>
