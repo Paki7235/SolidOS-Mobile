@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- SolidOS: calcolatrice -->
+  <defs>
+    <linearGradient id="f" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3E434E"/>
+      <stop offset="1" stop-color="#23262E"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="64" height="64" rx="17" fill="url(#f)"/>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="16.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.10"/>
+  <rect x="16" y="16" width="14" height="14" rx="4" fill="#FFFFFF" fill-opacity="0.95"/>
+  <rect x="34" y="16" width="14" height="14" rx="4" fill="#FFFFFF" fill-opacity="0.95"/>
+  <rect x="16" y="34" width="14" height="14" rx="4" fill="#FFFFFF" fill-opacity="0.95"/>
+  <rect x="34" y="34" width="14" height="14" rx="4" fill="#F59E3B"/>
+  <path d="M23 19.8v6.4M19.8 23h6.4M37.8 23h6.4M20.3 37.8l5.4 5.4M25.7 37.8l-5.4 5.4M37.8 39.5h6.4M37.8 42.5h6.4" stroke="#2B2F37" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M37.8 39.5h6.4M37.8 42.5h6.4" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+</svg>

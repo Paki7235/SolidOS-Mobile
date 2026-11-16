@@ -1,25 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <!-- Dov'è: segnaposto su una mappa stilizzata, con le onde del segnale del dispositivo -->
+  <!-- SolidOS: dove -->
   <defs>
-    <linearGradient id="fondo" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#2fd0a0"/>
-      <stop offset="1" stop-color="#1769e0"/>
-    </linearGradient>
-    <linearGradient id="spillo" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#e4ecff"/>
+    <linearGradient id="f" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22B8A2"/>
+      <stop offset="1" stop-color="#1774DB"/>
     </linearGradient>
   </defs>
-  <rect x="3" y="3" width="58" height="58" rx="15" fill="url(#fondo)"/>
-  <!-- strade della mappa -->
-  <path d="M3 44 C 18 38, 26 50, 44 42 S 61 36, 61 36" fill="none" stroke="#ffffff" stroke-opacity=".22" stroke-width="3"/>
-  <path d="M14 61 L 26 3" fill="none" stroke="#ffffff" stroke-opacity=".16" stroke-width="2.5"/>
-  <!-- onde del segnale -->
-  <path d="M42.5 13.5 a 9 9 0 0 1 7 7" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
-  <path d="M43.5 7.5 a 15 15 0 0 1 12.5 12.5" fill="none" stroke="#ffffff" stroke-opacity=".7" stroke-width="2.6" stroke-linecap="round"/>
-  <!-- ombra e segnaposto -->
-  <ellipse cx="29" cy="52" rx="8" ry="2.4" fill="#0b2a66" fill-opacity=".35"/>
-  <path d="M29 51 C 29 51, 15 37.5, 15 27 A 14 14 0 0 1 43 27 C 43 37.5, 29 51, 29 51 Z" fill="url(#spillo)"/>
-  <circle cx="29" cy="27" r="7.2" fill="#1769e0"/>
-  <circle cx="29" cy="27" r="3" fill="#ffffff"/>
+  <rect x="0" y="0" width="64" height="64" rx="17" fill="url(#f)"/>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="16.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.10"/>
+  <path d="M32 50s-13-11.6-13-21.6C19 21 24.8 15 32 15s13 6 13 13.4C45 38.4 32 50 32 50z" fill="#FFFFFF"/>
+  <circle cx="32" cy="28.5" r="5.2" fill="#1C97C0"/>
 </svg>

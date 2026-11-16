@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- SolidOS: telefono -->
+  <defs>
+    <linearGradient id="f" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#34C27A"/>
+      <stop offset="1" stop-color="#1F9A5A"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="64" height="64" rx="17" fill="url(#f)"/>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="16.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.10"/>
+  <path d="M24.2 17.5c1.3-.8 3-.4 3.8.9l2.6 4.4c.7 1.2.5 2.7-.5 3.6l-2.3 2.1c1.7 3.6 4.4 6.4 8 8.1l2.1-2.3c.9-1 2.4-1.2 3.6-.5l4.4 2.6c1.3.8 1.7 2.5.9 3.8l-1.6 2.6c-1.3 2.1-3.8 3.1-6.2 2.4C29.2 43 21.1 34.9 18.6 25c-.6-2.4.3-4.9 2.4-6.2z" fill="#FFFFFF"/>
+</svg>

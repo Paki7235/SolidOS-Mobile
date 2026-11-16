@@ -60,12 +60,10 @@ Item {
                             columns: 2; spacing: 12
                             Repeater {
                                 model: casella.modelData.app.slice(0, casella.modelData.app.length > 4 ? 3 : 4)
-                                Rectangle {
+                                IconaApp {
                                     required property var modelData
-                                    width: lib.latoMini; height: width; radius: Math.round(width * 0.27)
-                                    color: tel.pal.tessera; border.color: tel.pal.vetroBordo
-                                    Icona { anchors.centerIn: parent; nome: parent.modelData.icona; lato: Math.round(parent.width * 0.68) }
-                                    MouseArea { anchors.fill: parent; onClicked: tel.apri(parent.modelData) }
+                                    app: modelData; conNome: false; lato: lib.latoMini
+                                    width: lib.latoMini
                                 }
                             }
                             // Le altre app della cartella, in piccolo, nel quarto riquadro
