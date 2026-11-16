@@ -7,7 +7,7 @@ import SolidUI
 
 Rectangle {
     id: app
-    color: tel.chiaro ? "#f2f3f8" : "#0e1118"
+    color: tel.pal.sfondo
     property var dispositivi: []
     property string scelto: ""
     property bool collegato: false
@@ -16,8 +16,8 @@ Rectangle {
     property int comandoId: 0          // comando in attesa di conferma
     property string comandoTipo: ""
     property int tentativi: 0
-    readonly property color sezione: tel.chiaro ? "#ffffff" : "#1b1f2b"
-    readonly property color linea: tel.chiaro ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.08)
+    readonly property color sezione: tel.pal.superficie
+    readonly property color linea: tel.pal.bordo
     readonly property var dispositivo: dispositivi.find(function (d) { return d.id === scelto }) || null
 
     function aggiorna() {

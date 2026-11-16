@@ -6,12 +6,12 @@ import SolidUI
 
 Rectangle {
     id: app
-    color: tel.chiaro ? "#f2f3f8" : "#0e1118"
+    color: tel.pal.sfondo
     property var stato: ({ attivo: false, visibilita: "nessuno", cartella: "", dispositivi: [] })
     property var qr: null
     readonly property var file: tel.daCondividere
-    readonly property color sezione: tel.chiaro ? "#ffffff" : "#1b1f2b"
-    readonly property color linea: tel.chiaro ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.08)
+    readonly property color sezione: tel.pal.superficie
+    readonly property color linea: tel.pal.bordo
 
     function aggiorna() { ponte.avvia("vicinaStato", [], "vicina-stato") }
     function nomeFile(p) { return p.split("/").pop() }

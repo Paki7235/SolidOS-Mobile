@@ -6,13 +6,13 @@ import SolidUI
 
 Rectangle {
     id: app
-    color: tel.chiaro ? "#f2f3f8" : "#0e1118"
+    color: tel.pal.sfondo
     property var contatti: []
     property var scelto: null          // contatto aperto nella scheda
     property bool modifica: false
     property string cerca: ""
-    readonly property color sezione: tel.chiaro ? "#ffffff" : "#1b1f2b"
-    readonly property color linea: tel.chiaro ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.08)
+    readonly property color sezione: tel.pal.superficie
+    readonly property color linea: tel.pal.bordo
     readonly property var filtrati: contatti.filter(function (c) { return !cerca || c.nome.toLowerCase().indexOf(cerca) >= 0 || c.numero.replace(/\s/g, "").indexOf(cerca.replace(/\s/g, "")) >= 0 })
 
     function aggiorna() {
@@ -45,7 +45,7 @@ Rectangle {
         }
         Rectangle {
             x: 16; y: 108; width: parent.width - 32; height: 40; radius: 12
-            color: tel.chiaro ? "#e6e8f0" : "#1f2430"
+            color: tel.pal.superficie2
             Row {
                 anchors.fill: parent; anchors.leftMargin: 12; spacing: 8
                 Icona { nome: "system-search-symbolic"; lato: 16; anchors.verticalCenter: parent.verticalCenter }

@@ -1,10 +1,10 @@
-// Superficie «vetro» del design: semitrasparente, bordo chiaro, angoli arrotondati.
-// (Niente sfocatura vera: costa troppa memoria e batteria sui telefoni da 2 GB.)
+// Pannello sopra lo sfondo (blocco, Home, tendine): scuro o chiaro e quasi pieno,
+// bordo sottile, angoli del design. Niente sfocatura (costa memoria e batteria).
 import QtQuick
 
 Rectangle {
     color: tel.pal.vetro
     border.color: tel.pal.vetroBordo
     border.width: 1
-    radius: 22
+    radius: tel.r3
 }

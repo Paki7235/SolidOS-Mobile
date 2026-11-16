@@ -148,7 +148,7 @@ Item {
             Rectangle {
                 required property var modelData
                 width: 34; height: 34; radius: 8
-                color: zoomArea.containsMouse ? tel.pal.traccia : (tel.chiaro ? "#ffffff" : "#1b1f2b")
+                color: zoomArea.containsMouse ? tel.pal.traccia : (tel.pal.superficie)
                 border.color: tel.pal.vetroBordo
                 Text { anchors.centerIn: parent; text: parent.modelData.t; color: tel.pal.testo; font.pixelSize: 18; font.weight: Font.DemiBold }
                 MouseArea { id: zoomArea; anchors.fill: parent; hoverEnabled: true; onClicked: mappa.zooma(parent.modelData.d) }

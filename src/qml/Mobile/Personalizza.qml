@@ -6,9 +6,9 @@ import SolidUI
 
 Rectangle {
     id: pers
-    color: tel.chiaro ? "#f2f3f8" : "#0e1118"
-    readonly property color sezione: tel.chiaro ? "#ffffff" : "#1b1f2b"
-    readonly property color spento: tel.chiaro ? "#e6e8f0" : "#2a2f3d"
+    color: tel.pal.sfondo
+    readonly property color sezione: tel.pal.superficie
+    readonly property color spento: tel.pal.superficie2
 
     component Scelta: Rectangle {
         id: sc
@@ -92,19 +92,11 @@ Rectangle {
                         border.width: 3
                         border.color: tel.imp.sfondo === modelData ? tel.accento : "transparent"
                         clip: true
-                        Rectangle {
-                            anchors.fill: parent; anchors.margins: 3; radius: 9
-                            gradient: Gradient {
-                                GradientStop { position: 0.0; color: tel.chiaro ? "#eef1ff" : "#0b1230" }
-                                GradientStop { position: 1.0; color: tel.chiaro ? "#c9d4ff" : "#3f4fb8" }
-                            }
-                        }
-                        Image {
+                        // Anteprima: lo stesso sfondo disegnato del telefono, in piccolo
+                        Sfondo {
                             anchors.fill: parent; anchors.margins: 3
-                            source: "file://" + tel.sfondi + "/" + parent.modelData + (tel.chiaro ? "-chiaro" : "") + ".png"
-                            sourceSize.height: 160
-                            fillMode: Image.PreserveAspectCrop
-                            asynchronous: true
+                            nome: parent.modelData
+                            chiaro: tel.chiaro
                         }
                         MouseArea { anchors.fill: parent; onClicked: tel.imposta("sfondo", parent.modelData) }
                     }

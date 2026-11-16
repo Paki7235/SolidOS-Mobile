@@ -6,13 +6,13 @@ import SolidUI
 
 Rectangle {
     id: app
-    color: tel.chiaro ? "#f2f3f8" : "#0e1118"
+    color: tel.pal.sfondo
     property var conversazioni: []
     property var aperta: null            // {numero, nome, messaggi} oppure null
     property string cerca: ""
     property bool nuova: false
-    readonly property color linea: tel.chiaro ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.08)
-    readonly property color sezione: tel.chiaro ? "#ffffff" : "#1b1f2b"
+    readonly property color linea: tel.pal.bordo
+    readonly property color sezione: tel.pal.superficie
 
     function aggiorna() { conversazioni = ponte.chiama0("conversazioni") }
     function apri(numero) { aperta = ponte.chiama("conversazione", [numero]); nuova = false }
@@ -34,7 +34,7 @@ Rectangle {
         }
         Rectangle {
             x: 16; y: 108; width: parent.width - 32; height: 40; radius: 12
-            color: tel.chiaro ? "#e6e8f0" : "#1f2430"
+            color: tel.pal.superficie2
             Row {
                 anchors.fill: parent; anchors.leftMargin: 12; spacing: 8
                 Icona { nome: "system-search-symbolic"; lato: 16; anchors.verticalCenter: parent.verticalCenter }
@@ -174,7 +174,7 @@ Rectangle {
                     width: Math.min(testoMsg.implicitWidth + 28, chat.width * 0.76)
                     height: testoMsg.implicitHeight + ora.implicitHeight + 18
                     radius: 18
-                    color: msg.modelData.mio ? tel.accento : (tel.chiaro ? "#e6e8f0" : "#262b37")
+                    color: msg.modelData.mio ? tel.accento : (tel.pal.superficie2)
                     Text {
                         id: testoMsg
                         x: 14; y: 8

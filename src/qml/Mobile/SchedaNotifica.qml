@@ -8,10 +8,10 @@ Vetro {
     property var n: ({})
     property bool compatta: false
     property bool pieno: false          // banner: fondo quasi pieno per leggerlo su qualsiasi schermata
-    color: pieno ? (tel.chiaro ? Qt.rgba(0.98, 0.98, 1, 0.97) : Qt.rgba(0.12, 0.14, 0.2, 0.97)) : tel.pal.vetro
+    color: pieno ? tel.pal.superficie : tel.pal.vetro
     width: parent ? parent.width : 300
     height: contenuto.implicitHeight + 24
-    radius: 22
+    radius: tel.r2
     x: trascina.active ? trascina.translation.x : 0
     opacity: 1 - Math.min(0.8, Math.abs(x) / width)
 

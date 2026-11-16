@@ -8,8 +8,8 @@ Rectangle {
     property alias text: campo.text
     signal invia(string testo)
     height: Math.min(140, campo.implicitHeight + 26) + (tel.imp.navigazione === "tasti" ? 44 : 22)
-    color: tel.chiaro ? "#ffffff" : "#1b1f2b"
-    Rectangle { width: parent.width; height: 1; color: tel.chiaro ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.08) }
+    color: tel.pal.superficie
+    Rectangle { width: parent.width; height: 1; color: tel.pal.bordo }
     Rectangle {
         x: 12; y: 8
         width: parent.width - 70; height: Math.min(130, campo.implicitHeight + 10)

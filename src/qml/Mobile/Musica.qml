@@ -6,13 +6,13 @@ import SolidUI
 
 Rectangle {
     id: app
-    color: tel.chiaro ? "#f2f3f8" : "#0e1118"
+    color: tel.pal.sfondo
     property var brani: []
     property int attuale: -1
     property bool grande: false
     readonly property var brano: attuale >= 0 ? brani[attuale] : null
-    readonly property color sezione: tel.chiaro ? "#ffffff" : "#1b1f2b"
-    readonly property color linea: tel.chiaro ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.08)
+    readonly property color sezione: tel.pal.superficie
+    readonly property color linea: tel.pal.bordo
     readonly property bool suona: lettore !== null && lettore.playbackState === MediaPlayer.PlayingState
 
     function aggiorna() { brani = ponte.chiama0("musica") }

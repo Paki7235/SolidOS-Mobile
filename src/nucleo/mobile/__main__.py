@@ -248,6 +248,12 @@ class BackendMobile(Backend):
                 risultato["tema"] = a.split("=", 1)[1]
             elif a.startswith("--foto="):
                 risultato["foto"] = a.split("=", 1)[1]
+            elif a.startswith("--dimensione="):   # es. 427x757 (schermo del telefono virtuale)
+                try:
+                    l, h = a.split("=", 1)[1].lower().split("x")
+                    risultato["larghezza"], risultato["altezza"] = int(l), int(h)
+                except ValueError:
+                    pass
         return risultato
 
     def cartellaSfondi(self) -> str:

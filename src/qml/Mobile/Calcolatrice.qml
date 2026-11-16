@@ -5,7 +5,7 @@ import SolidUI
 
 Rectangle {
     id: app
-    color: tel.chiaro ? "#f2f3f8" : "#0b0d14"
+    color: tel.pal.sfondo
     property string espressione: ""
     property string risultato: ""
     property bool errore: false
@@ -61,8 +61,8 @@ Rectangle {
                 width: tastiera.lato; height: tastiera.lato; radius: width / 2
                 color: modelData === "=" ? tel.accento
                        : operatore ? (tel.chiaro ? "#dfe6ff" : "#26304d")
-                       : funzione ? (tel.chiaro ? "#e3e5ee" : "#2a2e3b")
-                       : (tel.chiaro ? "#ffffff" : "#1b1f2b")
+                       : funzione ? (tel.pal.superficie2)
+                       : (tel.pal.superficie)
                 Text {
                     anchors.centerIn: parent; text: parent.modelData
                     color: parent.modelData === "=" ? "#ffffff" : (parent.operatore ? tel.accento : tel.pal.testo)

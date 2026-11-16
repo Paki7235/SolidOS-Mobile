@@ -1,43 +1,42 @@
-// Barra in alto del telefono: ora (o operatore sul blocco), segnale, Wi-Fi, batteria.
-// Al centro la «pillola» nera della fotocamera frontale.
+// Barra in alto del telefono: ora a sinistra (con la chiamata in corso, se ridotta),
+// Wi-Fi e batteria a destra. Niente imitazioni di fotocamere o «isole».
 import QtQuick
+import SolidUI
 
 Item {
     id: barra
-    height: 50
+    height: 40
     readonly property var st: tel.stato || ({})
     readonly property var bat: st.batteria || ({ livello: 100, carica: true })
-
-    Text {
-        anchors.left: parent.left; anchors.leftMargin: 30
-        anchors.verticalCenter: pillola.verticalCenter
-        text: tel.schermata === "blocco" ? "SolidOS" : tel.ora()
-        color: tel.pal.testo
-        font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold
-    }
-    // Pillola della fotocamera: durante una chiamata ridotta si allarga e mostra la durata
     readonly property bool inChiamata: tel.chiamataInfo.attiva === true && tel.chiamataRidotta
-    Rectangle {
-        id: pillola
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: 11
-        width: barra.inChiamata ? 200 : 124; height: 36; radius: 18
-        color: "#000000"
-        Behavior on width { NumberAnimation { duration: 200 } }
-        Row {
+
+    Row {
+        anchors.left: parent.left; anchors.leftMargin: tel.margine + 6
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: 8
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            // Sul blocco l'ora è già grande al centro
+            text: tel.schermata === "blocco" && !tel.appInterna ? "" : tel.ora()
+            color: tel.pal.testo
+            font.family: Tema.font; font.pixelSize: 15; font.weight: Font.DemiBold
+        }
+        // Chiamata ridotta: una pillola verde con la durata, si tocca per tornare alla chiamata
+        Rectangle {
             visible: barra.inChiamata
             anchors.verticalCenter: parent.verticalCenter
-            x: 14; spacing: 8
-            Rectangle { width: 22; height: 22; radius: 11; color: "#22c55e"; anchors.verticalCenter: parent.verticalCenter
-                Text { anchors.centerIn: parent; text: "✆"; color: "#ffffff"; font.pixelSize: 13 } }
-            Text { anchors.verticalCenter: parent.verticalCenter; text: tel.chiamataInfo.testo || ""; color: "#22c55e"; font.family: Tema.font; font.pixelSize: 14; font.weight: Font.DemiBold }
+            height: 24; radius: 12; width: durata.implicitWidth + 34
+            color: tel.pal.successo
+            Rectangle { x: 10; anchors.verticalCenter: parent.verticalCenter; width: 8; height: 8; radius: 4; color: "#ffffff" }
+            Text { id: durata; x: 24; anchors.verticalCenter: parent.verticalCenter; text: tel.chiamataInfo.testo || ""; color: "#ffffff"; font.family: Tema.font; font.pixelSize: 13; font.weight: Font.DemiBold }
+            MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: tel.chiamataRidotta = false }
         }
-        MouseArea { anchors.fill: parent; enabled: barra.inChiamata; onClicked: tel.chiamataRidotta = false }
     }
+
     Row {
-        anchors.right: parent.right; anchors.rightMargin: 28
-        anchors.verticalCenter: pillola.verticalCenter
-        spacing: 6
+        anchors.right: parent.right; anchors.rightMargin: tel.margine + 6
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: 8
         // Wi-Fi: tre archi
         Canvas {
             width: 17; height: 13
@@ -53,17 +52,28 @@ Item {
                 g.beginPath(); g.arc(8.5, 12.5, 11, Math.PI * 1.28, Math.PI * 1.72); g.stroke()
             }
         }
-        // Batteria
-        Rectangle {
+        Text {
             anchors.verticalCenter: parent.verticalCenter
-            width: 25; height: 12; radius: 4
-            color: "transparent"
-            border.color: tel.pal.testo; border.width: 1.5
+            text: barra.bat.livello + "%"
+            color: tel.pal.testo
+            font.family: Tema.font; font.pixelSize: 13; font.weight: Font.DemiBold
+        }
+        // Batteria
+        Item {
+            anchors.verticalCenter: parent.verticalCenter
+            width: 26; height: 13
             Rectangle {
-                x: 2; y: 2; height: parent.height - 4; radius: 2
-                width: Math.max(2, (parent.width - 4) * barra.bat.livello / 100)
-                color: barra.bat.livello <= 20 && !barra.bat.carica ? "#ef4444" : (barra.bat.carica && barra.bat.livello < 100 ? "#22c55e" : tel.pal.testo)
+                width: 23; height: 13; radius: 4
+                color: "transparent"
+                border.color: Qt.rgba(tel.pal.testo.r, tel.pal.testo.g, tel.pal.testo.b, 0.45); border.width: 1.2
+                Rectangle {
+                    x: 2; y: 2; height: parent.height - 4; radius: 2
+                    width: Math.max(2, (parent.width - 4) * barra.bat.livello / 100)
+                    color: barra.bat.livello <= 20 && !barra.bat.carica ? tel.pal.pericolo
+                           : (barra.bat.carica && barra.bat.livello < 100 ? tel.pal.successo : tel.pal.testo)
+                }
             }
+            Rectangle { x: 24; anchors.verticalCenter: parent.verticalCenter; width: 2; height: 5; radius: 1; color: Qt.rgba(tel.pal.testo.r, tel.pal.testo.g, tel.pal.testo.b, 0.45) }
         }
     }
 }

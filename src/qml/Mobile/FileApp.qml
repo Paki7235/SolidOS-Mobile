@@ -7,14 +7,14 @@ import SolidUI
 
 Rectangle {
     id: app
-    color: tel.chiaro ? "#f2f3f8" : "#0e1118"
+    color: tel.pal.sfondo
     property var luoghi: []
     property var cartella: ({ percorso: "", titolo: "", su: "", voci: [] })
     property bool inLuoghi: true
     property var anteprima: null         // voce aperta (immagine o testo)
     property string testoAnteprima: ""
-    readonly property color sezione: tel.chiaro ? "#ffffff" : "#1b1f2b"
-    readonly property color linea: tel.chiaro ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.08)
+    readonly property color sezione: tel.pal.superficie
+    readonly property color linea: tel.pal.bordo
 
     function vai(percorso) { cartella = ponte.chiama("elencoFile", [percorso, false]); inLuoghi = false }
     function ricarica() { if (!inLuoghi) cartella = ponte.chiama("elencoFile", [cartella.percorso, false]) }

@@ -9,8 +9,8 @@ import SolidUI
 Window {
     id: tel
     visible: true
-    width: 390
-    height: 844
+    width: ponte.chiama0("avvio").larghezza || 390
+    height: ponte.chiama0("avvio").altezza || 844
     minimumWidth: 320
     minimumHeight: 600
     title: "SolidOS Mobile"
@@ -25,19 +25,34 @@ Window {
     readonly property bool chiaro: imp.tema === "chiaro"
     readonly property real k: [0.9, 1.0, 1.15][imp.testo] || 1.0
     readonly property color accento: imp.accento
+    // Colori del design: superfici solide e sobrie, bordi sottili, testo ad alto contrasto
     readonly property QtObject pal: QtObject {
-        readonly property color testo: tel.chiaro ? "#0f1630" : "#ffffff"
-        readonly property color testo2: tel.chiaro ? Qt.rgba(0.06, 0.09, 0.19, 0.66) : Qt.rgba(1, 1, 1, 0.78)
-        readonly property color vetro: tel.chiaro ? Qt.rgba(1, 1, 1, 0.62) : Qt.rgba(1, 1, 1, 0.14)
-        readonly property color vetroBordo: tel.chiaro ? Qt.rgba(1, 1, 1, 0.85) : Qt.rgba(1, 1, 1, 0.16)
-        readonly property color traccia: tel.chiaro ? Qt.rgba(0.06, 0.09, 0.19, 0.12) : Qt.rgba(1, 1, 1, 0.22)
-        readonly property color velo: tel.chiaro ? Qt.rgba(0.93, 0.94, 0.98, 0.95) : Qt.rgba(0.02, 0.03, 0.08, 0.92)
-        readonly property color pieno: tel.chiaro ? "#0f1630" : "#ffffff"
-        readonly property color suPieno: tel.chiaro ? "#ffffff" : "#1b2140"
+        readonly property color sfondo: tel.chiaro ? "#F3F4F6" : "#0B0C10"        // fondo delle app
+        readonly property color superficie: tel.chiaro ? "#FFFFFF" : "#16181E"    // schede, righe
+        readonly property color superficie2: tel.chiaro ? "#ECEEF2" : "#1F222A"   // campi, pulsanti
+        readonly property color bordo: tel.chiaro ? Qt.rgba(0, 0, 0, 0.07) : Qt.rgba(1, 1, 1, 0.07)
+        readonly property color testo: tel.chiaro ? "#111318" : "#F4F5F7"
+        readonly property color testo2: tel.chiaro ? "#5D6472" : "#9AA1AE"
+        readonly property color testo3: tel.chiaro ? "#8A909C" : "#6B7280"
+        // Pannelli sopra lo sfondo (blocco, Home, tendine)
+        readonly property color vetro: tel.chiaro ? Qt.rgba(1, 1, 1, 0.82) : Qt.rgba(0.085, 0.095, 0.12, 0.78)
+        readonly property color vetroBordo: tel.chiaro ? Qt.rgba(0, 0, 0, 0.06) : Qt.rgba(1, 1, 1, 0.08)
+        readonly property color traccia: tel.chiaro ? Qt.rgba(0, 0, 0, 0.07) : Qt.rgba(1, 1, 1, 0.10)
+        readonly property color velo: tel.chiaro ? Qt.rgba(0.95, 0.955, 0.965, 0.97) : Qt.rgba(0.035, 0.04, 0.05, 0.96)
+        readonly property color tessera: tel.chiaro ? "#FFFFFF" : "#1C1F26"       // base comune delle icone
+        readonly property color pieno: tel.chiaro ? "#111318" : "#F4F5F7"
+        readonly property color suPieno: tel.chiaro ? "#FFFFFF" : "#111318"
+        readonly property color successo: "#22A06B"
+        readonly property color pericolo: "#E5484D"
     }
+    // Misure del design: raggi e margini uguali ovunque
+    readonly property int r1: 12      // controlli piccoli
+    readonly property int r2: 18      // schede
+    readonly property int r3: 24      // pannelli grandi
+    readonly property int margine: 18 // bordo dello schermo
     function px(n) { return Math.round(n * k) }
     readonly property string fontOra: imp.orologio || Tema.font
-    readonly property int latoIcona: [52, 60, 68][imp.icone === undefined ? 1 : imp.icone]
+    readonly property int latoIcona: [52, 58, 64][imp.icone === undefined ? 1 : imp.icone]
 
     // ── Stato del telefono ────────────────────────────────────────────────
     property string schermata: "blocco"          // blocco | home
@@ -144,25 +159,11 @@ Window {
         onTriggered: tel.contentItem.grabToImage(function (r) { r.saveToFile(ponte.chiama0("avvio").foto); Qt.quit() })
     }
 
-    // ── Sfondo: gli stessi sfondi di SolidOS per PC (variante chiara col tema chiaro) ──
-    // Riserva se l'immagine manca: gli stessi colori dello sfondo «Notte»
-    Rectangle {
+    // ── Sfondo: disegnato dal sistema (niente file), oppure una foto scelta in Foto ──
+    Sfondo {
         anchors.fill: parent
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: tel.chiaro ? "#eef1ff" : "#0b1230" }
-            GradientStop { position: 0.6; color: tel.chiaro ? "#c9d4ff" : "#2a3d9e" }
-            GradientStop { position: 1.0; color: tel.chiaro ? "#e5d6ff" : "#5b34b0" }
-        }
-    }
-    readonly property string sfondi: ponte.chiama0("cartellaSfondi")
-    Image {
-        anchors.fill: parent
-        // Sfondo di sistema (nome) oppure una foto scelta in Foto (percorso completo)
-        source: tel.imp.sfondo.charAt(0) === "/" ? "file://" + tel.imp.sfondo
-                : "file://" + tel.sfondi + "/" + tel.imp.sfondo + (tel.chiaro ? "-chiaro" : "") + ".png"
-        fillMode: Image.PreserveAspectCrop
-        asynchronous: true
-        sourceSize.height: 1080
+        nome: tel.imp.sfondo
+        chiaro: tel.chiaro
     }
 
     // ── Schermate ─────────────────────────────────────────────────────────
@@ -371,12 +372,12 @@ Window {
         width: Math.min(parent.width - 40, etichetta.implicitWidth + 32)
         height: etichetta.implicitHeight + 20
         radius: 16
-        color: tel.chiaro ? "#0f1630" : "#f2f4f8"
+        color: tel.pal.pieno
         opacity: 0
         visible: opacity > 0
         z: 100
         Behavior on opacity { NumberAnimation { duration: 200 } }
-        Text { id: etichetta; anchors.centerIn: parent; width: Math.min(implicitWidth, tel.width - 72); wrapMode: Text.Wrap; horizontalAlignment: Text.AlignHCenter; color: tel.chiaro ? "#ffffff" : "#0f1630"; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.Medium }
+        Text { id: etichetta; anchors.centerIn: parent; width: Math.min(implicitWidth, tel.width - 72); wrapMode: Text.Wrap; horizontalAlignment: Text.AlignHCenter; color: tel.pal.suPieno; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.Medium }
         Timer { id: nascondi; interval: 2600; onTriggered: messaggio.opacity = 0 }
     }
 }

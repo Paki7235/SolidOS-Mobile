@@ -6,15 +6,15 @@ import SolidUI
 
 Rectangle {
     id: app
-    color: tel.chiaro ? "#f2f3f8" : "#0e1118"
+    color: tel.pal.sfondo
     property var consigliate: []
     property bool disponibile: true
     property var risultati: []
     property string cerca: ""
     property bool cercando: false
     property var inCorso: ({})          // id → true durante installazione/rimozione
-    readonly property color sezione: tel.chiaro ? "#ffffff" : "#1b1f2b"
-    readonly property color linea: tel.chiaro ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.08)
+    readonly property color sezione: tel.pal.superficie
+    readonly property color linea: tel.pal.bordo
 
     function aggiorna() { ponte.avvia("storeConsigliate", [], "store-consigliate") }
     function azione(a) {
@@ -42,7 +42,7 @@ Rectangle {
     Text { x: 20; y: 56; text: I18n.t("Store"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(30); font.weight: Font.Bold }
     Rectangle {
         x: 16; y: 104; width: parent.width - 32; height: 40; radius: 12
-        color: tel.chiaro ? "#e3e5ee" : "#1b1f2b"
+        color: tel.pal.superficie2
         Icona { x: 12; anchors.verticalCenter: parent.verticalCenter; nome: "system-search-symbolic"; lato: 16 }
         TextField {
             x: 36; width: parent.width - 46; anchors.verticalCenter: parent.verticalCenter

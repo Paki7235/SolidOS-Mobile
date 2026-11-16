@@ -6,14 +6,14 @@ import SolidUI
 
 Rectangle {
     id: app
-    color: tel.chiaro ? "#f2f3f8" : "#0e1118"
+    color: tel.pal.sfondo
     property string scheda: "tastierino"      // preferiti | recenti | contatti | tastierino
     property string numero: ""
     property var contatti: []
     property var registro: []
     property var modem: ({})
-    readonly property color sezione: tel.chiaro ? "#ffffff" : "#1b1f2b"
-    readonly property color linea: tel.chiaro ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.08)
+    readonly property color sezione: tel.pal.superficie
+    readonly property color linea: tel.pal.bordo
 
     function aggiorna() {
         contatti = ponte.chiama0("contatti")
@@ -159,7 +159,7 @@ Rectangle {
                 Rectangle {
                     required property var modelData
                     width: 76; height: 76; radius: 38
-                    color: tasto.pressed ? (tel.chiaro ? "#d4d8e4" : "#3a4050") : (tel.chiaro ? "#e6e8f0" : "#262b37")
+                    color: tasto.pressed ? (tel.chiaro ? "#d4d8e4" : "#3a4050") : (tel.pal.superficie2)
                     Column {
                         anchors.centerIn: parent
                         Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData[0]; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 32; font.weight: Font.Medium }

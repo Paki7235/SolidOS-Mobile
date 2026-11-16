@@ -7,10 +7,10 @@ import SolidUI
 
 Rectangle {
     id: imp
-    color: tel.chiaro ? "#f2f3f8" : "#0e1118"
+    color: tel.pal.sfondo
     property string pagina: ""          // "" = elenco principale
-    readonly property color sezione: tel.chiaro ? "#ffffff" : "#1b1f2b"
-    readonly property color linea: tel.chiaro ? Qt.rgba(0, 0, 0, 0.07) : Qt.rgba(1, 1, 1, 0.07)
+    readonly property color sezione: tel.pal.superficie
+    readonly property color linea: tel.pal.bordo
     property var wifi: ({ acceso: false, reti: [] })
     property var bt: ({ disponibile: false, acceso: false, dispositivi: [] })
     property var trovatiBt: []
@@ -645,7 +645,7 @@ Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom; anchors.bottomMargin: 60
         width: testoAttesa.implicitWidth + 40; height: 44; radius: 22
-        color: tel.chiaro ? "#0f1630" : "#f2f4f8"
-        Text { id: testoAttesa; anchors.centerIn: parent; text: I18n.t("Connessione in corso…"); color: tel.chiaro ? "#ffffff" : "#0f1630"; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.DemiBold }
+        color: tel.pal.pieno
+        Text { id: testoAttesa; anchors.centerIn: parent; text: I18n.t("Connessione in corso…"); color: tel.pal.suPieno; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.DemiBold }
     }
 }

@@ -7,11 +7,11 @@ import SolidUI
 
 Rectangle {
     id: app
-    color: tel.chiaro ? "#f2f3f8" : "#0e1118"
+    color: tel.pal.sfondo
     property var elenco: []
     property int aperta: -1
     property bool comandi: true
-    readonly property color sezione: tel.chiaro ? "#ffffff" : "#1b1f2b"
+    readonly property color sezione: tel.pal.superficie
 
     function aggiorna() { elenco = ponte.chiama0("foto") }
     function apri(i) { aperta = i; comandi = true; vista.positionViewAtIndex(i, ListView.Beginning); vista.currentIndex = i }
