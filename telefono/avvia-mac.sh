@@ -23,13 +23,14 @@ if [ "$(stat -f %z "$IMG")" -lt 8000000000 ]; then
 	qemu-img resize -f raw "$IMG" 8G >/dev/null
 fi
 
-echo "Avvio di SolidOS Mobile… (per chiudere: chiudi la finestra)"
+echo "Avvio di SolidOS Mobile: dopo circa un minuto compare la schermata di blocco."
+echo "Se la finestra è più alta dello schermo, trascinane l'angolo per rimpicciolirla. Per chiudere: chiudi la finestra."
 exec qemu-system-aarch64 \
 	-name "SolidOS Mobile" \
 	-M virt,highmem=off -accel hvf -cpu host -smp 2 -m 2048 \
 	-bios "$FIRMWARE" \
 	-drive "file=$IMG,format=raw,if=virtio" \
-	-device virtio-gpu-pci,xres=450,yres=900 \
+	-device virtio-gpu-pci,xres=640,yres=1136 \
 	-device virtio-tablet-pci -device virtio-keyboard-pci \
 	-netdev user,id=rete -device virtio-net-pci,netdev=rete \
 	-device virtio-rng-pci \
