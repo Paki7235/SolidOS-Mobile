@@ -2,7 +2,12 @@
 # Avvia SolidOS Mobile completo in un telefono virtuale sul Mac (processore Apple).
 # Serve QEMU:  brew install qemu
 # Uso (nella cartella dove hai estratto lo zip):  sh avvia-mac.sh
+#   sh avvia-mac.sh finestra   → nella finestra di QEMU invece che in Condivisione Schermo
 # Il telefono gira con l'accelerazione del Mac (HVF): non è emulato, è veloce.
+#
+# Lo schermo del telefono è 640×1136: il firmware UEFI di QEMU sotto i 640 pixel di
+# larghezza si blocca. Per vederlo intero e in proporzione si usa Condivisione Schermo
+# del Mac, che rimpicciolisce la finestra mantenendo le proporzioni.
 set -e
 CARTELLA=$(cd "$(dirname "$0")" && pwd)
 IMG="$CARTELLA/solidos-mobile.img"
@@ -23,15 +28,38 @@ if [ "$(stat -f %z "$IMG")" -lt 8000000000 ]; then
 	qemu-img resize -f raw "$IMG" 8G >/dev/null
 fi
 
-echo "Avvio di SolidOS Mobile: dopo circa un minuto compare la schermata di blocco."
-echo "Se la finestra è più alta dello schermo, trascinane l'angolo per rimpicciolirla. Per chiudere: chiudi la finestra."
-exec qemu-system-aarch64 \
-	-name "SolidOS Mobile" \
-	-M virt,highmem=off -accel hvf -cpu host -smp 2 -m 2048 \
-	-bios "$FIRMWARE" \
-	-drive "file=$IMG,format=raw,if=virtio" \
+COMUNI="-name SolidOS-Mobile -M virt,highmem=off -accel hvf -cpu host -smp 2 -m 2048"
+DISCO="file=$IMG,format=raw,if=virtio"
+
+if [ "${1:-}" = finestra ]; then
+	echo "Avvio di SolidOS Mobile nella finestra di QEMU (circa un minuto)."
+	# shellcheck disable=SC2086
+	exec qemu-system-aarch64 $COMUNI -bios "$FIRMWARE" -drive "$DISCO" \
+		-device virtio-gpu-pci,xres=640,yres=1136 \
+		-device virtio-tablet-pci -device virtio-keyboard-pci \
+		-netdev user,id=rete -device virtio-net-pci,netdev=rete -device virtio-rng-pci \
+		-display cocoa,zoom-to-fit=on
+fi
+
+# Schermo del telefono condiviso solo con questo Mac (127.0.0.1), con una password
+PASSWORD=solidos
+PORTA=5907
+# shellcheck disable=SC2086
+qemu-system-aarch64 $COMUNI -bios "$FIRMWARE" -drive "$DISCO" \
 	-device virtio-gpu-pci,xres=640,yres=1136 \
 	-device virtio-tablet-pci -device virtio-keyboard-pci \
-	-netdev user,id=rete -device virtio-net-pci,netdev=rete \
-	-device virtio-rng-pci \
-	-display cocoa,zoom-to-fit=on
+	-netdev user,id=rete -device virtio-net-pci,netdev=rete -device virtio-rng-pci \
+	-display none \
+	-object secret,id=vncpw,data="$PASSWORD" \
+	-vnc 127.0.0.1:$((PORTA - 5900)),password-secret=vncpw &
+QEMU=$!
+trap 'kill $QEMU 2>/dev/null' INT TERM EXIT
+sleep 3
+kill -0 $QEMU 2>/dev/null || { echo "QEMU non è partito."; exit 1; }
+
+echo "SolidOS Mobile si sta avviando: dopo circa un minuto compare la schermata di blocco."
+echo "Si apre Condivisione Schermo: se chiede la password scrivi  $PASSWORD"
+echo "La finestra si può rimpicciolire: il telefono resta in proporzione."
+echo "Per spegnere il telefono virtuale: premi Ctrl+C qui nel Terminale."
+open "vnc://:$PASSWORD@127.0.0.1:$PORTA"
+wait $QEMU

@@ -112,7 +112,8 @@ elif [ "$DEVICE" = qemu-aarch64 ]; then
 		echo "  2. Estrai questo zip in una cartella e, nel Terminale, entra in quella cartella"
 		echo "  3. Avvia:                           sh avvia-mac.sh"
 		echo
-		echo "Si apre una finestra a forma di telefono. Il mouse fa da dito: trascina in su per entrare."
+		echo "Si apre Condivisione Schermo con il telefono (password: solidos). Il mouse fa da dito:"
+		echo "tieni premuto e trascina in su per entrare. Per spegnerlo: Ctrl+C nel Terminale."
 		echo "Nel telefono virtuale funzionano interfaccia, app, Wi-Fi (simulato come rete) e Solid ID;"
 		echo "chiamate, SMS, fotocamera e sensori ovviamente no (non c'è un telefono vero)."
 	} >> "$LEGGIMI"
