@@ -186,7 +186,7 @@ class Servizio:
         await self.esegui(lambda: subprocess.run(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "0"], check=False, timeout=5))
         await self.esegui(lambda: subprocess.run(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "1.0"], check=False, timeout=5))
         avviso = await asyncio.create_subprocess_exec(
-            "notify-send", "--wait", "--urgency=critical", f"--app-name={T('Dov’è')}", "--icon=nucleo-dove",
+            "notify-send", "--wait", "--urgency=critical", f"--app-name={T('Dov’è')}", "--icon=org.gnome.Maps",
             "--action=ferma=" + T("Ferma il suono"), T("Questo dispositivo è cercato"),
             T("Qualcuno sta usando «Dov'è» per trovarlo. Premi «Ferma il suono»."),
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)

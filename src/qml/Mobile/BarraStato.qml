@@ -16,8 +16,8 @@ Item {
         spacing: 8
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            // Sul blocco l'ora è già grande al centro
-            text: tel.schermata === "blocco" && !tel.appInterna ? "" : tel.ora()
+            // Sul blocco (come nella prima versione) il nome del sistema: l'ora è già grande al centro
+            text: tel.schermata === "blocco" && !tel.appInterna ? "SolidOS" : tel.ora()
             color: tel.pal.testo
             font.family: Tema.font; font.pixelSize: 15; font.weight: Font.DemiBold
         }

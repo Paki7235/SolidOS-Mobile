@@ -39,58 +39,62 @@ Item {
         }
     }
 
-    // Data e ora: orologio grande ma leggero, posizione proporzionale all'altezza
+    // Data e ora (come nella prima versione): orologio grande e deciso
     Column {
         id: orologio
         transform: spinta; opacity: blocco.presenza
         anchors.horizontalCenter: parent.horizontalCenter
-        y: Math.round(blocco.height * 0.09)
-        spacing: 0
-        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: "system-lock-screen-symbolic"; lato: 16; opacity: 0.8 }
-        Item { width: 1; height: 8 }
+        y: Math.round(Math.min(74, blocco.height * 0.088))
+        spacing: 2
+        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: "system-lock-screen-symbolic"; lato: 20 }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: tel.giorno()
-            color: tel.pal.testo
-            opacity: 0.85
-            font.family: Tema.font; font.pixelSize: tel.px(17); font.weight: Font.Medium
-            font.capitalization: Font.Capitalize
+            color: tel.pal.testo2
+            font.family: Tema.font; font.pixelSize: tel.px(20); font.weight: Font.DemiBold
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: tel.ora()
             color: tel.pal.testo
-            font.family: tel.fontOra; font.pixelSize: Math.min(92, Math.round(blocco.width * 0.22)); font.weight: Font.Light
-            font.letterSpacing: -1
+            font.family: tel.fontOra; font.pixelSize: Math.min(104, Math.round(blocco.width * 0.27)); font.weight: Font.Bold
+            font.letterSpacing: -2
         }
     }
 
-    // Stato in piccolo: batteria e rete
+    // Widget: batteria di questo telefono, rete e Bluetooth (come nella prima versione)
     Row {
         id: pillole
         transform: spinta; opacity: blocco.presenza
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: orologio.bottom; anchors.topMargin: 6
-        spacing: 8
-        Repeater {
-            model: [
-                { t: (tel.stato.batteria ? tel.stato.batteria.livello : 100) + "%" + (tel.stato.batteria && tel.stato.batteria.carica ? " · " + I18n.t("in carica") : "") },
-                { t: tel.stato.rete && tel.stato.rete.connesso ? tel.stato.rete.nome : I18n.t("Nessuna rete") }
-            ]
-            Vetro {
-                required property var modelData
-                height: 28; radius: 14; width: Math.min(blocco.width * 0.42, etichettaPillola.implicitWidth + 24)
-                Text { id: etichettaPillola; anchors.centerIn: parent; width: parent.width - 24; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
-                       text: parent.modelData.t; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(12); font.weight: Font.Medium }
+        anchors.top: orologio.bottom; anchors.topMargin: 20
+        spacing: 10
+        Vetro {
+            width: 72; height: 72; radius: 36
+            Column {
+                anchors.centerIn: parent
+                spacing: 2
+                Text { anchors.horizontalCenter: parent.horizontalCenter; text: (tel.stato.batteria ? tel.stato.batteria.livello : 100) + "%"; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.Bold }
+                Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("batteria"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(11) }
+            }
+        }
+        Vetro {
+            width: 172; height: 72; radius: 22
+            Column {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left; anchors.leftMargin: 14
+                spacing: 2
+                Text { text: tel.stato.rete && tel.stato.rete.connesso ? tel.stato.rete.nome : I18n.t("Nessuna rete"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold; width: 144; elide: Text.ElideRight }
+                Text { text: tel.stato.bluetooth ? I18n.t("Bluetooth acceso") : I18n.t("Bluetooth spento"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
             }
         }
     }
 
     Column {
         transform: spinta; opacity: blocco.presenza
-        x: tel.margine - 4
+        x: 14
         anchors.top: pillole.bottom; anchors.topMargin: 28
-        width: parent.width - 2 * (tel.margine - 4)
+        width: parent.width - 28
         spacing: 8
         visible: !blocco.chiedeCodice
         // Messaggio del proprietario mandato da «Dov'è»
@@ -129,15 +133,15 @@ Item {
     Row {
         transform: spinta; opacity: blocco.presenza
         anchors.left: parent.left; anchors.right: parent.right
-        anchors.bottom: parent.bottom; anchors.bottomMargin: 46
-        leftPadding: tel.margine + 22; rightPadding: tel.margine + 22
-        spacing: parent.width - 2 * (tel.margine + 22) - 96
+        anchors.bottom: parent.bottom; anchors.bottomMargin: 44
+        leftPadding: 46; rightPadding: 46
+        spacing: parent.width - 92 - 104
         Repeater {
             model: [{ i: "torcia", t: I18n.t("Torcia") }, { i: "camera-photo-symbolic", t: I18n.t("Fotocamera") }]
             Vetro {
                 required property var modelData
-                width: 48; height: 48; radius: 24
-                Icona { anchors.centerIn: parent; visible: parent.modelData.i !== "torcia"; nome: parent.modelData.i; lato: 20 }
+                width: 52; height: 52; radius: 26
+                Icona { anchors.centerIn: parent; visible: parent.modelData.i !== "torcia"; nome: parent.modelData.i; lato: 22 }
                 // Torcia disegnata (non tutti i temi di icone ce l'hanno)
                 Item {
                     visible: parent.modelData.i === "torcia"
@@ -159,8 +163,7 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom; anchors.bottomMargin: 22
             text: I18n.t("Scorri in su per entrare")
-            color: tel.pal.testo
-            opacity: 0.7
+            color: tel.pal.testo2
             font.family: Tema.font; font.pixelSize: tel.px(13)
         }
         Rectangle {
