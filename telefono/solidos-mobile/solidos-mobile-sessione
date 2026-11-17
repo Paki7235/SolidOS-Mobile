@@ -22,7 +22,9 @@ for m in /sys/class/drm/card*-*/modes; do
 done
 [ -z "$larghezza" ] && [ -r /sys/class/graphics/fb0/virtual_size ] && larghezza=$(cut -d, -f1 /sys/class/graphics/fb0/virtual_size)
 scala=$(awk -v l="${larghezza:-1080}" 'BEGIN { s = l / 420; s = int(s * 4 + 0.5) / 4; if (s < 1) s = 1; print s }')
-export QT_SCALE_FACTOR="${SOLIDOS_SCALA:-$scala}"
+# (nucleo.qmlapp la moltiplica per la dimensione del testo scelta nelle Impostazioni)
+export SOLIDOS_SCALA_SCHERMO="${SOLIDOS_SCALA:-$scala}"
+export QT_SCALE_FACTOR="$SOLIDOS_SCALA_SCHERMO"
 
 # Macchina virtuale (per provarlo sul computer): la scheda video virtuale non ha il 3D,
 # si disegna in software (altrimenti cage si ferma con lo schermo nero)

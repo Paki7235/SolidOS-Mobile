@@ -15,15 +15,17 @@ Item {
     // 3 icone grandi + un riquadro con 4 icone piccole, nome sotto in piccolo
     readonly property real margine: 24
     readonly property real spazio: 18
-    readonly property real latoCartella: Math.floor((width - 2 * margine - spazio) / 2)
     readonly property real pad: 12
     readonly property real gap: 8
-    readonly property real latoMini: Math.floor((latoCartella - 2 * pad - gap) / 2)
+    // Le icone non superano quelle della Home: su uno schermo largo le cartelle restano
+    // della loro misura e si mettono al centro (prima crescevano con lo schermo)
+    readonly property real latoMini: Math.min(tel.latoIcona, Math.floor((Math.floor((width - 2 * margine - spazio) / 2) - 2 * pad - gap) / 2))
+    readonly property real latoCartella: 2 * latoMini + 2 * pad + gap
 
     Rectangle {
         id: barraCerca
-        x: lib.margine; y: 8
-        width: parent.width - 2 * lib.margine; height: 38; radius: 10
+        x: Math.round((lib.width - width) / 2); y: 8
+        width: 2 * lib.latoCartella + lib.spazio; height: 38; radius: 10
         color: tel.pal.vetro
         border.color: tel.pal.vetroBordo; border.width: 1
         Row {
@@ -54,7 +56,7 @@ Item {
         clip: true
         Grid {
             id: griglia
-            x: lib.margine
+            x: Math.round((lib.width - 2 * lib.latoCartella - lib.spazio) / 2)
             columns: 2
             columnSpacing: lib.spazio; rowSpacing: lib.spazio
             Repeater {

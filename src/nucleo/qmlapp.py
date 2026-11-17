@@ -31,7 +31,13 @@ def _scala_testo() -> float:
 def prepara_ambiente(layer_shell: bool = False, software: bool | None = None) -> None:
     os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "Basic")
     if not layer_shell:
-        scala = _scala_testo()
+        # Scala dello schermo decisa dalla sessione del telefono (in base ai pixel dello
+        # schermo) per la dimensione del testo scelta nelle Impostazioni
+        try:
+            schermo = float(os.environ.get("SOLIDOS_SCALA_SCHERMO", "1"))
+        except ValueError:
+            schermo = 1.0
+        scala = schermo * _scala_testo()
         if abs(scala - 1.0) > 0.01:
             os.environ["QT_SCALE_FACTOR"] = f"{scala:g}"
         else:
