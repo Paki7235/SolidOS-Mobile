@@ -1,6 +1,7 @@
-// Centro di controllo (dall'angolo in alto a destra): interruttori rapidi, luminosità,
-// volume e rete. Tutto in schede ordinate su una griglia regolare. I comandi agiscono
-// davvero sul sistema.
+// Centro di controllo (dall'angolo in alto a destra), in stile iPhone: moduli in vetro su
+// una griglia di 4 colonne. Connessioni (2×2), Non disturbare e scorciatoie, cursori
+// verticali alti per luminosità e volume, rete, e una fila di pulsanti rapidi.
+// I comandi agiscono davvero sul sistema.
 import QtQuick
 import SolidUI
 
@@ -11,145 +12,188 @@ Item {
     onVisibleChanged: if (visible) { luce = ponte.chiama0("luminosita"); audio = ponte.chiama0("volume") }
     readonly property var st: tel.stato || ({})
     readonly property bool wifiAcceso: st.rete ? st.rete.wifi : false
-    readonly property real larghezza: width - 2 * tel.margine
+
+    // Griglia: 4 colonne uguali; «passo» = una cella più lo spazio
+    readonly property real spazio: 14
+    readonly property real lato: Math.floor((width - 2 * 20 - 3 * spazio) / 4)
+    readonly property real passo: lato + spazio
+    readonly property real x0: 20
+    readonly property real y0: 64
+    function px(c) { return x0 + c * passo }
+    function py(r) { return y0 + r * passo }
+    function largo(n) { return n * lato + (n - 1) * spazio }
 
     MouseArea { anchors.fill: parent; onClicked: tel.controllo = false }
 
-    Column {
-        x: tel.margine; y: 52
-        width: cc.larghezza
-        spacing: 14
+    // Un modulo del centro di controllo: vetro con angoli morbidi
+    component Modulo: Vetro { radius: Math.round(cc.lato * 0.32) }
+    // Un interruttore rotondo dentro un modulo
+    component Tondo: Rectangle {
+        id: tondo
+        property string icona: ""
+        property bool acceso: false
+        property color coloreAcceso: tel.accento
+        signal premuto()
+        width: Math.round(cc.lato * 0.72); height: width; radius: width / 2
+        color: acceso ? coloreAcceso : tel.pal.traccia
+        scale: toccoTondo.pressed ? 0.93 : 1
+        Behavior on scale { NumberAnimation { duration: tel.tVeloce } }
+        Behavior on color { ColorAnimation { duration: tel.tVeloce } }
+        Icona { anchors.centerIn: parent; nome: tondo.icona; lato: Math.round(tondo.width * 0.44); tema: tondo.acceso ? "scuro" : "" }
+        MouseArea { id: toccoTondo; anchors.fill: parent; anchors.margins: -4; onClicked: tondo.premuto() }
+    }
 
-        // ── Intestazione: ora e data, Impostazioni ───────────────────────
-        Item {
-            width: parent.width; height: 56
+    // ── Connessioni (2×2) ────────────────────────────────────────────────
+    Modulo {
+        x: cc.px(0); y: cc.py(0)
+        width: cc.largo(2); height: cc.largo(2)
+        Grid {
+            anchors.centerIn: parent
+            columns: 2
+            spacing: Math.round(cc.lato * 0.22)
+            Tondo { icona: "airplane-mode-symbolic"; coloreAcceso: "#F59E0B"; onPremuto: tel.avviso(I18n.t("Modalità aereo: arriva con il telefono vero")) }
+            Tondo { icona: "network-cellular-symbolic"; coloreAcceso: tel.pal.successo; acceso: tel.imp.dati_mobili === true
+                    onPremuto: { ponte.avvia("datiMobili", [!tel.imp.dati_mobili], "dati"); tel.imposta("dati_mobili", !tel.imp.dati_mobili) } }
+            Tondo { icona: "network-wireless-symbolic"; acceso: cc.wifiAcceso
+                    onPremuto: { ponte.chiama("wifi", [!cc.wifiAcceso]); ponte.avvia("stato", [], "stato") } }
+            Tondo { icona: "bluetooth-active-symbolic"; acceso: cc.st.bluetooth === true
+                    onPremuto: { ponte.chiama("bluetooth", [!cc.st.bluetooth]); ponte.avvia("stato", [], "stato") } }
+        }
+    }
+
+    // ── Non disturbare (largo) ───────────────────────────────────────────
+    Modulo {
+        x: cc.px(2); y: cc.py(0)
+        width: cc.largo(2); height: cc.lato
+        color: tel.imp.non_disturbare ? Qt.rgba(0.39, 0.40, 0.95, 0.92) : tel.pal.vetro
+        Row {
+            anchors.verticalCenter: parent.verticalCenter
+            x: 12; spacing: 10
+            Rectangle {
+                width: Math.round(cc.lato * 0.5); height: width; radius: width / 2
+                anchors.verticalCenter: parent.verticalCenter
+                color: tel.imp.non_disturbare ? "#ffffff" : tel.pal.traccia
+                Icona { anchors.centerIn: parent; nome: "weather-clear-night-symbolic"; lato: Math.round(parent.width * 0.5); tema: tel.imp.non_disturbare ? "chiaro" : "" }
+            }
             Column {
                 anchors.verticalCenter: parent.verticalCenter
-                Text { text: tel.ora(); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 34; font.weight: Font.Light }
-                Text { text: tel.giorno(); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13); font.capitalization: Font.Capitalize }
+                Text { text: I18n.t("Non disturbare"); color: tel.imp.non_disturbare ? "#ffffff" : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+                Text { text: tel.imp.non_disturbare ? I18n.t("Attivo") : I18n.t("Spento"); color: tel.imp.non_disturbare ? Qt.rgba(1, 1, 1, 0.8) : tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(11) }
             }
+        }
+        MouseArea { anchors.fill: parent; onClicked: tel.nonDisturbare(!tel.imp.non_disturbare) }
+    }
+
+    // ── Scorciatoie quadrate: Torcia e Aspetto ───────────────────────────
+    Repeater {
+        model: [
+            { i: "torcia", f: function () { tel.avviso(I18n.t("Torcia: arriva con il telefono vero")) } },
+            { i: "preferences-desktop-wallpaper-symbolic", f: function () { tel.controllo = false; tel.personalizza = true } }
+        ]
+        Modulo {
+            required property var modelData
+            required property int index
+            x: cc.px(2 + index); y: cc.py(1)
+            width: cc.lato; height: cc.lato
+            Icona { anchors.centerIn: parent; visible: parent.modelData.i !== "torcia"; nome: parent.modelData.i; lato: Math.round(cc.lato * 0.34) }
+            // Torcia disegnata (non tutti i temi di icone ce l'hanno)
+            Item {
+                visible: parent.modelData.i === "torcia"
+                anchors.centerIn: parent; width: 14; height: 24
+                Rectangle { width: 14; height: 7; radius: 2; color: tel.pal.testo }
+                Rectangle { y: 6; x: 3; width: 8; height: 17; radius: 2; color: tel.pal.testo }
+                Rectangle { y: 10; x: 6; width: 2; height: 4; radius: 1; color: tel.pal.suPieno }
+            }
+            scale: toccoScorc.pressed ? 0.95 : 1
+            Behavior on scale { NumberAnimation { duration: tel.tVeloce } }
+            MouseArea { id: toccoScorc; anchors.fill: parent; onClicked: parent.modelData.f() }
+        }
+    }
+
+    // ── Luminosità e volume: cursori verticali alti ──────────────────────
+    Repeater {
+        model: [{ i: "display-brightness-symbolic", chiave: "luce" }, { i: "audio-volume-high-symbolic", chiave: "audio" }]
+        Modulo {
+            id: cursore
+            required property var modelData
+            required property int index
+            readonly property int valore: cc[modelData.chiave]
+            x: cc.px(index); y: cc.py(2)
+            width: cc.lato; height: cc.largo(2)
+            clip: true
             Rectangle {
-                anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
-                width: 40; height: 40; radius: 20; color: tel.pal.superficie2
-                Icona { anchors.centerIn: parent; nome: "preferences-system-symbolic"; lato: 18 }
-                MouseArea { anchors.fill: parent; onClicked: { tel.controllo = false; tel.apri({ "id": "interno:impostazioni" }) } }
+                anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+                height: Math.max(parent.radius * 2, parent.height * cursore.valore / 100)
+                radius: parent.radius
+                color: tel.pal.pieno
+                Behavior on height { enabled: !trascina.pressed; NumberAnimation { duration: tel.tVeloce } }
             }
-        }
-
-        // ── Interruttori rapidi: 4 per riga, tutti uguali ────────────────
-        Rectangle {
-            width: parent.width; height: interruttori.height + 32
-            radius: tel.r3; color: tel.pal.superficie; border.color: tel.pal.bordo
-            Grid {
-                id: interruttori
-                x: 8; y: 16
-                columns: 4; rowSpacing: 16
-                Repeater {
-                    model: [
-                        { i: "network-wireless-symbolic", t: "Wi-Fi", acceso: cc.wifiAcceso,
-                          f: function () { ponte.chiama("wifi", [!cc.wifiAcceso]); ponte.avvia("stato", [], "stato") } },
-                        { i: "bluetooth-active-symbolic", t: "Bluetooth", acceso: cc.st.bluetooth === true,
-                          f: function () { ponte.chiama("bluetooth", [!cc.st.bluetooth]); ponte.avvia("stato", [], "stato") } },
-                        { i: "network-cellular-symbolic", t: I18n.t("Dati"), acceso: tel.imp.dati_mobili === true,
-                          f: function () { ponte.avvia("datiMobili", [!tel.imp.dati_mobili], "dati"); tel.imposta("dati_mobili", !tel.imp.dati_mobili) } },
-                        { i: "airplane-mode-symbolic", t: I18n.t("Aereo"), acceso: false,
-                          f: function () { tel.avviso(I18n.t("Modalità aereo: arriva con il telefono vero")) } },
-                        { i: "weather-clear-night-symbolic", t: I18n.t("Non disturbare"), acceso: tel.imp.non_disturbare === true,
-                          f: function () { tel.nonDisturbare(!tel.imp.non_disturbare) } },
-                        { i: "audio-volume-muted-symbolic", t: I18n.t("Silenzioso"), acceso: tel.imp.silenzioso === true,
-                          f: function () { tel.imposta("silenzioso", !tel.imp.silenzioso) } },
-                        { i: "system-lock-screen-symbolic", t: I18n.t("Blocca"), acceso: false,
-                          f: function () { tel.controllo = false; tel.schermata = "blocco" } },
-                        { i: "preferences-desktop-wallpaper-symbolic", t: I18n.t("Aspetto"), acceso: false,
-                          f: function () { tel.controllo = false; tel.personalizza = true } }
-                    ]
-                    Item {
-                        required property var modelData
-                        width: (cc.larghezza - 16) / 4; height: 78
-                        Rectangle {
-                            id: tasto
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            width: 52; height: 52; radius: 26
-                            color: parent.modelData.acceso ? tel.accento : tel.pal.superficie2
-                            scale: tocco.pressed ? 0.93 : 1
-                            Behavior on scale { NumberAnimation { duration: 80 } }
-                            Icona { anchors.centerIn: parent; nome: parent.parent.modelData.i; lato: 22; tema: parent.parent.modelData.acceso ? "scuro" : "" }
-                        }
-                        Text {
-                            anchors.top: tasto.bottom; anchors.topMargin: 6
-                            width: parent.width; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
-                            text: parent.modelData.t; color: tel.pal.testo2
-                            font.family: Tema.font; font.pixelSize: tel.px(11); font.weight: Font.Medium
-                        }
-                        MouseArea { id: tocco; anchors.fill: parent; onClicked: parent.modelData.f() }
-                    }
+            Icona {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottom: parent.bottom; anchors.bottomMargin: 16
+                nome: cursore.modelData.i; lato: Math.round(cc.lato * 0.32)
+                tema: tel.chiaro ? "scuro" : "chiaro"     // sopra il riempimento pieno
+            }
+            MouseArea {
+                id: trascina
+                anchors.fill: parent
+                function aggiorna(y) {
+                    var v = Math.max(5, Math.min(100, Math.round((1 - y / height) * 100)))
+                    cc[cursore.modelData.chiave] = v
+                    if (cursore.modelData.chiave === "luce") ponte.chiama("impostaLuminosita", [v])
+                    else ponte.chiama("impostaVolume", [v])
                 }
+                onPressed: function (e) { aggiorna(e.y) }
+                onPositionChanged: function (e) { aggiorna(e.y) }
             }
         }
+    }
 
-        // ── Luminosità e volume: cursori orizzontali ─────────────────────
-        Rectangle {
-            width: parent.width; height: 132
-            radius: tel.r3; color: tel.pal.superficie; border.color: tel.pal.bordo
-            Column {
-                x: 16; y: 16; width: parent.width - 32
-                spacing: 12
-                Repeater {
-                    model: [{ i: "display-brightness-symbolic", chiave: "luce" }, { i: "audio-volume-high-symbolic", chiave: "audio" }]
-                    Rectangle {
-                        id: cursore
-                        required property var modelData
-                        readonly property int valore: cc[modelData.chiave]
-                        width: parent.width; height: 44; radius: 22
-                        color: tel.pal.superficie2
-                        clip: true
-                        Rectangle {
-                            width: Math.max(44, parent.width * cursore.valore / 100); height: parent.height; radius: 22
-                            color: tel.pal.pieno
-                        }
-                        // sopra il riempimento pieno: icona del colore opposto
-                        Icona { x: 13; anchors.verticalCenter: parent.verticalCenter; nome: cursore.modelData.i; lato: 18; tema: tel.chiaro ? "scuro" : "chiaro" }
-                        MouseArea {
-                            anchors.fill: parent
-                            function aggiorna(x) {
-                                var v = Math.max(5, Math.min(100, Math.round(x / width * 100)))
-                                cc[cursore.modelData.chiave] = v
-                                if (cursore.modelData.chiave === "luce") ponte.chiama("impostaLuminosita", [v])
-                                else ponte.chiama("impostaVolume", [v])
-                            }
-                            onPressed: function (e) { aggiorna(e.x) }
-                            onPositionChanged: function (e) { aggiorna(e.x) }
-                        }
-                    }
-                }
-            }
-        }
-
-        // ── Rete e batteria ───────────────────────────────────────────────
+    // ── Rete attuale (largo) e batteria ──────────────────────────────────
+    Modulo {
+        x: cc.px(2); y: cc.py(2)
+        width: cc.largo(2); height: cc.lato
         Row {
-            width: parent.width; spacing: 12
-            Repeater {
-                model: [
-                    { i: cc.st.rete && cc.st.rete.tipo === "ethernet" ? "network-wired-symbolic" : "network-wireless-symbolic",
-                      t: cc.st.rete && cc.st.rete.connesso ? cc.st.rete.nome : I18n.t("Non connesso"), s: I18n.t("Rete") },
-                    { i: "battery-good-symbolic",
-                      t: (cc.st.batteria ? cc.st.batteria.livello : 100) + "%", s: cc.st.batteria && cc.st.batteria.carica ? I18n.t("In carica") : I18n.t("Batteria") }
-                ]
-                Rectangle {
-                    required property var modelData
-                    width: (cc.larghezza - 12) / 2; height: 64
-                    radius: tel.r2; color: tel.pal.superficie; border.color: tel.pal.bordo
-                    Row {
-                        x: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 12
-                        Icona { anchors.verticalCenter: parent.verticalCenter; nome: parent.parent.modelData.i; lato: 20 }
-                        Column {
-                            anchors.verticalCenter: parent.verticalCenter
-                            Text { width: (cc.larghezza - 12) / 2 - 64; elide: Text.ElideRight; text: parent.parent.parent.modelData.t; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.DemiBold }
-                            Text { text: parent.parent.parent.modelData.s; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
-                        }
-                    }
-                }
+            anchors.verticalCenter: parent.verticalCenter
+            x: 14; spacing: 10
+            Icona { anchors.verticalCenter: parent.verticalCenter; nome: cc.st.rete && cc.st.rete.tipo === "ethernet" ? "network-wired-symbolic" : "network-wireless-symbolic"; lato: Math.round(cc.lato * 0.3) }
+            Column {
+                anchors.verticalCenter: parent.verticalCenter
+                Text { width: cc.largo(2) - 60; elide: Text.ElideRight; text: cc.st.rete && cc.st.rete.connesso ? cc.st.rete.nome : I18n.t("Non connesso"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+                Text { text: I18n.t("Rete"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(11) }
             }
+        }
+        MouseArea { anchors.fill: parent; onClicked: { tel.controllo = false; tel.apri({ "id": "interno:impostazioni" }); impostazioniApp.apri("wifi") } }
+    }
+    Modulo {
+        x: cc.px(2); y: cc.py(3)
+        width: cc.largo(2); height: cc.lato
+        Row {
+            anchors.verticalCenter: parent.verticalCenter
+            x: 14; spacing: 10
+            Text { anchors.verticalCenter: parent.verticalCenter; text: (cc.st.batteria ? cc.st.batteria.livello : 100) + "%"; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(22); font.weight: Font.DemiBold }
+            Text { anchors.verticalCenter: parent.verticalCenter; text: cc.st.batteria && cc.st.batteria.carica ? I18n.t("In carica") : I18n.t("Batteria"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
+        }
+    }
+
+    // ── Fila di pulsanti rapidi ───────────────────────────────────────────
+    Repeater {
+        model: [
+            { i: "system-lock-screen-symbolic", f: function () { tel.controllo = false; tel.schermata = "blocco" } },
+            { i: "accessories-calculator-symbolic", f: function () { tel.controllo = false; tel.apri({ "id": "interno:calcolatrice" }) } },
+            { i: "camera-photo-symbolic", f: function () { tel.controllo = false; tel.apri({ "id": "interno:fotocamera" }) } },
+            { i: "preferences-system-symbolic", f: function () { tel.controllo = false; tel.apri({ "id": "interno:impostazioni" }) } }
+        ]
+        Modulo {
+            required property var modelData
+            required property int index
+            x: cc.px(index); y: cc.py(4)
+            width: cc.lato; height: cc.lato
+            radius: cc.lato / 2
+            Icona { anchors.centerIn: parent; nome: parent.modelData.i; lato: Math.round(cc.lato * 0.34) }
+            scale: toccoRapido.pressed ? 0.93 : 1
+            Behavior on scale { NumberAnimation { duration: tel.tVeloce } }
+            MouseArea { id: toccoRapido; anchors.fill: parent; onClicked: parent.modelData.f() }
         }
     }
 }

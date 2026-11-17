@@ -1,5 +1,6 @@
-// Notifiche (dall'angolo in alto a sinistra): ora e data, «Non disturbare», le notifiche
-// arrivate (dalle app, dagli SMS, dalle chiamate perse) e «Cancella tutto».
+// Notifiche (dall'angolo in alto a sinistra), in stile iPhone: data e ora grandi al
+// centro come sul blocco, poi le notifiche in schede di vetro. In alto «Non disturbare»
+// e «Cancella». Le notifiche arrivano dalle app, dagli SMS e dalle chiamate perse.
 import QtQuick
 import SolidUI
 
@@ -7,29 +8,39 @@ Item {
     id: nt
     MouseArea { anchors.fill: parent; onClicked: tel.notifiche = false }
 
-    // ── Intestazione ─────────────────────────────────────────────────────
-    Item {
-        id: testata
-        x: tel.margine; y: 52
-        width: parent.width - 2 * tel.margine; height: 56
-        Column {
-            anchors.verticalCenter: parent.verticalCenter
-            Text { text: tel.ora(); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 34; font.weight: Font.Light }
-            Text { text: tel.giorno(); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13); font.capitalization: Font.Capitalize }
+    // ── Data e ora grandi ────────────────────────────────────────────────
+    Column {
+        id: orologio
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: Math.round(Math.min(64, nt.height * 0.075))
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: tel.giorno()
+            color: tel.pal.testo2
+            font.family: Tema.font; font.pixelSize: tel.px(18); font.weight: Font.DemiBold
+            font.capitalization: Font.Capitalize
+        }
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: tel.ora()
+            color: tel.pal.testo
+            font.family: tel.fontOra; font.pixelSize: Math.min(84, Math.round(nt.width * 0.21)); font.weight: Font.Bold
+            font.letterSpacing: -2
         }
     }
 
+    // ── Titolo e comandi ─────────────────────────────────────────────────
     Item {
-        id: comandi
-        x: tel.margine; anchors.top: testata.bottom; anchors.topMargin: 18
-        width: parent.width - 2 * tel.margine; height: 32
-        Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.t("Notifiche"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(20); font.weight: Font.DemiBold }
+        id: testata
+        x: 16; anchors.top: orologio.bottom; anchors.topMargin: 18
+        width: parent.width - 32; height: 32
+        Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.t("Centro notifiche"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(18); font.weight: Font.Bold }
         Row {
             anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
             spacing: 8
-            Rectangle {
-                height: 32; width: dnd.implicitWidth + 42; radius: 16
-                color: tel.imp.non_disturbare ? tel.accento : tel.pal.superficie2
+            Vetro {
+                height: 30; width: dnd.implicitWidth + 40; radius: 15
+                color: tel.imp.non_disturbare ? Qt.rgba(0.39, 0.40, 0.95, 0.92) : tel.pal.vetro
                 Row {
                     anchors.centerIn: parent; spacing: 6
                     Icona { nome: "weather-clear-night-symbolic"; lato: 14; anchors.verticalCenter: parent.verticalCenter; tema: tel.imp.non_disturbare ? "scuro" : "" }
@@ -37,20 +48,20 @@ Item {
                 }
                 MouseArea { anchors.fill: parent; onClicked: tel.nonDisturbare(!tel.imp.non_disturbare) }
             }
-            Rectangle {
+            Vetro {
                 visible: tel.elencoNotifiche.length > 0
-                height: 32; width: cancella.implicitWidth + 26; radius: 16
-                color: tel.pal.superficie2
-                Text { id: cancella; anchors.centerIn: parent; text: I18n.t("Cancella"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(12); font.weight: Font.DemiBold }
-                MouseArea { anchors.fill: parent; onClicked: { ponte.chiama0("svuotaNotifiche"); tel.aggiornaNotifiche() } }
+                height: 30; width: 30; radius: 15
+                Text { anchors.centerIn: parent; text: "×"; color: tel.pal.testo; font.pixelSize: 18 }
+                MouseArea { anchors.fill: parent; anchors.margins: -6; onClicked: { ponte.chiama0("svuotaNotifiche"); tel.aggiornaNotifiche() } }
             }
         }
     }
 
+    // ── Notifiche ────────────────────────────────────────────────────────
     Flickable {
-        anchors.top: comandi.bottom; anchors.topMargin: 14
+        anchors.top: testata.bottom; anchors.topMargin: 12
         anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
-        anchors.leftMargin: tel.margine; anchors.rightMargin: tel.margine; anchors.bottomMargin: 30
+        anchors.leftMargin: 12; anchors.rightMargin: 12; anchors.bottomMargin: 30
         contentHeight: colonna.height
         clip: true
         Column {
@@ -59,21 +70,14 @@ Item {
             spacing: 8
             Repeater {
                 model: tel.elencoNotifiche
-                SchedaNotifica { required property var modelData; n: modelData; color: tel.pal.superficie }
+                SchedaNotifica { required property var modelData; n: modelData }
             }
-            Rectangle {
+            Text {
                 visible: tel.elencoNotifiche.length === 0
-                width: parent.width; height: vuoto.implicitHeight + 40
-                radius: tel.r3; color: tel.pal.superficie; border.color: tel.pal.bordo
-                Column {
-                    id: vuoto
-                    anchors.centerIn: parent
-                    width: parent.width - 40
-                    spacing: 6
-                    Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: "preferences-system-notifications-symbolic"; lato: 26; opacity: 0.7 }
-                    Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap; text: I18n.t("Nessuna notifica"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
-                    Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap; text: I18n.t("Qui compaiono messaggi, chiamate perse e avvisi delle app."); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
-                }
+                width: parent.width; topPadding: 40
+                horizontalAlignment: Text.AlignHCenter
+                text: tel.imp.non_disturbare ? I18n.t("Non disturbare attivo") : I18n.t("Nessuna notifica")
+                color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(15)
             }
         }
     }
