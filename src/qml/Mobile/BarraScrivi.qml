@@ -29,7 +29,7 @@ Rectangle {
         anchors.right: parent.right; anchors.rightMargin: 12; y: 10
         width: 40; height: 40; radius: 20
         color: campo.text.trim() ? tel.accento : (tel.chiaro ? "#d4d8e4" : "#3a4050")
-        Icona { anchors.centerIn: parent; nome: "go-up-symbolic"; lato: 20 }
+        Icona { anchors.centerIn: parent; nome: "go-up-symbolic"; lato: 20 ; tema: "scuro" }
         MouseArea { anchors.fill: parent; onClicked: if (campo.text.trim()) { barra.invia(campo.text); campo.text = "" } }
     }
 }

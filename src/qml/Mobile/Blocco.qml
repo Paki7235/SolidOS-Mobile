@@ -9,6 +9,16 @@ Item {
     property bool chiedeCodice: false       // tastierino del codice visibile
     property string codice: ""
     property string errore: ""
+    // Sblocco che segue il dito: il contenuto sale e sfuma mentre si trascina in su
+    property real trascinamento: 0
+    readonly property real presenza: Math.max(0, 1 + trascinamento / (height * 0.45))
+    Translate { id: spinta; y: blocco.trascinamento * 0.8 }
+    NumberAnimation { id: ritorno; target: blocco; property: "trascinamento"; to: 0; duration: tel.tEntrata; easing.type: Easing.OutBack; easing.overshoot: 1.1 }
+    SequentialAnimation {
+        id: uscita
+        NumberAnimation { target: blocco; property: "trascinamento"; to: -blocco.height * 0.5; duration: tel.tNormale; easing.type: Easing.InCubic }
+        ScriptAction { script: { blocco.trascinamento = 0; blocco.entra() } }
+    }
     // Si entra: con il codice se impostato, poi si toglie l'eventuale blocco di «Dov'è»
     function entra() {
         if (ponte.chiama0("haCodice")) { chiedeCodice = true; codice = ""; errore = ""; return }
@@ -32,6 +42,7 @@ Item {
     // Data e ora: orologio grande ma leggero, posizione proporzionale all'altezza
     Column {
         id: orologio
+        transform: spinta; opacity: blocco.presenza
         anchors.horizontalCenter: parent.horizontalCenter
         y: Math.round(blocco.height * 0.09)
         spacing: 0
@@ -57,6 +68,7 @@ Item {
     // Stato in piccolo: batteria e rete
     Row {
         id: pillole
+        transform: spinta; opacity: blocco.presenza
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: orologio.bottom; anchors.topMargin: 6
         spacing: 8
@@ -75,6 +87,7 @@ Item {
     }
 
     Column {
+        transform: spinta; opacity: blocco.presenza
         x: tel.margine - 4
         anchors.top: pillole.bottom; anchors.topMargin: 28
         width: parent.width - 2 * (tel.margine - 4)
@@ -114,6 +127,7 @@ Item {
 
     // Torcia e fotocamera
     Row {
+        transform: spinta; opacity: blocco.presenza
         anchors.left: parent.left; anchors.right: parent.right
         anchors.bottom: parent.bottom; anchors.bottomMargin: 46
         leftPadding: tel.margine + 22; rightPadding: tel.margine + 22
@@ -160,8 +174,13 @@ Item {
         DragHandler {
             target: null; xAxis.enabled: false
             property real ultimaY: 0
-            onTranslationChanged: if (active) ultimaY = translation.y
-            onActiveChanged: if (active) ultimaY = 0; else if (ultimaY < -40) blocco.entra()
+            onTranslationChanged: if (active) { ultimaY = translation.y; blocco.trascinamento = Math.min(0, translation.y) }
+            onActiveChanged: {
+                if (active) { ritorno.stop(); uscita.stop(); ultimaY = 0; return }
+                // Oltre la soglia si entra, altrimenti tutto torna al suo posto con una piccola molla
+                if (ultimaY < -Math.min(120, blocco.height * 0.15)) { if (tel.movimento) uscita.start(); else blocco.entra(); blocco.trascinamento = tel.movimento ? blocco.trascinamento : 0 }
+                else ritorno.start()
+            }
         }
         TapHandler { onDoubleTapped: blocco.entra() }
     }

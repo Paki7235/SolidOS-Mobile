@@ -32,7 +32,7 @@ Item {
                 color: tel.imp.non_disturbare ? tel.accento : tel.pal.superficie2
                 Row {
                     anchors.centerIn: parent; spacing: 6
-                    Icona { nome: "weather-clear-night-symbolic"; lato: 14; anchors.verticalCenter: parent.verticalCenter }
+                    Icona { nome: "weather-clear-night-symbolic"; lato: 14; anchors.verticalCenter: parent.verticalCenter; tema: tel.imp.non_disturbare ? "scuro" : "" }
                     Text { id: dnd; text: I18n.t("Non disturbare"); color: tel.imp.non_disturbare ? "#ffffff" : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(12); font.weight: Font.DemiBold }
                 }
                 MouseArea { anchors.fill: parent; onClicked: tel.nonDisturbare(!tel.imp.non_disturbare) }

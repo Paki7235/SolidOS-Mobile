@@ -148,7 +148,7 @@ Rectangle {
                     color: index === 2 && app.scelto && app.scelto.preferito ? tel.accento : app.sezione
                     Column {
                         anchors.centerIn: parent; spacing: 4
-                        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: parent.parent.modelData.i; lato: 22 }
+                        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: parent.parent.modelData.i; lato: 22; tema: parent.parent.index === 2 && app.scelto && app.scelto.preferito ? "scuro" : "" }
                         Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData.t; color: parent.parent.index === 2 && app.scelto && app.scelto.preferito ? "#ffffff" : tel.accento; font.family: Tema.font; font.pixelSize: tel.px(12); font.weight: Font.DemiBold }
                     }
                     MouseArea {

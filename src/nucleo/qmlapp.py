@@ -59,6 +59,13 @@ def crea_app(nome_app: str, argv: list[str] | None = None):
     app.setApplicationName(nome_app)
     app.setOrganizationName(branding.nome())
     app.setDesktopFileName(branding.comando(nome_app))
+    # Caratteri propri del sistema (es. Plus Jakarta Sans su SolidOS Mobile), accanto ai QML
+    from PyQt6.QtGui import QFontDatabase
+
+    for cartella in (CARTELLA_QML.parent / "font", CARTELLA_QML.parent / "dati" / "font"):
+        if cartella.is_dir():
+            for f in sorted(cartella.glob("*.[ot]tf")):
+                QFontDatabase.addApplicationFont(str(f))
     font = QFont(branding.get("FONT_UI", "Inter"))
     font.setPointSize(int(branding.get("FONT_UI_DIMENSIONE", "10") or 10))
     app.setFont(font)
@@ -153,7 +160,7 @@ def _provider_icone():
 
         def requestPixmap(self, ident, richiesta, *_):
             lato = max(richiesta.width(), richiesta.height(), 0) or 48
-            nome = ident.split("?")[0]
+            nome, _, opzioni = ident.partition("?")
             icona = QIcon(nome) if nome.startswith("/") else QIcon.fromTheme(nome)
             if icona.isNull() and not nome.startswith("/"):
                 # Icone proprie del sistema (es. Dov'è): Qt cerca le icone di riserva solo nella
@@ -170,6 +177,21 @@ def _provider_icone():
             if pixmap.isNull():
                 pixmap = QPixmap(lato, lato)
                 pixmap.fill()
+            # «?tema=chiaro|scuro» (SolidOS Mobile): le icone simboliche (monocromatiche) si
+            # ricolorano come fanno i sistemi Linux: scure sui fondi chiari, chiare sui fondi scuri
+            if nome.endswith("-symbolic") and "tema=" in opzioni:
+                from PyQt6.QtGui import QColor, QPainter
+
+                colore = QColor("#0F172A") if "tema=chiaro" in opzioni else QColor("#F8FAFC")
+                tinta = QPixmap(pixmap.size())
+                tinta.setDevicePixelRatio(pixmap.devicePixelRatio())
+                tinta.fill(QColor(0, 0, 0, 0))
+                p = QPainter(tinta)
+                p.drawPixmap(0, 0, pixmap)
+                p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
+                p.fillRect(tinta.rect(), colore)
+                p.end()
+                pixmap = tinta
             return pixmap, pixmap.size()
 
     return ProviderIcone()

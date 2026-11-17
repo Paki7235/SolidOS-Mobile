@@ -29,7 +29,7 @@ Rectangle {
             anchors.right: parent.right; anchors.rightMargin: 18; y: 58
             width: 40; height: 40; radius: 20
             color: tel.accento
-            Icona { anchors.centerIn: parent; nome: "document-edit-symbolic"; lato: 20 }
+            Icona { anchors.centerIn: parent; nome: "document-edit-symbolic"; lato: 20 ; tema: "scuro" }
             MouseArea { anchors.fill: parent; onClicked: { app.nuova = true; destinatario.text = ""; testoNuovo.text = "" } }
         }
         Rectangle {

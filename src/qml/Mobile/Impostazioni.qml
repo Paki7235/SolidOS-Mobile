@@ -81,7 +81,7 @@ Rectangle {
             visible: r.icona !== ""
             x: 14; anchors.verticalCenter: parent.verticalCenter
             width: 30; height: 30; radius: 8; color: r.coloreIcona
-            Icona { anchors.centerIn: parent; nome: r.icona; lato: 18 }
+            Icona { anchors.centerIn: parent; nome: r.icona; lato: 18; tema: "scuro" }   // bianca sul quadratino colorato
         }
         Text { x: r.icona !== "" ? 56 : 16; anchors.verticalCenter: parent.verticalCenter; text: r.titolo; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16) }
         Text {
@@ -142,7 +142,7 @@ Rectangle {
         color: tel.pal.traccia
         clip: true
         Rectangle { width: parent.width * cur.valore / 100; height: parent.height; radius: 12; color: tel.accento }
-        Icona { x: 12; anchors.verticalCenter: parent.verticalCenter; nome: cur.icona; lato: 20 }
+        Icona { x: 12; anchors.verticalCenter: parent.verticalCenter; nome: cur.icona; lato: 20 ; tema: "scuro" }
         MouseArea {
             anchors.fill: parent
             function muovi(x) { var v = Math.max(0, Math.min(100, Math.round(x / width * 100))); cur.valore = v; cur.mosso(v) }
@@ -350,7 +350,8 @@ Rectangle {
                 Gruppo {
                     Riga { titolo: I18n.t("Blocco automatico"); valore: tel.imp.blocco_auto === 0 ? I18n.t("Mai") : tel.imp.blocco_auto + " min"
                         onScelta: { var v = [1, 2, 5, 10, 0]; tel.imposta("blocco_auto", v[(v.indexOf(tel.imp.blocco_auto) + 1) % v.length]) } }
-                    Riga { titolo: I18n.t("Schermo sempre acceso"); interruttore: true; acceso: tel.imp.sempre_acceso === true; freccia: false; ultima: true; onCambiato: function (si) { tel.imposta("sempre_acceso", si) } }
+                    Riga { titolo: I18n.t("Schermo sempre acceso"); interruttore: true; acceso: tel.imp.sempre_acceso === true; freccia: false; onCambiato: function (si) { tel.imposta("sempre_acceso", si) } }
+                    Riga { titolo: I18n.t("Riduci animazioni"); interruttore: true; acceso: tel.imp.riduci_movimento === true; freccia: false; ultima: true; onCambiato: function (si) { tel.imposta("riduci_movimento", si) } }
                 }
                 Nota { text: I18n.t("Con lo schermo sempre acceso, a telefono bloccato restano visibili ora, data e notifiche con pochissimo consumo.") }
             }
@@ -427,7 +428,7 @@ Rectangle {
                         Rectangle {
                             anchors.horizontalCenter: parent.horizontalCenter; y: 6
                             width: 70; height: 70; radius: 35; color: tel.accento
-                            Icona { anchors.centerIn: parent; nome: "avatar-default-symbolic"; lato: 36 }
+                            Icona { anchors.centerIn: parent; nome: "avatar-default-symbolic"; lato: 36 ; tema: "scuro" }
                         }
                         Text { anchors.horizontalCenter: parent.horizontalCenter; y: 84; text: paginaSid.modo === "accedi" ? I18n.t("Accedi al Solid ID") : I18n.t("Crea il tuo Solid ID"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(18); font.weight: Font.Bold }
                     }

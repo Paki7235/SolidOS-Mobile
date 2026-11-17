@@ -31,6 +31,7 @@ package() {
 	cp -r "$srcdir"/src/nucleo "$pkgdir"/usr/share/solidos-mobile/
 	cp -r "$srcdir"/src/qml "$pkgdir"/usr/share/solidos-mobile/
 	cp -r "$srcdir"/src/dati/icone "$pkgdir"/usr/share/solidos-mobile/icone
+	cp -r "$srcdir"/src/dati/font "$pkgdir"/usr/share/solidos-mobile/font
 	mkdir -p "$pkgdir"/usr/share/icons
 	cp -r "$srcdir"/src/dati/icone/hicolor "$pkgdir"/usr/share/icons/
 	install -Dm644 "$srcdir"/branding.env "$pkgdir"/usr/share/solidos-mobile/branding.env

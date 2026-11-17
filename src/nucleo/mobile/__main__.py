@@ -18,6 +18,7 @@ from ..ponte import Backend, crea_ponte
 from ..sistema import config_utente, leggi_json, scrivi_json
 
 PREDEFINITE = {
+    "riduci_movimento": False,   # Accessibilità: animazioni istantanee
     "tema": "scuro",          # scuro | chiaro
     "testo": 1,               # 0 piccolo, 1 normale, 2 grande
     "accento": "#3F7CF5",

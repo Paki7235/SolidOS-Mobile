@@ -73,7 +73,7 @@ Item {
                             color: parent.modelData.acceso ? tel.accento : tel.pal.superficie2
                             scale: tocco.pressed ? 0.93 : 1
                             Behavior on scale { NumberAnimation { duration: 80 } }
-                            Icona { anchors.centerIn: parent; nome: parent.parent.modelData.i; lato: 22 }
+                            Icona { anchors.centerIn: parent; nome: parent.parent.modelData.i; lato: 22; tema: parent.parent.modelData.acceso ? "scuro" : "" }
                         }
                         Text {
                             anchors.top: tasto.bottom; anchors.topMargin: 6
@@ -107,7 +107,8 @@ Item {
                             width: Math.max(44, parent.width * cursore.valore / 100); height: parent.height; radius: 22
                             color: tel.pal.pieno
                         }
-                        Icona { x: 13; anchors.verticalCenter: parent.verticalCenter; nome: cursore.modelData.i; lato: 18 }
+                        // sopra il riempimento pieno: icona del colore opposto
+                        Icona { x: 13; anchors.verticalCenter: parent.verticalCenter; nome: cursore.modelData.i; lato: 18; tema: tel.chiaro ? "scuro" : "chiaro" }
                         MouseArea {
                             anchors.fill: parent
                             function aggiorna(x) {

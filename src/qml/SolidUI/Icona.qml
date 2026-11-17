@@ -13,7 +13,12 @@ Image {
     Layout.preferredHeight: lato
     sourceSize.width: lato * 2
     sourceSize.height: lato * 2
-    source: nome ? "image://icona/" + nome : ""
+    // Sul telefono le icone seguono il tema chiaro o scuro dell'interfaccia
+    // «tema» forza le icone: "scuro" = icone chiare (su colori pieni), "chiaro" = icone scure
+    property string tema: ""
+    readonly property string temaIcone: tema !== "" ? tema
+        : (typeof tel !== "undefined" && tel.chiaro !== undefined ? (tel.chiaro ? "chiaro" : "scuro") : "")
+    source: nome ? "image://icona/" + nome + (temaIcone ? "?tema=" + temaIcone : "") : ""
     fillMode: Image.PreserveAspectFit
     asynchronous: true
     smooth: true

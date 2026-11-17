@@ -25,26 +25,34 @@ Window {
     readonly property bool chiaro: imp.tema === "chiaro"
     readonly property real k: [0.9, 1.0, 1.15][imp.testo] || 1.0
     readonly property color accento: imp.accento
-    // Colori del design: superfici solide e sobrie, bordi sottili, testo ad alto contrasto
+    // Colori del design (sistema «Modern Dark»: ardesia profonda, mai nero puro sugli OLED).
+    // Contrasti verificati: testo ≥ 7:1, testo secondario ≥ 4,5:1 in entrambi i temi.
     readonly property QtObject pal: QtObject {
-        readonly property color sfondo: tel.chiaro ? "#F3F4F6" : "#0B0C10"        // fondo delle app
-        readonly property color superficie: tel.chiaro ? "#FFFFFF" : "#16181E"    // schede, righe
-        readonly property color superficie2: tel.chiaro ? "#ECEEF2" : "#1F222A"   // campi, pulsanti
-        readonly property color bordo: tel.chiaro ? Qt.rgba(0, 0, 0, 0.07) : Qt.rgba(1, 1, 1, 0.07)
-        readonly property color testo: tel.chiaro ? "#111318" : "#F4F5F7"
-        readonly property color testo2: tel.chiaro ? "#5D6472" : "#9AA1AE"
-        readonly property color testo3: tel.chiaro ? "#8A909C" : "#6B7280"
+        readonly property color sfondo: tel.chiaro ? "#F8FAFC" : "#0F172A"        // fondo delle app
+        readonly property color superficie: tel.chiaro ? "#FFFFFF" : "#1E293B"    // schede, righe
+        readonly property color superficie2: tel.chiaro ? "#E9EDF1" : "#272F42"   // campi, pulsanti
+        readonly property color bordo: tel.chiaro ? "#E2E8F0" : Qt.rgba(0.58, 0.64, 0.72, 0.16)
+        readonly property color testo: tel.chiaro ? "#0F172A" : "#F8FAFC"
+        readonly property color testo2: tel.chiaro ? "#64748B" : "#94A3B8"
+        readonly property color testo3: tel.chiaro ? "#94A3B8" : "#64748B"
         // Pannelli sopra lo sfondo (blocco, Home, tendine)
-        readonly property color vetro: tel.chiaro ? Qt.rgba(1, 1, 1, 0.82) : Qt.rgba(0.085, 0.095, 0.12, 0.78)
-        readonly property color vetroBordo: tel.chiaro ? Qt.rgba(0, 0, 0, 0.06) : Qt.rgba(1, 1, 1, 0.08)
-        readonly property color traccia: tel.chiaro ? Qt.rgba(0, 0, 0, 0.07) : Qt.rgba(1, 1, 1, 0.10)
-        readonly property color velo: tel.chiaro ? Qt.rgba(0.95, 0.955, 0.965, 0.97) : Qt.rgba(0.035, 0.04, 0.05, 0.96)
-        readonly property color tessera: tel.chiaro ? "#FFFFFF" : "#1C1F26"       // base comune delle icone
-        readonly property color pieno: tel.chiaro ? "#111318" : "#F4F5F7"
-        readonly property color suPieno: tel.chiaro ? "#FFFFFF" : "#111318"
-        readonly property color successo: "#22A06B"
-        readonly property color pericolo: "#E5484D"
+        readonly property color vetro: tel.chiaro ? Qt.rgba(1, 1, 1, 0.80) : Qt.rgba(0.118, 0.161, 0.231, 0.78)
+        readonly property color vetroBordo: tel.chiaro ? Qt.rgba(0.06, 0.09, 0.16, 0.07) : Qt.rgba(0.58, 0.64, 0.72, 0.16)
+        readonly property color traccia: tel.chiaro ? Qt.rgba(0.06, 0.09, 0.16, 0.08) : Qt.rgba(0.58, 0.64, 0.72, 0.18)
+        readonly property color velo: tel.chiaro ? Qt.rgba(0.97, 0.98, 0.99, 0.96) : Qt.rgba(0.059, 0.09, 0.165, 0.95)
+        readonly property color tessera: tel.chiaro ? "#FFFFFF" : "#1E293B"
+        readonly property color pieno: tel.chiaro ? "#0F172A" : "#F8FAFC"
+        readonly property color suPieno: tel.chiaro ? "#FFFFFF" : "#0F172A"
+        readonly property color successo: "#22C55E"
+        readonly property color pericolo: "#EF4444"
     }
+    // Movimento (regole: entrata «expo» ~380 ms, uscita più rapida ~240 ms, pressione al 97%,
+    // 150–300 ms per i piccoli effetti). Con «Riduci animazioni» tutto diventa istantaneo.
+    readonly property bool movimento: imp.riduci_movimento !== true
+    function durata(ms) { return movimento ? ms : 0 }
+    readonly property int tVeloce: durata(150)
+    readonly property int tNormale: durata(240)
+    readonly property int tEntrata: durata(380)
     // Misure del design: raggi e margini uguali ovunque
     readonly property int r1: 12      // controlli piccoli
     readonly property int r2: 18      // schede
@@ -56,6 +64,9 @@ Window {
 
     // ── Stato del telefono ────────────────────────────────────────────────
     property string schermata: "blocco"          // blocco | home
+    // Ogni volta che si entra nella Home le icone fanno la loro entrata scaglionata
+    property int entrata: 0
+    onSchermataChanged: if (schermata === "home") entrata++
     property bool notifiche: false
     property bool controllo: false
     property bool personalizza: false
@@ -186,7 +197,7 @@ Window {
         height: parent.height
         y: tel.appInterna === "telefono" ? 0 : tel.height
         visible: tel.appInterna === "telefono" || y < tel.height - 1
-        Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+        Behavior on y { Movimento { apre: tel.appInterna === "telefono" } }
     }
     Dove {
         id: doveApp
@@ -194,7 +205,7 @@ Window {
         height: parent.height
         y: tel.appInterna === "dove" ? 0 : tel.height
         visible: tel.appInterna === "dove" || y < tel.height - 1
-        Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+        Behavior on y { Movimento { apre: tel.appInterna === "dove" } }
     }
     Impostazioni {
         id: impostazioniApp
@@ -202,7 +213,7 @@ Window {
         height: parent.height
         y: tel.appInterna === "impostazioni" ? 0 : tel.height
         visible: tel.appInterna === "impostazioni" || y < tel.height - 1
-        Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+        Behavior on y { Movimento { apre: tel.appInterna === "impostazioni" } }
     }
     Contatti {
         id: contattiApp
@@ -210,7 +221,7 @@ Window {
         height: parent.height
         y: tel.appInterna === "contatti" ? 0 : tel.height
         visible: tel.appInterna === "contatti" || y < tel.height - 1
-        Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+        Behavior on y { Movimento { apre: tel.appInterna === "contatti" } }
     }
     Messaggi {
         id: messaggiApp
@@ -218,7 +229,7 @@ Window {
         height: parent.height
         y: tel.appInterna === "messaggi" ? 0 : tel.height
         visible: tel.appInterna === "messaggi" || y < tel.height - 1
-        Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+        Behavior on y { Movimento { apre: tel.appInterna === "messaggi" } }
     }
 
     // ── App di base: caricate solo quando servono (meno memoria) ─────────
@@ -233,7 +244,7 @@ Window {
         active: tel.appInterna === nome || visible || (resta && usata)
         onActiveChanged: if (active) usata = true
         asynchronous: false
-        Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+        Behavior on y { Movimento { apre: tel.appInterna === nome } }
     }
     PaginaApp { nome: "calcolatrice"; source: "Calcolatrice.qml" }
     PaginaApp { nome: "note"; source: "Note.qml" }
@@ -250,7 +261,7 @@ Window {
         color: tel.pal.velo
         opacity: (tel.notifiche || tel.controllo || tel.personalizza) ? 1 : 0
         visible: opacity > 0
-        Behavior on opacity { NumberAnimation { duration: 180 } }
+        Behavior on opacity { NumberAnimation { duration: tel.tNormale; easing.type: Easing.OutCubic } }
         MouseArea { anchors.fill: parent; onClicked: tel.chiudiTutto() }
     }
     Notifiche {
@@ -258,21 +269,21 @@ Window {
         height: parent.height
         y: tel.notifiche ? 0 : -tel.height
         visible: tel.notifiche || y > -tel.height + 1
-        Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+        Behavior on y { Movimento { apre: tel.notifiche } }
     }
     CentroControllo {
         anchors.left: parent.left; anchors.right: parent.right
         height: parent.height
         y: tel.controllo ? 0 : -tel.height
         visible: tel.controllo || y > -tel.height + 1
-        Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+        Behavior on y { Movimento { apre: tel.controllo } }
     }
     Personalizza {
         anchors.left: parent.left; anchors.right: parent.right
         height: parent.height
         y: tel.personalizza ? 0 : tel.height
         visible: tel.personalizza || y < tel.height - 1
-        Behavior on y { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+        Behavior on y { Movimento { apre: tel.personalizza } }
     }
 
     // ── Gesti dal bordo alto: sinistra = notifiche, destra = controllo ────
@@ -312,7 +323,7 @@ Window {
         n: tel.banner || ({})
         y: tel.banner && tel.schermata !== "blocco" && !tel.notifiche ? 54 : -height - 20
         visible: y > -height - 20
-        Behavior on y { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+        Behavior on y { Movimento { apre: tel.banner && tel.schermata !== "blocco" && !tel.notifiche } }
     }
 
     // ── Chiamata: sopra a tutto (anche al blocco), riducibile a pillola verde ──
@@ -376,7 +387,7 @@ Window {
         opacity: 0
         visible: opacity > 0
         z: 100
-        Behavior on opacity { NumberAnimation { duration: 200 } }
+        Behavior on opacity { NumberAnimation { duration: tel.tNormale; easing.type: Easing.OutCubic } }
         Text { id: etichetta; anchors.centerIn: parent; width: Math.min(implicitWidth, tel.width - 72); wrapMode: Text.Wrap; horizontalAlignment: Text.AlignHCenter; color: tel.pal.suPieno; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.Medium }
         Timer { id: nascondi; interval: 2600; onTriggered: messaggio.opacity = 0 }
     }

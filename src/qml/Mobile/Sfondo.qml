@@ -11,11 +11,11 @@ Item {
 
     // base, alone 1 (in alto a destra), alone 2 (in basso a sinistra), intensità
     readonly property var tavolozze: ({
-        "notte":   { scuro: ["#0A0C12", "#2F5BDB", "#6C4FD8", 0.30], chiaro: ["#F3F5FA", "#9DB6FF", "#C7B7FF", 0.45] },
+        "notte":   { scuro: ["#0B1120", "#3B5BDB", "#7C3AED", 0.30], chiaro: ["#F8FAFC", "#A5B8FF", "#D2C2FF", 0.45] },
         "alba":    { scuro: ["#120C0E", "#E2683F", "#C9408A", 0.26], chiaro: ["#FBF5F1", "#FFC09E", "#F5B3D2", 0.45] },
         "oceano":  { scuro: ["#071116", "#1597B0", "#2559D6", 0.28], chiaro: ["#F1F7F9", "#9FDCE8", "#A9C1FF", 0.45] },
         "aurora":  { scuro: ["#08100E", "#1FA37A", "#2F6FD6", 0.26], chiaro: ["#F2F8F5", "#A5E3CB", "#AFC8FF", 0.45] },
-        "grafite": { scuro: ["#0C0D0F", "#5A6170", "#3A3F4A", 0.22], chiaro: ["#F2F3F4", "#D7DAE0", "#E3E5EA", 0.55] }
+        "grafite": { scuro: ["#0F172A", "#475569", "#334155", 0.30], chiaro: ["#F8FAFC", "#CBD5E1", "#E2E8F0", 0.60] }
     })
     readonly property var t: (tavolozze[nome] || tavolozze["notte"])[chiaro ? "chiaro" : "scuro"]
 

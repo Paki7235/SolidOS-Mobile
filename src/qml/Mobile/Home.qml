@@ -100,8 +100,9 @@ Item {
                     model: home.app.slice(0, griglia.righe * 4)
                     Item {
                         required property var modelData
+                        required property int index
                         width: home.cella; height: home.altezzaCella
-                        IconaApp { anchors.horizontalCenter: parent.horizontalCenter; app: parent.modelData }
+                        IconaApp { anchors.horizontalCenter: parent.horizontalCenter; app: parent.modelData; ritardo: 60 + parent.index * 35 }
                     }
                 }
             }
@@ -136,8 +137,9 @@ Item {
                         model: home.dock
                         Item {
                             required property var modelData
+                            required property int index
                             width: (dockHome.width - 12) / Math.max(4, home.dock.length); height: tel.latoIcona
-                            IconaApp { anchors.horizontalCenter: parent.horizontalCenter; app: parent.modelData; conNome: false }
+                            IconaApp { anchors.horizontalCenter: parent.horizontalCenter; app: parent.modelData; conNome: false; ritardo: parent.index * 35 }
                         }
                     }
                 }

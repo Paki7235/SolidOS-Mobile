@@ -7,6 +7,22 @@ Item {
     property var app: ({})
     property bool conNome: true
     property int lato: tel.latoIcona
+    property int ritardo: 0      // entrata scaglionata: ogni icona parte un po' dopo la precedente
+    transform: Translate { id: spinta }
+    // Quando si entra nella Home le icone salgono e appaiono una dopo l'altra (con un piccolo rimbalzo)
+    Connections { target: tel; function onEntrataChanged() { if (tel.movimento) entrata.restart() } }
+    SequentialAnimation {
+        id: entrata
+        PropertyAction { target: ic; property: "opacity"; value: 0 }
+        PropertyAction { target: spinta; property: "y"; value: 16 }
+        PropertyAction { target: ic; property: "scale"; value: 0.92 }
+        PauseAnimation { duration: ic.ritardo }
+        ParallelAnimation {
+            NumberAnimation { target: ic; property: "opacity"; to: 1; duration: 280; easing.type: Easing.OutCubic }
+            NumberAnimation { target: spinta; property: "y"; to: 0; duration: 420; easing.type: Easing.OutBack; easing.overshoot: 1.4 }
+            NumberAnimation { target: ic; property: "scale"; to: 1; duration: 420; easing.type: Easing.OutBack; easing.overshoot: 1.4 }
+        }
+    }
     width: lato + 24
     height: lato + (conNome ? 26 : 0)
 
@@ -16,8 +32,11 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         nome: ic.app.icona || "application-x-executable"
         lato: ic.lato
-        scale: area.pressed ? 0.92 : 1
-        Behavior on scale { NumberAnimation { duration: 90 } }
+        // Pressione: 97%, risposta immediata (≤ 150 ms)
+        scale: area.pressed ? 0.97 : 1
+        opacity: area.pressed ? 0.85 : 1
+        Behavior on scale { NumberAnimation { duration: tel.tVeloce; easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: tel.tVeloce } }
     }
     Text {
         visible: ic.conNome
