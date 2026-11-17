@@ -30,10 +30,13 @@ package() {
 	mkdir -p "$pkgdir"/usr/share/solidos-mobile
 	cp -r "$srcdir"/src/nucleo "$pkgdir"/usr/share/solidos-mobile/
 	cp -r "$srcdir"/src/qml "$pkgdir"/usr/share/solidos-mobile/
-	cp -r "$srcdir"/src/dati/icone "$pkgdir"/usr/share/solidos-mobile/icone
 	cp -r "$srcdir"/src/dati/font "$pkgdir"/usr/share/solidos-mobile/font
-	mkdir -p "$pkgdir"/usr/share/icons
-	cp -r "$srcdir"/src/dati/icone/hicolor "$pkgdir"/usr/share/icons/
+	# icone proprie (se ce ne sono: per ora tutte dal tema di sistema, come sul PC)
+	if [ -d "$srcdir"/src/dati/icone ]; then
+		cp -r "$srcdir"/src/dati/icone "$pkgdir"/usr/share/solidos-mobile/icone
+		mkdir -p "$pkgdir"/usr/share/icons
+		cp -r "$srcdir"/src/dati/icone/hicolor "$pkgdir"/usr/share/icons/
+	fi
 	install -Dm644 "$srcdir"/branding.env "$pkgdir"/usr/share/solidos-mobile/branding.env
 	install -Dm755 "$srcdir"/solidos-mobile-sessione "$pkgdir"/usr/bin/solidos-mobile-sessione
 	install -Dm755 "$srcdir"/solidos-mobile-prepara "$pkgdir"/usr/libexec/solidos-mobile-prepara
