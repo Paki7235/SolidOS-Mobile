@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+ <!-- SolidOS Mobile: dove -->
+ <defs>
+  <linearGradient id="fondo" x1="0.2" y1="0" x2="0.8" y2="1">
+   <stop offset="0" stop-color="#2DC3A7"/>
+   <stop offset="1" stop-color="#1873DA"/>
+  </linearGradient>
+  <linearGradient id="luce" x1="0" y1="0" x2="0" y2="1">
+   <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+   <stop offset="0.45" stop-color="#ffffff" stop-opacity="0.04"/>
+   <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+  </linearGradient>
+ </defs>
+ <rect x="2" y="2" width="60" height="60" rx="14.5" fill="url(#fondo)"/>
+ <rect x="2" y="2" width="60" height="60" rx="14.5" fill="url(#luce)"/>
+ <rect x="2.6" y="2.6" width="58.8" height="58.8" rx="13.9" fill="none" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.2"/>
+ <g transform="translate(0,1.2)" opacity="0.16"><path fill="#000000" d="M32 51s-14-12.3-14-23C18 20.2 24.3 14 32 14s14 6.2 14 14c0 10.7-14 23-14 23z"/></g>
+ <path fill="#ffffff" d="M32 51s-14-12.3-14-23C18 20.2 24.3 14 32 14s14 6.2 14 14c0 10.7-14 23-14 23z"/>
+ <circle fill="#1D97C2" cx="32" cy="28" r="5.4"/>
+</svg>

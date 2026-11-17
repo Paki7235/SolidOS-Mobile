@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+ <!-- SolidOS Mobile: foto -->
+ <defs>
+  <linearGradient id="fondo" x1="0.2" y1="0" x2="0.8" y2="1">
+   <stop offset="0" stop-color="#FFA45C"/>
+   <stop offset="1" stop-color="#EE5A7C"/>
+  </linearGradient>
+  <linearGradient id="luce" x1="0" y1="0" x2="0" y2="1">
+   <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+   <stop offset="0.45" stop-color="#ffffff" stop-opacity="0.04"/>
+   <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+  </linearGradient>
+ </defs>
+ <rect x="2" y="2" width="60" height="60" rx="14.5" fill="url(#fondo)"/>
+ <rect x="2" y="2" width="60" height="60" rx="14.5" fill="url(#luce)"/>
+ <rect x="2.6" y="2.6" width="58.8" height="58.8" rx="13.9" fill="none" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.2"/>
+ <g transform="translate(0,1.2)" opacity="0.16"><rect fill="#000000" x="14" y="17" width="36" height="30" rx="6"/></g>
+ <rect fill="#ffffff" x="14" y="17" width="36" height="30" rx="6"/>
+ <path fill="#EE5A7C" d="M18 43l9.2-10.4c.8-.9 2.2-.9 3 0l5.3 6 3.6-3.9c.8-.9 2.2-.9 3 0L46 39.2V43z"/><circle fill="#F7A23C" cx="39" cy="25.5" r="3.4"/>
+</svg>

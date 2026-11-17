@@ -58,22 +58,22 @@ ALIAS = {
 
 
 # App interne all'interfaccia (si aprono subito e non occupano memoria in più).
-# Icone: tutte dallo stesso tema di SolidOS per PC (Papirus); per le app che sul PC non ci
-# sono le icone del tema: Chiamate, Chatty, Contatti, Snapshot, Musica; Dov'è usa Mappe.
+# Icone: set proprio di SolidOS Mobile (src/dati/icone, generato da scripts/genera-icone.py):
+# tessera con sfumatura sobria e simbolo bianco pieno, uguale per tutte le app interne.
 IN_ARRIVO = {
-    "telefono": {"id": "interno:telefono", "nome": T("Telefono"), "icona": "org.gnome.Calls", "categorie": ["Telephony"]},
-    "messaggi": {"id": "interno:messaggi", "nome": T("Messaggi"), "icona": "sm.puri.Chatty", "categorie": ["Chat"]},
-    "contatti": {"id": "interno:contatti", "nome": T("Contatti"), "icona": "org.gnome.Contacts", "categorie": ["ContactManagement"]},
-    "dove": {"id": "interno:dove", "nome": T("Dov'è"), "icona": "org.gnome.Maps", "categorie": ["Utility"]},
-    "impostazioni": {"id": "interno:impostazioni", "nome": T("Impostazioni"), "icona": "org.gnome.Settings", "categorie": ["Settings"]},
-    "fotocamera": {"id": "interno:fotocamera", "nome": T("Fotocamera"), "icona": "org.gnome.Snapshot", "categorie": ["Photography"]},
-    "foto": {"id": "interno:foto", "nome": T("Foto"), "icona": "org.gnome.Loupe", "categorie": ["Graphics", "Photography"]},
-    "musica": {"id": "interno:musica", "nome": T("Musica"), "icona": "org.gnome.Music", "categorie": ["Audio", "Player"]},
-    "note": {"id": "interno:note", "nome": T("Note"), "icona": "accessories-notes", "categorie": ["Office", "TextEditor"]},
-    "file": {"id": "interno:file", "nome": T("File"), "icona": "system-file-manager", "categorie": ["FileManager", "Utility"]},
-    "calcolatrice": {"id": "interno:calcolatrice", "nome": T("Calcolatrice"), "icona": "org.gnome.Calculator", "categorie": ["Calculator", "Utility"]},
-    "store": {"id": "interno:store", "nome": T("Store"), "icona": "org.gnome.Software", "categorie": ["System"]},
-    "vicina": {"id": "interno:vicina", "nome": T("Vicina"), "icona": "localsend", "categorie": ["Network", "FileTransfer"]},
+    "telefono": {"id": "interno:telefono", "nome": T("Telefono"), "icona": "nucleo-telefono", "categorie": ["Telephony"]},
+    "messaggi": {"id": "interno:messaggi", "nome": T("Messaggi"), "icona": "nucleo-messaggi", "categorie": ["Chat"]},
+    "contatti": {"id": "interno:contatti", "nome": T("Contatti"), "icona": "nucleo-contatti", "categorie": ["ContactManagement"]},
+    "dove": {"id": "interno:dove", "nome": T("Dov'è"), "icona": "nucleo-dove", "categorie": ["Utility"]},
+    "impostazioni": {"id": "interno:impostazioni", "nome": T("Impostazioni"), "icona": "nucleo-impostazioni", "categorie": ["Settings"]},
+    "fotocamera": {"id": "interno:fotocamera", "nome": T("Fotocamera"), "icona": "nucleo-fotocamera", "categorie": ["Photography"]},
+    "foto": {"id": "interno:foto", "nome": T("Foto"), "icona": "nucleo-foto", "categorie": ["Graphics", "Photography"]},
+    "musica": {"id": "interno:musica", "nome": T("Musica"), "icona": "nucleo-musica", "categorie": ["Audio", "Player"]},
+    "note": {"id": "interno:note", "nome": T("Note"), "icona": "nucleo-note", "categorie": ["Office", "TextEditor"]},
+    "file": {"id": "interno:file", "nome": T("File"), "icona": "nucleo-file", "categorie": ["FileManager", "Utility"]},
+    "calcolatrice": {"id": "interno:calcolatrice", "nome": T("Calcolatrice"), "icona": "nucleo-calcolatrice", "categorie": ["Calculator", "Utility"]},
+    "store": {"id": "interno:store", "nome": T("Store"), "icona": "nucleo-store", "categorie": ["System"]},
+    "vicina": {"id": "interno:vicina", "nome": T("Vicina"), "icona": "nucleo-vicina", "categorie": ["Network", "FileTransfer"]},
 }
 
 
@@ -196,8 +196,8 @@ class BackendMobile(Backend):
         from . import telefonia
 
         if telefonia.DEMO:
-            self.centro.aggiungi(T("Messaggi"), "Mamma", "A che ora arrivi stasera? Ho preparato la cena", "sm.puri.Chatty", "messaggi")
-            self.centro.aggiungi(T("Telefono"), T("Chiamata persa"), "Giulia Rossi", "org.gnome.Calls", "telefono")
+            self.centro.aggiungi(T("Messaggi"), "Mamma", "A che ora arrivi stasera? Ho preparato la cena", "nucleo-messaggi", "messaggi")
+            self.centro.aggiungi(T("Telefono"), T("Chiamata persa"), "Giulia Rossi", "nucleo-telefono", "telefono")
             self.centro.aggiungi(T("Calendario"), T("Riunione con Marco"), T("Tra un'ora · Studio"), "x-office-calendar")
 
     # ── Notifiche ────────────────────────────────────────────────────────
@@ -223,7 +223,7 @@ class BackendMobile(Backend):
 
         arrivati = telefonia.sincronizza_sms()
         for numero, testo in arrivati:
-            self.centro.aggiungi(T("Messaggi"), telefonia.nome_di(numero) or numero, testo, "sm.puri.Chatty", "messaggi")
+            self.centro.aggiungi(T("Messaggi"), telefonia.nome_di(numero) or numero, testo, "nucleo-messaggi", "messaggi")
         return len(arrivati)
 
     # ── Personalizza ─────────────────────────────────────────────────────
@@ -438,7 +438,7 @@ class BackendMobile(Backend):
         if not hasattr(self, "_ch"):
             self._ch = telefonia.Chiamate()
             self._ch.persa = lambda numero: self.centro.aggiungi(
-                T("Telefono"), T("Chiamata persa"), telefonia.nome_di(numero) or numero, "org.gnome.Calls", "telefono")
+                T("Telefono"), T("Chiamata persa"), telefonia.nome_di(numero) or numero, "nucleo-telefono", "telefono")
         return self._ch
 
     def chiama(self, numero: str) -> dict:

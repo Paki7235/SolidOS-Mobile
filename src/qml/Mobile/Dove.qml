@@ -81,7 +81,7 @@ Rectangle {
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             width: 84; height: 84; color: "transparent"
-            Icona { anchors.centerIn: parent; nome: "org.gnome.Maps"; lato: 84 }
+            Icona { anchors.centerIn: parent; nome: "nucleo-dove"; lato: 84 }
         }
         Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Dov'è"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(26); font.weight: Font.Bold }
         Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap; text: I18n.t("Accedi con il tuo Solid ID per vedere sulla mappa il telefono e il PC, farli suonare o bloccarli a distanza."); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(15) }
