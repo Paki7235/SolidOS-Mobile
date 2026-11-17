@@ -39,7 +39,7 @@ Window {
         readonly property color vetro: tel.chiaro ? Qt.rgba(1, 1, 1, 0.80) : Qt.rgba(0.118, 0.161, 0.231, 0.78)
         readonly property color vetroBordo: tel.chiaro ? Qt.rgba(0.06, 0.09, 0.16, 0.07) : Qt.rgba(0.58, 0.64, 0.72, 0.16)
         readonly property color traccia: tel.chiaro ? Qt.rgba(0.06, 0.09, 0.16, 0.08) : Qt.rgba(0.58, 0.64, 0.72, 0.18)
-        readonly property color velo: tel.chiaro ? Qt.rgba(0.95, 0.96, 0.98, 0.86) : Qt.rgba(0.04, 0.06, 0.12, 0.82)
+        readonly property color velo: tel.chiaro ? Qt.rgba(0.95, 0.96, 0.98, 0.93) : Qt.rgba(0.04, 0.06, 0.12, 0.90)
         readonly property color tessera: tel.chiaro ? "#FFFFFF" : "#1E293B"
         readonly property color pieno: tel.chiaro ? "#0F172A" : "#F8FAFC"
         readonly property color suPieno: tel.chiaro ? "#FFFFFF" : "#0F172A"

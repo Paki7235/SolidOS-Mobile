@@ -369,7 +369,11 @@ class BackendMobile(Backend):
         schermo.imposta_luminosita(int(valore))
 
     def volume(self) -> int:
+        from . import telefonia
         from ..hw import audio
+
+        if telefonia.DEMO:   # foto della prova: un valore realistico
+            return 60
 
         try:
             return int(audio.volume().get("volume", 50))
