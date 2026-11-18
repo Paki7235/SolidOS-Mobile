@@ -1,0 +1,10 @@
+[Unit]
+Description=Aggiornamenti firmati di SolidOS Mobile
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/solidos-mobile-aggiorna
+Nice=10
+IOSchedulingClass=idle

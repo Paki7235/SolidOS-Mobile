@@ -23,6 +23,10 @@ source="
 	solidos-mobile.service
 	solidos-mobile-sessione
 	solidos-mobile-prepara
+	solidos-mobile-aggiorna
+	solidos-mobile-aggiornamenti.service
+	solidos-mobile-aggiornamenti.timer
+	chiave-aggiornamenti.pem
 	"
 builddir="$srcdir"
 
@@ -38,6 +42,14 @@ package() {
 		cp -r "$srcdir"/src/dati/icone/hicolor "$pkgdir"/usr/share/icons/
 	fi
 	install -Dm644 "$srcdir"/branding.env "$pkgdir"/usr/share/solidos-mobile/branding.env
+	# Versione (numero della build) e chiave pubblica che verifica la firma degli aggiornamenti
+	install -Dm644 "$srcdir"/src/dati/versione "$pkgdir"/usr/share/solidos-mobile/versione
+	install -Dm644 "$srcdir"/chiave-aggiornamenti.pem "$pkgdir"/usr/share/solidos-mobile/chiave-aggiornamenti.pem
+	install -Dm755 "$srcdir"/solidos-mobile-aggiorna "$pkgdir"/usr/libexec/solidos-mobile-aggiorna
+	install -Dm644 "$srcdir"/solidos-mobile-aggiornamenti.service "$pkgdir"/usr/lib/systemd/system/solidos-mobile-aggiornamenti.service
+	install -Dm644 "$srcdir"/solidos-mobile-aggiornamenti.timer "$pkgdir"/usr/lib/systemd/system/solidos-mobile-aggiornamenti.timer
+	mkdir -p "$pkgdir"/usr/lib/systemd/system/timers.target.wants
+	ln -s ../solidos-mobile-aggiornamenti.timer "$pkgdir"/usr/lib/systemd/system/timers.target.wants/solidos-mobile-aggiornamenti.timer
 	install -Dm755 "$srcdir"/solidos-mobile-sessione "$pkgdir"/usr/bin/solidos-mobile-sessione
 	install -Dm755 "$srcdir"/solidos-mobile-prepara "$pkgdir"/usr/libexec/solidos-mobile-prepara
 	install -Dm755 "$srcdir"/solidos-mobile.initd "$pkgdir"/etc/init.d/solidos-mobile

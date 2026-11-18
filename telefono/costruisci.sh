@@ -60,6 +60,8 @@ for p in solidos-mobile hisi-wlan; do
 	rm -rf "$APORTS/main/$p" && mkdir -p "$APORTS/main/$p"
 	cp "$RADICE/telefono/$p"/* "$APORTS/main/$p"/
 done
+# Numero di versione = numero della build su GitHub (lo usano gli aggiornamenti automatici)
+printf '%s\n' "${GITHUB_RUN_NUMBER:-0}" > "$RADICE/src/dati/versione"
 tar -C "$RADICE" --exclude='__pycache__' -czf "$APORTS/main/solidos-mobile/solidos-mobile.tar.gz" src branding.env
 python3 "$PMB" -y checksum solidos-mobile hisi-wlan
 

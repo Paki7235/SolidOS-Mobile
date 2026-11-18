@@ -561,9 +561,11 @@ class BackendMobile(Backend):
         impostazioni.imposta_risparmio(bool(si))
 
     def infoTelefono(self) -> dict:
-        from . import impostazioni
+        from . import aggiornamento, impostazioni
 
-        return impostazioni.info()
+        info = impostazioni.info()
+        info["aggiornamenti"] = aggiornamento.stato()
+        return info
 
     # ── Solid ID dal telefono ────────────────────────────────────────────
     def _sid(self):

@@ -50,3 +50,32 @@ jobs:
           gh release list --limit 200 --json tagName -q '.[].tagName' \
             | grep "^telefono-${{ matrix.device }}-" | grep -vx "$TAG" \
             | while read -r vecchio; do gh release delete "$vecchio" --cleanup-tag -y; done
+
+  # Aggiornamento automatico e firmato per i telefoni già installati: la cartella
+  # dell'interfaccia (uguale per tutti i telefoni), la scheda versione.json e la sua firma
+  aggiornamento:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pacchetto firmato
+        env:
+          FIRMA: ${{ secrets.FIRMA_AGGIORNAMENTI }}
+        run: |
+          # Senza la chiave non si pubblica niente: i telefoni accettano solo schede firmate
+          [ -n "$FIRMA" ] || { echo "Manca il segreto FIRMA_AGGIORNAMENTI"; exit 1; }
+          umask 077; printf '%s\n' "$FIRMA" > "$RUNNER_TEMP/chiave.pem"; umask 022
+          sh telefono/pacchetto-aggiornamento.sh "${{ github.run_number }}" "$RUNNER_TEMP/chiave.pem"
+          rm -f "$RUNNER_TEMP/chiave.pem"
+      - name: Pubblica (Release «aggiornamento», sempre la stessa)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view aggiornamento >/dev/null 2>&1 || \
+            gh release create aggiornamento --latest=false --title "Aggiornamenti di SolidOS Mobile" \
+              --notes "Aggiornamenti firmati che i telefoni con SolidOS Mobile installano da soli. Non serve scaricarli."
+          gh release upload aggiornamento --clobber uscita-aggiornamento/*.tar.xz \
+            uscita-aggiornamento/versione.json uscita-aggiornamento/versione.json.firma
+          # Solo l'ultimo pacchetto
+          gh release view aggiornamento --json assets -q '.assets[].name' \
+            | grep '^solidos-mobile-aggiornamento-' | grep -vx "solidos-mobile-aggiornamento-${{ github.run_number }}.tar.xz" \
+            | while read -r vecchio; do gh release delete-asset aggiornamento "$vecchio" --yes; done

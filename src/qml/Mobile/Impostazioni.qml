@@ -544,6 +544,12 @@ Rectangle {
                     Riga { titolo: I18n.t("Sistema"); valore: imp.info.sistema || ""; freccia: false }
                     Riga { titolo: "Kernel"; valore: imp.info.kernel || ""; freccia: false; ultima: true }
                 }
+                Titoletto { text: I18n.t("Aggiornamenti") }
+                Gruppo {
+                    Riga { titolo: I18n.t("Versione di SolidOS"); valore: imp.info.aggiornamenti && imp.info.aggiornamenti.versione ? String(imp.info.aggiornamenti.versione) : I18n.t("di prova"); freccia: false }
+                    Riga { titolo: I18n.t("Ultimo controllo"); valore: imp.info.aggiornamenti && imp.info.aggiornamenti.ultimo ? imp.info.aggiornamenti.ultimo : "—"; freccia: false; ultima: true }
+                }
+                Nota { text: (imp.info.aggiornamenti && imp.info.aggiornamenti.esito ? imp.info.aggiornamenti.esito + ". " : "") + I18n.t("Il telefono cerca gli aggiornamenti ogni giorno e installa solo quelli firmati da SolidOS, dopo averli provati.") }
                 Titoletto { text: I18n.t("Memoria") }
                 Gruppo {
                     Riga { titolo: "RAM"; valore: imp.info.ram || ""; freccia: false }

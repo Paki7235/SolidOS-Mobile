@@ -1,0 +1,6 @@
+#!/bin/sh
+# Aggiornamento firmato di SolidOS Mobile (root): vedi nucleo/mobile/aggiornamento.py
+#   solidos-mobile-aggiorna                 cerca e installa la versione nuova
+#   solidos-mobile-aggiorna --torna-indietro torna alla versione di prima
+export PYTHONPATH=/usr/share/solidos-mobile
+exec python3 -m nucleo.mobile.aggiornamento "$@"

@@ -4,7 +4,7 @@
 Crea src/dati/icone/linea/<nome>.svg con i nomi delle icone che l'interfaccia chiede
 («network-wireless-symbolic», «call-start-symbolic»…) e quelli delle app («linea-telefono»…).
 Il fornitore di icone (nucleo/qmlapp.py) le cerca qui per prime e le ricolora in bianco o in
-nero secondo il tema. Disegni in stile Lucide (licenza ISC), ridisegnati a mano.
+nero secondo il tema. I tracciati vengono da Lucide (licenza ISC, testo in docs/LICENZE.md).
 """
 from pathlib import Path
 

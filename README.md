@@ -58,6 +58,14 @@ Ogni modifica pubblicata su GitHub fotografa da sola tutte le schermate, in tema
 - `src/nucleo/`, `src/qml/SolidUI/` — il nucleo comune con SolidOS per PC
 - `src/nucleo/solidid/` — Solid ID e «Dov'è»
 
-## Licenza
+## Open source e gratuito
 
-GPL-3.0 (vedi [LICENSE](LICENSE)).
+SolidOS Mobile è software libero (GPL-3.0-or-later, vedi [LICENSE](LICENSE)) e gratuito:
+nessun costo, nessuna pubblicità, nessun dato venduto. Licenze di caratteri e icone in
+[docs/LICENZE.md](docs/LICENZE.md).
+
+## Aggiornamenti
+
+I telefoni installati si aggiornano da soli una volta al giorno, solo con pacchetti **firmati**
+dal progetto, dopo aver provato che la nuova versione si avvia; la versione precedente resta
+sul telefono per tornare indietro. Dettagli e impronta della chiave in [SECURITY.md](SECURITY.md).
