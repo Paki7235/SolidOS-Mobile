@@ -365,9 +365,32 @@ def foto() -> list:
                     trovate.append((f.stat().st_mtime, f))
                 except OSError:
                     pass
-    trovate.sort(key=lambda x: -x[0])
-    return [{"percorso": str(f), "uri": _uri(f), "nome": f.name,
-             "data": time.strftime("%d/%m/%Y %H:%M", time.localtime(t))} for t, f in trovate[:2000]]
+    scaricati = cartella_utente("DOWNLOAD", "Scaricati")
+    elenco = []
+    for t, f in trovate[:2000]:
+        album = "scaricati" if scaricati in f.parents else ("schermate" if "screenshot" in f.name.lower() or "schermata" in f.name.lower() else "fotocamera")
+        elenco.append({"percorso": str(f), "uri": _uri(f), "nome": f.name, "quando": t, "fonte": "telefono", "album": album})
+    # Le foto degli account collegati (Nextcloud…), con il simbolino del servizio
+    from . import fotoaccount
+
+    elenco += [dict(x, album="account") for x in fotoaccount.foto()]
+    if DEMO:   # foto di prova: alcune «arrivano» dagli account collegati
+        for i, x in enumerate(elenco):
+            if i in (2, 5):
+                x["fonte"] = "google"
+            elif i in (6, 8):
+                x["fonte"] = "onedrive"
+    elenco.sort(key=lambda x: -x["quando"])
+    oggi = time.strftime("%Y-%m-%d")
+    ieri = time.strftime("%Y-%m-%d", time.localtime(time.time() - 86400))
+    mesi = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre",
+            "ottobre", "novembre", "dicembre"]
+    for x in elenco:
+        lt = time.localtime(x["quando"])
+        g = time.strftime("%Y-%m-%d", lt)
+        x["giorno"] = T("Oggi") if g == oggi else (T("Ieri") if g == ieri else f"{lt.tm_mday} {T(mesi[lt.tm_mon - 1])}" + (f" {lt.tm_year}" if lt.tm_year != time.localtime().tm_year else ""))
+        x["data"] = time.strftime("%d/%m/%Y %H:%M", lt)
+    return elenco
 
 
 def nuova_foto() -> str:

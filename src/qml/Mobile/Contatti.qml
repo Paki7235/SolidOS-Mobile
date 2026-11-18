@@ -40,10 +40,48 @@ Rectangle {
             suggerimento: I18n.t("Cerca tra") + " " + app.contatti.length + " " + I18n.t("contatti")
             onTextChanged: app.cerca = text.toLowerCase()
         }
+        // La mia scheda (nome del Solid ID)
+        Item {
+            id: miaScheda
+            x: 16; y: 176; width: parent.width - 46; height: app.cerca ? 0 : 84
+            visible: !app.cerca
+            readonly property string nome: (ponte.chiama0("solidId").nome || "") || I18n.t("Io")
+            Avatar { anchors.verticalCenter: parent.verticalCenter; lato: 60; nome: miaScheda.nome }
+            Column {
+                x: 74; anchors.verticalCenter: parent.verticalCenter
+                Text { text: miaScheda.nome; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(19); font.weight: Font.Bold }
+                Text { text: I18n.t("La mia scheda"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
+            }
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: app.linea }
+        }
+        // Indice delle lettere: tocca per saltare
+        Column {
+            anchors.right: parent.right; anchors.rightMargin: 4
+            anchors.verticalCenter: elenco.verticalCenter
+            visible: !app.cerca && app.contatti.length > 8
+            Repeater {
+                model: "ABCDEFGHILMNOPQRSTUVZ#".split("")
+                Text {
+                    required property string modelData
+                    width: 20; horizontalAlignment: Text.AlignHCenter
+                    text: modelData; color: tel.accento; font.family: Tema.font; font.pixelSize: 10; font.weight: Font.DemiBold
+                    MouseArea {
+                        anchors.fill: parent; anchors.margins: -2
+                        onClicked: {
+                            var l = parent.modelData
+                            for (var i = 0; i < app.filtrati.length; i++) {
+                                var c = (app.filtrati[i].nome || "").charAt(0).toUpperCase()
+                                if (l === "#" ? !/[A-Z]/.test(c) : c >= l) { elenco.positionViewAtIndex(i, ListView.Beginning); return }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         ListView {
             id: elenco
-            anchors.left: parent.left; anchors.right: parent.right
-            anchors.top: parent.top; anchors.topMargin: 178; anchors.bottom: parent.bottom; anchors.bottomMargin: 30
+            anchors.left: parent.left; anchors.right: parent.right; anchors.rightMargin: 24
+            anchors.top: miaScheda.bottom; anchors.topMargin: 4; anchors.bottom: parent.bottom; anchors.bottomMargin: 30
             clip: true
             model: app.filtrati
             section.property: "nome"
@@ -52,7 +90,7 @@ Rectangle {
                 required property string section
                 x: 20; height: 28; verticalAlignment: Text.AlignBottom
                 text: section.toUpperCase()
-                color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Bold
+                color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Bold
             }
             delegate: Item {
                 id: voce
@@ -79,16 +117,29 @@ Rectangle {
 
     // ══ Scheda del contatto (e modifica) ═════════════════════════════════
     Item {
+        id: schedaContatto
         anchors.fill: parent
         visible: app.scelto !== null
+        readonly property bool vista: !app.modifica
+        // Testata a tutto schermo: la sfumatura del contatto, che sfuma nello sfondo
+        Rectangle {
+            visible: schedaContatto.vista
+            width: parent.width; height: 440
+            gradient: Gradient {
+                GradientStop { position: 0; color: copiaColori.coppie[copiaColori.indice][0] }
+                GradientStop { position: 0.75; color: copiaColori.coppie[copiaColori.indice][1] }
+                GradientStop { position: 1; color: tel.pal.sfondo }
+            }
+            Avatar { id: copiaColori; visible: false; nome: app.scelto && app.scelto.nome ? app.scelto.nome : "" }
+        }
         Text {
-            x: 18; y: 60; text: "‹ " + I18n.t("Contatti"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
+            x: 18; y: 60; text: "‹ " + I18n.t("Contatti"); color: schedaContatto.vista ? "#FFFFFF" : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
             MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: { app.scelto = null; app.modifica = false } }
         }
         Text {
             anchors.right: parent.right; anchors.rightMargin: 20; y: 60
             text: app.modifica ? I18n.t("Salva") : I18n.t("Modifica")
-            color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold
+            color: schedaContatto.vista ? "#FFFFFF" : tel.accento; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold
             MouseArea {
                 anchors.fill: parent; anchors.margins: -10
                 onClicked: {
@@ -103,34 +154,47 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             y: 100
             spacing: 8
-            Avatar { anchors.horizontalCenter: parent.horizontalCenter; lato: 104; nome: app.scelto && app.scelto.nome ? app.scelto.nome : "+" }
-            Text { visible: !app.modifica; anchors.horizontalCenter: parent.horizontalCenter; text: app.scelto ? app.scelto.nome : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(28); font.weight: Font.DemiBold }
+            Avatar { visible: app.modifica; anchors.horizontalCenter: parent.horizontalCenter; lato: 104; nome: app.scelto && app.scelto.nome ? app.scelto.nome : "+" }
+            Rectangle {
+                visible: !app.modifica
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: 118; height: 118; radius: 59; color: "#38FFFFFF"
+                Text { anchors.centerIn: parent; text: copiaColori.iniziali; color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: 44; font.weight: Font.DemiBold }
+            }
+            Item { width: 1; height: 4 }
+            Text { visible: !app.modifica; anchors.horizontalCenter: parent.horizontalCenter; width: app.width - 40; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
+                   text: app.scelto ? app.scelto.nome : ""; color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(30); font.weight: Font.Bold }
+            Text { visible: !app.modifica && app.scelto && app.scelto.preferito; anchors.horizontalCenter: parent.horizontalCenter; text: "★ " + I18n.t("Preferito"); color: "#E6FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(14) }
         }
         // Azioni rapide
         Row {
             visible: !app.modifica
             anchors.horizontalCenter: parent.horizontalCenter
-            y: 260
-            spacing: 12
+            y: 344
+            spacing: 8
             Repeater {
-                model: [{ t: I18n.t("Chiama"), i: "call-start-symbolic" }, { t: I18n.t("Messaggio"), i: "mail-message-new-symbolic" }, { t: I18n.t("Preferito"), i: "starred-symbolic" }]
+                model: [{ t: I18n.t("messaggio"), i: "mail-message-new-symbolic" }, { t: I18n.t("chiama"), i: "call-start-symbolic" },
+                        { t: I18n.t("video"), i: "camera-photo-symbolic" }, { t: I18n.t("mail"), i: "document-send-symbolic" }]
                 Rectangle {
+                    id: azione
                     required property var modelData
                     required property int index
-                    width: (app.width - 64) / 3; height: 70; radius: 22
-                    color: index === 2 && app.scelto && app.scelto.preferito ? tel.pal.pieno : app.sezione
-                    border.width: 1; border.color: index === 2 && app.scelto && app.scelto.preferito ? tel.pal.pieno : tel.pal.bordo
+                    readonly property bool attiva: index < 2 || !!(index === 3 && app.scelto && app.scelto.email)
+                    width: (app.width - 32 - 24) / 4; height: 62; radius: 14
+                    color: "#2EFFFFFF"
+                    opacity: attiva ? 1 : 0.45
                     Column {
                         anchors.centerIn: parent; spacing: 4
-                        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: parent.parent.modelData.i; lato: 22; tema: parent.parent.index === 2 && app.scelto && app.scelto.preferito ? (tel.chiaro ? "scuro" : "chiaro") : "" }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData.t; color: parent.parent.index === 2 && app.scelto && app.scelto.preferito ? tel.pal.suPieno : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(12); font.weight: Font.DemiBold }
+                        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: azione.modelData.i; lato: 21; tema: "scuro" }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: azione.modelData.t; color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(11.5); font.weight: Font.Medium }
                     }
                     MouseArea {
                         anchors.fill: parent
                         onClicked: {
-                            if (parent.index === 0) tel.chiama(app.scelto.numero)
-                            else if (parent.index === 1) { tel.appInterna = "messaggi"; messaggiApp.apri(app.scelto.numero) }
-                            else { ponte.chiama("preferito", [app.scelto.id, !app.scelto.preferito]); app.aggiorna() }
+                            if (azione.index === 0) { tel.appInterna = "messaggi"; messaggiApp.apri(app.scelto.numero) }
+                            else if (azione.index === 1) tel.chiama(app.scelto.numero)
+                            else if (azione.index === 2) tel.avviso(I18n.t("Le videochiamate arrivano più avanti"))
+                            else if (app.scelto.email) Qt.openUrlExternally("mailto:" + app.scelto.email)
                         }
                     }
                 }
@@ -138,9 +202,9 @@ Rectangle {
         }
         // Dettagli (lettura) o campi (modifica)
         Rectangle {
-            x: 16; y: app.modifica ? 210 : 344
+            x: 16; y: app.modifica ? 210 : 426
             width: parent.width - 32; height: dettagli.implicitHeight + 8
-            radius: 22; color: app.sezione
+            radius: 16; color: app.sezione
             Column {
                 id: dettagli
                 width: parent.width
@@ -151,7 +215,7 @@ Rectangle {
                         visible: app.modifica ? true : !!(!modelData.solo && app.scelto && app.scelto[modelData.c])
                         width: parent.width; height: visible ? 62 : 0
                         Text { x: 16; y: 10; text: parent.modelData.e; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
-                        Text { x: 16; y: 30; visible: !app.modifica; text: app.scelto ? (app.scelto[parent.modelData.c] || "") : ""; color: tel.pal.testo; font.family: parent.modelData.c === "numero" ? tel.fontMono : Tema.font; font.pixelSize: tel.px(16) }
+                        Text { x: 16; y: 30; visible: !app.modifica; text: app.scelto ? (app.scelto[parent.modelData.c] || "") : ""; color: parent.modelData.c === "note" ? tel.pal.testo : tel.accento; font.family: Tema.font; font.pixelSize: tel.px(16) }
                         Rectangle { anchors.bottom: parent.bottom; x: 16; width: parent.width - 16; height: 1; color: app.linea }
                     }
                 }
@@ -168,12 +232,38 @@ Rectangle {
             }
         }
         Rectangle {
+            visible: !app.modifica
+            x: 16; anchors.top: parent.top; anchors.topMargin: 426 + dettagli.implicitHeight + 8 + 14
+            width: parent.width - 32; height: 106; radius: 16; color: app.sezione
+            Column {
+                width: parent.width
+                Repeater {
+                    model: [{ t: app.scelto && app.scelto.preferito ? I18n.t("Togli dai preferiti") : I18n.t("Aggiungi ai preferiti"), c: tel.accento },
+                            { t: I18n.t("Condividi contatto"), c: tel.accento }]
+                    Item {
+                        required property var modelData
+                        required property int index
+                        width: parent.width; height: 53
+                        Text { x: 16; anchors.verticalCenter: parent.verticalCenter; text: parent.modelData.t; color: parent.modelData.c; font.family: Tema.font; font.pixelSize: tel.px(16) }
+                        Rectangle { visible: parent.index === 0; anchors.bottom: parent.bottom; x: 16; width: parent.width - 16; height: 1; color: app.linea }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                if (parent.index === 0) { ponte.chiama("preferito", [app.scelto.id, !app.scelto.preferito]); app.aggiorna() }
+                                else { var r = ponte.chiama0("esportaVcard"); tel.avviso(r.messaggio) }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Rectangle {
             visible: app.modifica && app.scelto && app.scelto.id !== ""
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom; anchors.bottomMargin: 50
             width: parent.width - 32; height: 48; radius: 14
             color: app.sezione
-            Text { anchors.centerIn: parent; text: I18n.t("Elimina contatto"); color: "#ef4444"; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
+            Text { anchors.centerIn: parent; text: I18n.t("Elimina contatto"); color: tel.rosso; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
             MouseArea { anchors.fill: parent; onClicked: conferma.open() }
         }
     }

@@ -37,6 +37,7 @@ PREDEFINITE = {
     "roaming": False,
     "sim_dati": "1",
     "risparmio": False,
+    "segreteria": "",          # numero della segreteria dell'operatore
 }
 
 # Categorie del menu di sistema → cartelle della Libreria app
@@ -826,6 +827,32 @@ class BackendMobile(Backend):
 
     def leggiTesto(self, percorso: str) -> str:
         return strumenti.leggi_testo(percorso)
+
+    # ── Foto: account collegati ──────────────────────────────────────────
+    def fotoServizi(self) -> list:
+        from . import fotoaccount
+
+        return fotoaccount.servizi()
+
+    def fotoCollegaNextcloud(self, indirizzo: str, utente: str, password: str, cartella: str) -> dict:
+        from . import fotoaccount
+
+        return fotoaccount.collega_nextcloud(indirizzo, utente, password, cartella)
+
+    def fotoScollega(self, servizio: str) -> dict:
+        from . import fotoaccount
+
+        return fotoaccount.scollega(servizio)
+
+    def fotoImposta(self, servizio: str, chiave: str, valore: bool) -> None:
+        from . import fotoaccount
+
+        fotoaccount.imposta(servizio, chiave, bool(valore))
+
+    def fotoSincronizza(self) -> None:
+        from . import fotoaccount
+
+        fotoaccount.sincronizza()
 
     def foto(self) -> list:
         return strumenti.foto()

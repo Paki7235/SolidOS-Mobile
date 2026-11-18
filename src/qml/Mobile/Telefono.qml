@@ -7,7 +7,20 @@ import SolidUI
 Rectangle {
     id: app
     color: tel.pal.sfondo
-    property string scheda: "tastierino"      // preferiti | recenti | contatti | tastierino
+    property string scheda: "tastierino"      // preferiti | recenti | contatti | tastierino | segreteria
+    property bool soloPerse: false
+    // Chiamate perse nelle ultime 24 ore (numero rosso sulla scheda Recenti)
+    readonly property int perse: registro.filter(function (v) { return v.tipo === "persa" && Date.now() / 1000 - v.quando < 86400 }).length
+    function contattoDi(numero) {
+        var b = (numero || "").replace(/\D/g, "")
+        for (var i = 0; i < contatti.length; i++) { var a = contatti[i].numero.replace(/\D/g, ""); if (b.length >= 6 && a.slice(-9) === b.slice(-9)) return contatti[i] }
+        return null
+    }
+    function dettagli(v) {
+        var c = contattoDi(v.numero)
+        if (c) { tel.appInterna = "contatti"; contattiApp.apri(c) }
+        else { app.numero = v.numero; nuovoContatto.open() }
+    }
     property string numero: ""
     property var contatti: []
     property var registro: []
@@ -23,15 +36,39 @@ Rectangle {
     onVisibleChanged: if (visible) aggiorna()
     Component.onCompleted: aggiorna()
     function chiama(n) { tel.chiama(n) }
+    function chiamaSegreteria() {
+        if (tel.imp.segreteria) app.chiama(tel.imp.segreteria)
+        else { app.scheda = "segreteria"; tel.avviso(I18n.t("Scrivi prima il numero della segreteria del tuo operatore")) }
+    }
 
     // ── Intestazione ──────────────────────────────────────────────────────
     Punti {
         x: 20; y: 60
-        text: ({ preferiti: I18n.t("Preferiti"), recenti: I18n.t("Recenti"), contatti: I18n.t("Contatti"), tastierino: "" })[app.scheda]
+        text: ({ preferiti: I18n.t("Preferiti"), recenti: I18n.t("Recenti"), contatti: I18n.t("Contatti"), tastierino: "", segreteria: I18n.t("Segreteria") })[app.scheda]
         font.pixelSize: 32
     }
+    // Recenti: tutte o solo le perse
+    Rectangle {
+        visible: app.scheda === "recenti"
+        anchors.right: parent.right; anchors.rightMargin: 96; y: 66
+        width: 150; height: 30; radius: 9; color: tel.pal.superficie2
+        Row {
+            anchors.fill: parent; anchors.margins: 2
+            Repeater {
+                model: [I18n.t("Tutte"), I18n.t("Perse")]
+                Rectangle {
+                    required property string modelData
+                    required property int index
+                    width: 73; height: 26; radius: 7
+                    color: (index === 1) === app.soloPerse ? tel.pal.superficie : "transparent"
+                    Text { anchors.centerIn: parent; text: parent.modelData; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+                    MouseArea { anchors.fill: parent; onClicked: app.soloPerse = parent.index === 1 }
+                }
+            }
+        }
+    }
     Text {
-        anchors.right: parent.right; anchors.rightMargin: 20; y: 64
+        anchors.right: parent.right; anchors.rightMargin: 20; y: 70
         visible: app.scheda === "recenti" && app.registro.length > 0
         text: I18n.t("Cancella"); color: tel.accento
         font.family: Tema.font; font.pixelSize: tel.px(16)
@@ -59,43 +96,59 @@ Rectangle {
     // ── Elenchi (Preferiti, Recenti, Contatti) ────────────────────────────
     ListView {
         id: elenco
-        visible: app.scheda !== "tastierino"
+        visible: app.scheda !== "tastierino" && app.scheda !== "segreteria"
         anchors.left: parent.left; anchors.right: parent.right
         anchors.top: parent.top; anchors.topMargin: app.modem.messaggio ? 152 : 108
         anchors.bottom: schede.top
         clip: true
-        model: app.scheda === "recenti" ? app.registro : (app.scheda === "preferiti" ? app.contatti.filter(function (c) { return c.preferito }) : app.contatti)
+        model: app.scheda === "recenti" ? app.registro.filter(function (v) { return !app.soloPerse || v.tipo === "persa" })
+               : (app.scheda === "preferiti" ? app.contatti.filter(function (c) { return c.preferito }) : (app.scheda === "contatti" ? app.contatti : []))
         delegate: Item {
             id: voce
             required property var modelData
             width: elenco.width; height: 64
-            Avatar { x: 20; anchors.verticalCenter: parent.verticalCenter; lato: 44; nome: voce.modelData.nome || "?"; nuovo: app.scheda === "recenti" && voce.modelData.tipo === "persa" }
+            Avatar { x: 20; anchors.verticalCenter: parent.verticalCenter; lato: 44; nome: voce.modelData.nome || "?" }
             Column {
                 x: 74; anchors.verticalCenter: parent.verticalCenter
                 width: parent.width - 150
-                Text { width: parent.width; elide: Text.ElideRight; text: voce.modelData.nome; color: app.scheda === "recenti" && voce.modelData.tipo === "persa" ? tel.accento : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
-                Text {
-                    width: parent.width; elide: Text.ElideRight
-                    text: app.scheda === "recenti"
-                          ? ({ persa: I18n.t("Persa"), entrata: I18n.t("In arrivo"), uscita: I18n.t("In uscita") })[voce.modelData.tipo] + (voce.modelData.conNome ? " · " + voce.modelData.numero : "")
-                          : voce.modelData.numero
-                    color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13)
+                Text { width: parent.width; elide: Text.ElideRight; text: voce.modelData.nome; color: app.scheda === "recenti" && voce.modelData.tipo === "persa" ? tel.rosso : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
+                Row {
+                    spacing: 4
+                    Text {
+                        visible: app.scheda === "recenti" && voce.modelData.tipo !== "persa"
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: voce.modelData.tipo === "uscita" ? "↗" : "↙"; color: tel.pal.testo2; font.pixelSize: tel.px(13)
+                    }
+                    Text {
+                        width: elenco.width - 150 - 16; elide: Text.ElideRight
+                        text: app.scheda === "recenti" ? (voce.modelData.conNome ? I18n.t("cellulare") : I18n.t("sconosciuto")) : voce.modelData.numero
+                        color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13)
+                    }
                 }
             }
             Text {
                 visible: app.scheda === "recenti"
-                anchors.right: parent.right; anchors.rightMargin: 64; anchors.verticalCenter: parent.verticalCenter
+                anchors.right: parent.right; anchors.rightMargin: 54; anchors.verticalCenter: parent.verticalCenter
                 text: voce.modelData.testoQuando || ""
-                color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13)
+                color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(14)
+            }
+            // «i»: i dettagli del contatto (o aggiungilo)
+            Rectangle {
+                visible: app.scheda === "recenti"
+                anchors.right: parent.right; anchors.rightMargin: 18; anchors.verticalCenter: parent.verticalCenter
+                width: 24; height: 24; radius: 12; color: "transparent"; border.width: 1.5; border.color: tel.accento
+                Text { anchors.centerIn: parent; text: "i"; color: tel.accento; font.family: Tema.font; font.pixelSize: 13; font.weight: Font.Bold }
+                MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: app.dettagli(voce.modelData) }
             }
             TastoTondo {
+                visible: app.scheda !== "recenti"
                 anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter
                 lato: 40; icona: "call-start-symbolic"
                 onTocco: app.chiama(voce.modelData.numero)
             }
             Rectangle { anchors.bottom: parent.bottom; x: 74; width: parent.width - 74; height: 1; color: app.linea }
             MouseArea {
-                anchors.fill: parent; anchors.rightMargin: 64
+                anchors.fill: parent; anchors.rightMargin: 56
                 onClicked: app.chiama(voce.modelData.numero)
                 onPressAndHold: if (app.scheda !== "recenti") { ponte.chiama("preferito", [voce.modelData.id, !voce.modelData.preferito]); app.aggiorna(); tel.avviso(voce.modelData.preferito ? I18n.t("Tolto dai preferiti") : I18n.t("Aggiunto ai preferiti")) }
             }
@@ -105,7 +158,7 @@ Rectangle {
             visible: elenco.count === 0
             width: parent.width - 60
             horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap
-            text: app.scheda === "recenti" ? I18n.t("Nessuna chiamata recente") : (app.scheda === "preferiti" ? I18n.t("Tieni premuto un contatto per aggiungerlo ai preferiti") : I18n.t("Nessun contatto: premi + per aggiungerne uno"))
+            text: app.scheda === "recenti" ? (app.soloPerse ? I18n.t("Nessuna chiamata persa") : I18n.t("Nessuna chiamata recente")) : (app.scheda === "preferiti" ? I18n.t("Tieni premuto un contatto per aggiungerlo ai preferiti") : I18n.t("Nessun contatto: premi + per aggiungerne uno"))
             color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(15)
         }
     }
@@ -138,6 +191,12 @@ Rectangle {
                 }
                 color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15)
             }
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                visible: app.numero.length >= 3 && app.contattoDi(app.numero) === null
+                text: I18n.t("Aggiungi numero"); color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.Medium
+                MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: nuovoContatto.open() }
+            }
         }
         Grid {
             id: tasti
@@ -160,7 +219,10 @@ Rectangle {
                         id: tasto
                         anchors.fill: parent
                         onClicked: app.numero += parent.modelData[0]
-                        onPressAndHold: if (parent.modelData[0] === "0") app.numero += "+"
+                        onPressAndHold: {
+                            if (parent.modelData[0] === "0") app.numero += "+"
+                            else if (parent.modelData[0] === "1") app.chiamaSegreteria()   // come su tutti i telefoni
+                        }
                     }
                 }
             }
@@ -180,8 +242,48 @@ Rectangle {
             visible: app.numero !== ""
             anchors.left: chiamaTasto.right; anchors.leftMargin: 40
             anchors.verticalCenter: chiamaTasto.verticalCenter
-            text: "⌫"; color: tel.pal.testo2; font.pixelSize: 30
+            text: "⌫"; color: tel.pal.testo2; font.pixelSize: 28
             MouseArea { anchors.fill: parent; anchors.margins: -12; onClicked: app.numero = app.numero.slice(0, -1); onPressAndHold: app.numero = "" }
+        }
+    }
+
+    // ── Segreteria ────────────────────────────────────────────────────────
+    Column {
+        visible: app.scheda === "segreteria"
+        x: 20; y: 130; width: parent.width - 40
+        spacing: 14
+        Rectangle {
+            width: parent.width; height: 150; radius: 18; color: tel.pal.superficie
+            Column {
+                anchors.centerIn: parent; spacing: 8
+                Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: "phone-voicemail-symbolic"; lato: 34 }
+                Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Nessun messaggio"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(17); font.weight: Font.DemiBold }
+                Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("I messaggi lasciati in segreteria li ascolti chiamandola"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
+            }
+        }
+        Text { text: I18n.t("Numero della segreteria"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+        CampoTesto {
+            id: campoSegreteria
+            width: parent.width
+            text: tel.imp.segreteria || ""
+            placeholderText: I18n.t("Lo trovi sul sito del tuo operatore")
+            inputMethodHints: Qt.ImhDialableCharactersOnly
+            onEditingFinished: tel.imposta("segreteria", text.trim())
+        }
+        Rectangle {
+            width: parent.width; height: 50; radius: 25; color: tel.pal.successo
+            opacity: campoSegreteria.text.trim() ? 1 : 0.4
+            Row {
+                anchors.centerIn: parent; spacing: 8
+                Icona { anchors.verticalCenter: parent.verticalCenter; nome: "call-start-symbolic"; lato: 18; tema: "scuro" }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.t("Chiama la segreteria"); color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
+            }
+            MouseArea { anchors.fill: parent; enabled: campoSegreteria.text.trim() !== ""; onClicked: { tel.imposta("segreteria", campoSegreteria.text.trim()); app.chiama(campoSegreteria.text.trim()) } }
+        }
+        Text {
+            width: parent.width; wrapMode: Text.Wrap
+            text: I18n.t("Puoi anche tenere premuto 1 sul tastierino, come su ogni telefono.")
+            color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13)
         }
     }
 
@@ -197,17 +299,24 @@ Rectangle {
             y: 8
             Repeater {
                 model: [{ s: "preferiti", t: I18n.t("Preferiti"), i: "starred-symbolic" }, { s: "recenti", t: I18n.t("Recenti"), i: "document-open-recent-symbolic" },
-                        { s: "contatti", t: I18n.t("Contatti"), i: "avatar-default-symbolic" }, { s: "tastierino", t: I18n.t("Tastierino"), i: "input-dialpad-symbolic" }]
+                        { s: "contatti", t: I18n.t("Contatti"), i: "avatar-default-symbolic" }, { s: "tastierino", t: I18n.t("Tastierino"), i: "input-dialpad-symbolic" },
+                        { s: "segreteria", t: I18n.t("Segreteria"), i: "phone-voicemail-symbolic" }]
                 Item {
+                    id: voceTab
                     required property var modelData
-                    width: (app.width - 20) / 4; height: 52
-                    opacity: app.scheda === modelData.s ? 1 : 0.45
+                    width: (app.width - 20) / 5; height: 52
                     Column {
                         anchors.centerIn: parent; spacing: 3
-                        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: parent.parent.modelData.i; lato: 24 }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData.t; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(11); font.weight: Font.Medium }
+                        opacity: app.scheda === voceTab.modelData.s ? 1 : 0.5
+                        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: voceTab.modelData.i; lato: 24 }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: voceTab.modelData.t; color: app.scheda === voceTab.modelData.s ? tel.accento : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(10.5); font.weight: Font.DemiBold }
                     }
-                    MouseArea { anchors.fill: parent; onClicked: app.scheda = parent.modelData.s }
+                    Rectangle {
+                        visible: voceTab.modelData.s === "recenti" && app.perse > 0
+                        x: parent.width / 2 + 4; y: 0; height: 18; width: Math.max(18, conto.implicitWidth + 10); radius: 9; color: tel.rosso
+                        Text { id: conto; anchors.centerIn: parent; text: app.perse; color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: 11; font.weight: Font.Bold }
+                    }
+                    MouseArea { anchors.fill: parent; onClicked: app.scheda = voceTab.modelData.s }
                 }
             }
         }
