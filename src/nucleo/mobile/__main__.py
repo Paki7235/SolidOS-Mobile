@@ -849,6 +849,9 @@ class BackendMobile(Backend):
 
         fotoaccount.imposta(servizio, chiave, bool(valore))
 
+    def fotoPreferita(self, percorso: str, si: bool) -> None:
+        strumenti.foto_preferita(percorso, bool(si))
+
     def fotoSincronizza(self) -> None:
         from . import fotoaccount
 

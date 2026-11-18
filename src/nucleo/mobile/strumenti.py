@@ -24,7 +24,7 @@ from pathlib import Path
 
 from .. import branding
 from ..i18n import T
-from ..sistema import cartella_utente, leggi_json, scrivi_json
+from ..sistema import cartella_utente, config_utente, leggi_json, scrivi_json
 from .telefonia import DEMO
 
 IMMAGINI = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp"}
@@ -342,13 +342,25 @@ def _demo_foto() -> None:
     c = cartella_foto()
     if any(c.iterdir()):
         return
-    colori = [((255, 140, 90), (120, 60, 200)), ((40, 120, 255), (20, 220, 200)), ((250, 210, 80), (240, 90, 80)),
-              ((30, 40, 90), (110, 80, 220)), ((60, 200, 120), (20, 90, 140)), ((240, 120, 180), (250, 220, 150)),
-              ((90, 90, 110), (200, 200, 220)), ((10, 120, 90), (200, 240, 120)), ((120, 30, 60), (250, 150, 60))]
-    for i, (a, b) in enumerate(colori):
-        f = c / f"IMG_202611{10 + i}_1200{i}.png"
-        _png(f, 240, 240, a, b)
-        os.utime(f, (time.time() - i * 86400, time.time() - i * 86400))
+    import colorsys
+
+    # Quattro giorni di foto di prova (8 oggi, 8 ieri alle 18:42, 4 e 4 nei giorni prima)
+    giorni = [(0, 8, None), (1, 8, (18, 42)), (4, 4, (11, 5)), (5, 4, (16, 20))]
+    n = 0
+    for indietro, quante, ora in giorni:
+        base = time.localtime(time.time() - indietro * 86400)
+        for k in range(quante):
+            h = (n * 0.137 + 0.08) % 1
+            a = tuple(int(v * 255) for v in colorsys.hsv_to_rgb(h, 0.65, 0.85))
+            b = tuple(int(v * 255) for v in colorsys.hsv_to_rgb((h + 0.18) % 1, 0.7, 0.75))
+            f = c / f"IMG_{time.strftime('%Y%m%d', base)}_{n:04d}.png"
+            _png(f, 240, 240, a, b)
+            if ora:
+                t = time.mktime(base[:3] + (ora[0], ora[1] - k, 0) + base[6:])
+            else:
+                t = time.time() - 600 - k * 900
+            os.utime(f, (t, t))
+            n += 1
 
 
 def foto() -> list:
@@ -375,12 +387,20 @@ def foto() -> list:
 
     elenco += [dict(x, album="account") for x in fotoaccount.foto()]
     if DEMO:   # foto di prova: alcune «arrivano» dagli account collegati
+        elenco.sort(key=lambda x: -x["quando"])
         for i, x in enumerate(elenco):
-            if i in (2, 5):
+            if i in (2, 5, 14):
                 x["fonte"] = "google"
-            elif i in (6, 8):
-                x["fonte"] = "onedrive"
+            elif i in (8, 11):
+                x["fonte"], x["dove"] = "onedrive", "Immagini/2026"
+            elif i == 17:
+                x["fonte"] = "nextcloud"
+            if 8 <= i < 16:
+                x["luogo"] = "Napoli"
     elenco.sort(key=lambda x: -x["quando"])
+    preferite = set(leggi_json(config_utente("foto-preferite.json"), []))
+    for x in elenco:
+        x["preferita"] = x["percorso"] in preferite
     oggi = time.strftime("%Y-%m-%d")
     ieri = time.strftime("%Y-%m-%d", time.localtime(time.time() - 86400))
     mesi = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre",
@@ -391,6 +411,14 @@ def foto() -> list:
         x["giorno"] = T("Oggi") if g == oggi else (T("Ieri") if g == ieri else f"{lt.tm_mday} {T(mesi[lt.tm_mon - 1])}" + (f" {lt.tm_year}" if lt.tm_year != time.localtime().tm_year else ""))
         x["data"] = time.strftime("%d/%m/%Y %H:%M", lt)
     return elenco
+
+
+def foto_preferita(percorso: str, si: bool) -> None:
+    f = config_utente("foto-preferite.json")
+    elenco = [p for p in leggi_json(f, []) if p != percorso]
+    if si:
+        elenco.append(percorso)
+    scrivi_json(f, elenco[-5000:])
 
 
 def nuova_foto() -> str:

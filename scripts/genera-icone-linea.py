@@ -73,6 +73,8 @@ G = {
     "cuffie": '<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/>',
     "auto": '<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
     "segreteria": '<circle cx="6" cy="12" r="4"/><circle cx="18" cy="12" r="4"/><path d="M6 16h12"/>',
+    "esporta": '<path d="M12 2v13M8 6l4-4 4 4"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>',
+    "nuvola": '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
     "rotazione": '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
 }
 
@@ -105,7 +107,7 @@ NOMI = {
     "media-skip-forward-symbolic": "avanti", "media-skip-backward-symbolic": "indietro",
 }
 APP = ["telefono", "messaggi", "contatti", "fotocamera", "foto", "musica", "note", "file", "dove",
-       "calcolatrice", "store", "vicina", "impostazioni"]
+       "calcolatrice", "store", "vicina", "impostazioni", "esporta", "nuvola"]
 
 
 def svg(disegno: str) -> str:

@@ -41,50 +41,59 @@ Rectangle {
         else { app.scheda = "segreteria"; tel.avviso(I18n.t("Scrivi prima il numero della segreteria del tuo operatore")) }
     }
 
-    // ── Intestazione ──────────────────────────────────────────────────────
+    // ── Intestazione: barra in alto (come l'iPhone) e titolo grande ───────
+    property bool modifica: false
     Punti {
-        x: 20; y: 60
+        x: 18; y: 92
+        visible: app.scheda !== "tastierino"
         text: ({ preferiti: I18n.t("Preferiti"), recenti: I18n.t("Recenti"), contatti: I18n.t("Contatti"), tastierino: "", segreteria: I18n.t("Segreteria") })[app.scheda]
-        font.pixelSize: 32
     }
     // Recenti: tutte o solo le perse
     Rectangle {
         visible: app.scheda === "recenti"
-        anchors.right: parent.right; anchors.rightMargin: 96; y: 66
-        width: 150; height: 30; radius: 9; color: tel.pal.superficie2
+        x: 16; y: 52
+        width: segm.width + 4; height: 32; radius: 9; color: tel.pal.superficie2
         Row {
-            anchors.fill: parent; anchors.margins: 2
+            id: segm
+            x: 2; y: 2
             Repeater {
                 model: [I18n.t("Tutte"), I18n.t("Perse")]
                 Rectangle {
                     required property string modelData
                     required property int index
-                    width: 73; height: 26; radius: 7
+                    width: etSeg.implicitWidth + 32; height: 28; radius: 7
                     color: (index === 1) === app.soloPerse ? tel.pal.superficie : "transparent"
-                    Text { anchors.centerIn: parent; text: parent.modelData; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+                    Text { id: etSeg; anchors.centerIn: parent; text: parent.modelData; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
                     MouseArea { anchors.fill: parent; onClicked: app.soloPerse = parent.index === 1 }
                 }
             }
         }
     }
     Text {
-        anchors.right: parent.right; anchors.rightMargin: 20; y: 70
+        anchors.right: parent.right; anchors.rightMargin: 16; y: 57
         visible: app.scheda === "recenti" && app.registro.length > 0
-        text: I18n.t("Cancella"); color: tel.accento
-        font.family: Tema.font; font.pixelSize: tel.px(16)
-        MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: { ponte.chiama0("cancellaRegistro"); app.aggiorna() } }
+        text: app.modifica ? I18n.t("Fine") : I18n.t("Modifica"); color: tel.accento
+        font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: app.modifica ? Font.DemiBold : Font.Normal
+        MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: app.modifica = !app.modifica }
     }
-    TastoTondo {
-        anchors.right: parent.right; anchors.rightMargin: 18; y: 62
-        visible: app.scheda === "contatti"
-        icona: "list-add-symbolic"; pieno: true
-        onTocco: nuovoContatto.open()
+    Text {
+        anchors.right: parent.right; anchors.rightMargin: 16; y: 98
+        visible: app.scheda === "recenti" && app.modifica
+        text: I18n.t("Cancella tutto"); color: tel.rosso
+        font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold
+        MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: { ponte.chiama0("cancellaRegistro"); app.modifica = false; app.aggiorna() } }
+    }
+    Text {
+        anchors.right: parent.right; anchors.rightMargin: 16; y: 50
+        visible: app.scheda === "contatti" || app.scheda === "preferiti"
+        text: "+"; color: tel.accento; font.family: Tema.font; font.pixelSize: 30; font.weight: Font.Light
+        MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: nuovoContatto.open() }
     }
 
     // ── Avviso SIM ────────────────────────────────────────────────────────
     Rectangle {
         visible: app.modem.messaggio !== undefined && app.modem.messaggio !== ""
-        x: 16; y: 104; width: parent.width - 32; height: 40; radius: 12
+        x: 16; y: 144; width: parent.width - 32; height: 40; radius: 12
         color: tel.chiaro ? "#fff4e5" : "#3a2a12"
         Row {
             anchors.centerIn: parent; spacing: 8
@@ -98,7 +107,7 @@ Rectangle {
         id: elenco
         visible: app.scheda !== "tastierino" && app.scheda !== "segreteria"
         anchors.left: parent.left; anchors.right: parent.right
-        anchors.top: parent.top; anchors.topMargin: app.modem.messaggio ? 152 : 108
+        anchors.top: parent.top; anchors.topMargin: app.modem.messaggio ? 192 : 146
         anchors.bottom: schede.top
         clip: true
         model: app.scheda === "recenti" ? app.registro.filter(function (v) { return !app.soloPerse || v.tipo === "persa" })
@@ -106,10 +115,10 @@ Rectangle {
         delegate: Item {
             id: voce
             required property var modelData
-            width: elenco.width; height: 64
-            Avatar { x: 20; anchors.verticalCenter: parent.verticalCenter; lato: 44; nome: voce.modelData.nome || "?" }
+            width: elenco.width; height: 56
+            Avatar { x: 16; anchors.verticalCenter: parent.verticalCenter; lato: 40; nome: voce.modelData.nome || "?" }
             Column {
-                x: 74; anchors.verticalCenter: parent.verticalCenter
+                x: 66; anchors.verticalCenter: parent.verticalCenter
                 width: parent.width - 150
                 Text { width: parent.width; elide: Text.ElideRight; text: voce.modelData.nome; color: app.scheda === "recenti" && voce.modelData.tipo === "persa" ? tel.rosso : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
                 Row {
@@ -146,7 +155,7 @@ Rectangle {
                 lato: 40; icona: "call-start-symbolic"
                 onTocco: app.chiama(voce.modelData.numero)
             }
-            Rectangle { anchors.bottom: parent.bottom; x: 74; width: parent.width - 74; height: 1; color: app.linea }
+            Rectangle { anchors.bottom: parent.bottom; x: 66; width: parent.width - 66; height: 1; color: app.linea }
             MouseArea {
                 anchors.fill: parent; anchors.rightMargin: 56
                 onClicked: app.chiama(voce.modelData.numero)
@@ -163,87 +172,69 @@ Rectangle {
         }
     }
 
-    // ── Tastierino ────────────────────────────────────────────────────────
+    // ── Tastierino (come l'iPhone: numero in alto, tasti tondi, chiamata verde al centro) ──
     Item {
         visible: app.scheda === "tastierino"
         anchors.left: parent.left; anchors.right: parent.right
         anchors.top: parent.top; anchors.bottom: schede.top
-        Column {
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: parent.height * 0.14
-            spacing: 6
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: app.width - 40; horizontalAlignment: Text.AlignHCenter
-                text: app.numero || " "
-                elide: Text.ElideLeft
-                color: tel.pal.testo; font.family: Tema.font; font.pixelSize: app.numero.length > 13 ? 30 : 38; font.weight: Font.Medium; font.letterSpacing: 0
-            }
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: {
-                    if (!app.numero) return " "
-                    for (var i = 0; i < app.contatti.length; i++) {
-                        var a = app.contatti[i].numero.replace(/\D/g, ""), b = app.numero.replace(/\D/g, "")
-                        if (b.length >= 6 && a.slice(-9) === b.slice(-9)) return app.contatti[i].nome
-                    }
-                    return " "
-                }
-                color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15)
-            }
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                visible: app.numero.length >= 3 && app.contattoDi(app.numero) === null
-                text: I18n.t("Aggiungi numero"); color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.Medium
-                MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: nuovoContatto.open() }
-            }
+        readonly property var conosciuto: app.contattoDi(app.numero)
+        Text {
+            x: 20; y: 150; width: parent.width - 40
+            horizontalAlignment: Text.AlignHCenter; elide: Text.ElideLeft
+            text: app.numero
+            color: tel.pal.testo; font.family: Tema.font; font.pixelSize: app.numero.length > 13 ? 30 : 38; font.letterSpacing: 1
+        }
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter; y: 202
+            visible: app.numero.length >= 3
+            text: parent.conosciuto ? parent.conosciuto.nome : I18n.t("Aggiungi numero")
+            color: parent.conosciuto ? tel.pal.testo : tel.accento; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.Medium
+            MouseArea { anchors.fill: parent; anchors.margins: -10; enabled: !parent.parent.conosciuto; onClicked: nuovoContatto.open() }
         }
         Grid {
             id: tasti
             anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottom: chiamaTasto.top; anchors.bottomMargin: 22
-            columns: 3; rowSpacing: 16; columnSpacing: 28
+            y: Math.min(270, parent.height - 5 * 78 - 4 * 16 - 20)
+            columns: 3; rowSpacing: 16; columnSpacing: 26
             Repeater {
                 model: [["1", ""], ["2", "ABC"], ["3", "DEF"], ["4", "GHI"], ["5", "JKL"], ["6", "MNO"], ["7", "PQRS"], ["8", "TUV"], ["9", "WXYZ"], ["*", ""], ["0", "+"], ["#", ""]]
                 Rectangle {
+                    id: tastoT
                     required property var modelData
-                    width: 76; height: 76; radius: 38
-                    color: tasto.pressed ? tel.pal.pieno : tel.pal.superficie2
+                    width: 78; height: 78; radius: 39
+                    color: tasto.pressed ? Qt.lighter(tel.pal.superficie2, 1.6) : tel.pal.superficie2
                     Behavior on color { ColorAnimation { duration: tel.tVeloce } }
                     Column {
                         anchors.centerIn: parent
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData[0]; color: tasto.pressed ? tel.pal.suPieno : tel.pal.testo; font.family: Tema.font; font.pixelSize: 32; font.weight: Font.Medium }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData[1]; color: tasto.pressed ? tel.pal.suPieno : tel.pal.testo2; font.family: Tema.font; font.pixelSize: 9; font.letterSpacing: 1.2 }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: tastoT.modelData[0]; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 34; font.weight: Font.Normal }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: tastoT.modelData[1] || " "; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 1.6 }
                     }
                     MouseArea {
                         id: tasto
                         anchors.fill: parent
-                        onClicked: app.numero += parent.modelData[0]
+                        onClicked: app.numero += tastoT.modelData[0]
                         onPressAndHold: {
-                            if (parent.modelData[0] === "0") app.numero += "+"
-                            else if (parent.modelData[0] === "1") app.chiamaSegreteria()   // come su tutti i telefoni
+                            if (tastoT.modelData[0] === "0") app.numero += "+"
+                            else if (tastoT.modelData[0] === "1") app.chiamaSegreteria()   // come su tutti i telefoni
                         }
                     }
                 }
             }
-        }
-        Rectangle {
-            id: chiamaTasto
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottom: parent.bottom; anchors.bottomMargin: 18
-            width: 76; height: 76; radius: 38
-            color: tel.pal.successo
-            scale: toccoChiama.pressed ? 0.93 : 1
-            Behavior on scale { NumberAnimation { duration: tel.tVeloce } }
-            Icona { anchors.centerIn: parent; nome: "call-start-symbolic"; lato: 30; tema: "chiaro" }
-            MouseArea { id: toccoChiama; anchors.fill: parent; onClicked: if (app.numero) app.chiama(app.numero) }
-        }
-        Text {
-            visible: app.numero !== ""
-            anchors.left: chiamaTasto.right; anchors.leftMargin: 40
-            anchors.verticalCenter: chiamaTasto.verticalCenter
-            text: "⌫"; color: tel.pal.testo2; font.pixelSize: 28
-            MouseArea { anchors.fill: parent; anchors.margins: -12; onClicked: app.numero = app.numero.slice(0, -1); onPressAndHold: app.numero = "" }
+            // Ultima riga: vuoto, chiama, cancella
+            Item { width: 78; height: 78 }
+            Rectangle {
+                width: 78; height: 78; radius: 39
+                color: tel.pal.successo
+                scale: toccoChiama.pressed ? 0.93 : 1
+                Behavior on scale { NumberAnimation { duration: tel.tVeloce } }
+                Icona { anchors.centerIn: parent; nome: "call-start-symbolic"; lato: 32; tema: "scuro" }
+                MouseArea { id: toccoChiama; anchors.fill: parent; onClicked: if (app.numero) app.chiama(app.numero) }
+            }
+            Item {
+                width: 78; height: 78
+                Icona { anchors.centerIn: parent; visible: app.numero !== ""; nome: "go-previous-symbolic"; lato: 30 }
+                MouseArea { anchors.fill: parent; enabled: app.numero !== ""; onClicked: app.numero = app.numero.slice(0, -1); onPressAndHold: app.numero = "" }
+            }
         }
     }
 

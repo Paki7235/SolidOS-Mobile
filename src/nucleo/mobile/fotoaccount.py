@@ -70,7 +70,7 @@ def servizi() -> list:
     collegati = {a["servizio"]: a for a in account()}
     if _demo():
         collegati.setdefault("google", {"servizio": "google", "utente": "pasquale@…", "foto": 412, "album": 3})
-        collegati.setdefault("onedrive", {"servizio": "onedrive", "utente": "Immagini", "auto": True, "wifi": True, "scarica": False})
+        collegati.setdefault("onedrive", {"servizio": "onedrive", "cartella": "Immagini", "auto": True, "wifi": True, "scarica": False})
     elenco = []
     for chiave, s in SERVIZI.items():
         a = collegati.get(chiave)

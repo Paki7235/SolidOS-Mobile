@@ -28,27 +28,31 @@ Rectangle {
     Item {
         anchors.fill: parent
         visible: app.scelto === null
-        Punti { x: 20; y: 60; text: I18n.t("Contatti"); font.pixelSize: 32 }
-        Row {
-            anchors.right: parent.right; anchors.rightMargin: 18; y: 62
-            spacing: 10
-            TastoTondo { icona: "document-send-symbolic"; onTocco: vcard.open() }
-            TastoTondo { icona: "list-add-symbolic"; pieno: true; onTocco: app.nuovo() }
+        // Barra in alto come l'iPhone: «Elenchi» (rubrica vCard) e «+»
+        Text {
+            x: 16; y: 56; text: I18n.t("Elenchi"); color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(16)
+            MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: vcard.open() }
         }
+        Text {
+            anchors.right: parent.right; anchors.rightMargin: 16; y: 48
+            text: "+"; color: tel.accento; font.family: Tema.font; font.pixelSize: 30; font.weight: Font.Light
+            MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: app.nuovo() }
+        }
+        Punti { x: 18; y: 92; text: I18n.t("Contatti") }
         CampoCerca {
-            x: 16; y: 122; width: parent.width - 32
+            x: 16; y: 146; width: parent.width - 46; height: 38; radius: 11
             suggerimento: I18n.t("Cerca tra") + " " + app.contatti.length + " " + I18n.t("contatti")
             onTextChanged: app.cerca = text.toLowerCase()
         }
         // La mia scheda (nome del Solid ID)
         Item {
             id: miaScheda
-            x: 16; y: 176; width: parent.width - 46; height: app.cerca ? 0 : 84
+            x: 16; y: 198; width: parent.width - 46; height: app.cerca ? 0 : 84
             visible: !app.cerca
             readonly property string nome: (ponte.chiama0("solidId").nome || "") || I18n.t("Io")
-            Avatar { anchors.verticalCenter: parent.verticalCenter; lato: 60; nome: miaScheda.nome }
+            Avatar { y: 4; lato: 60; nome: miaScheda.nome }
             Column {
-                x: 74; anchors.verticalCenter: parent.verticalCenter
+                x: 74; y: 14
                 Text { text: miaScheda.nome; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(19); font.weight: Font.Bold }
                 Text { text: I18n.t("La mia scheda"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
             }
@@ -57,13 +61,13 @@ Rectangle {
         // Indice delle lettere: tocca per saltare
         Column {
             anchors.right: parent.right; anchors.rightMargin: 4
-            anchors.verticalCenter: elenco.verticalCenter
-            visible: !app.cerca && app.contatti.length > 8
+            y: 206
+            visible: !app.cerca && app.contatti.length > 0
             Repeater {
                 model: "ABCDEFGHILMNOPQRSTUVZ#".split("")
                 Text {
                     required property string modelData
-                    width: 20; horizontalAlignment: Text.AlignHCenter
+                    width: 20; height: 13; horizontalAlignment: Text.AlignHCenter
                     text: modelData; color: tel.accento; font.family: Tema.font; font.pixelSize: 10; font.weight: Font.DemiBold
                     MouseArea {
                         anchors.fill: parent; anchors.margins: -2
@@ -80,29 +84,25 @@ Rectangle {
         }
         ListView {
             id: elenco
-            anchors.left: parent.left; anchors.right: parent.right; anchors.rightMargin: 24
-            anchors.top: miaScheda.bottom; anchors.topMargin: 4; anchors.bottom: parent.bottom; anchors.bottomMargin: 30
+            anchors.left: parent.left; anchors.leftMargin: 16; anchors.right: parent.right; anchors.rightMargin: 30
+            anchors.top: miaScheda.bottom; anchors.topMargin: 6; anchors.bottom: parent.bottom; anchors.bottomMargin: 30
             clip: true
             model: app.filtrati
             section.property: "nome"
             section.criteria: ViewSection.FirstCharacter
             section.delegate: Text {
                 required property string section
-                x: 20; height: 28; verticalAlignment: Text.AlignBottom
+                height: 30; verticalAlignment: Text.AlignBottom; bottomPadding: 4
                 text: section.toUpperCase()
                 color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Bold
             }
             delegate: Item {
                 id: voce
                 required property var modelData
-                width: elenco.width; height: 58
-                Avatar { x: 20; anchors.verticalCenter: parent.verticalCenter; lato: 42; nome: voce.modelData.nome }
-                Column {
-                    x: 72; anchors.verticalCenter: parent.verticalCenter
-                    Text { text: voce.modelData.nome + (voce.modelData.preferito ? "  ★" : ""); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
-                    Text { text: voce.modelData.numero; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
-                }
-                Rectangle { anchors.bottom: parent.bottom; x: 72; width: parent.width - 72; height: 1; color: app.linea }
+                width: elenco.width; height: 44
+                // Solo il nome, come la rubrica dell'iPhone
+                Text { anchors.verticalCenter: parent.verticalCenter; width: parent.width; elide: Text.ElideRight; text: voce.modelData.nome; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.Medium }
+                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: app.linea }
                 MouseArea { anchors.fill: parent; onClicked: app.apri(voce.modelData) }
             }
             Text {
@@ -126,8 +126,8 @@ Rectangle {
             visible: schedaContatto.vista
             width: parent.width; height: 440
             gradient: Gradient {
-                GradientStop { position: 0; color: copiaColori.coppie[copiaColori.indice][0] }
-                GradientStop { position: 0.75; color: copiaColori.coppie[copiaColori.indice][1] }
+                GradientStop { position: 0; color: "#8B5CF6" }
+                GradientStop { position: 0.6; color: "#4C7DFF" }
                 GradientStop { position: 1; color: tel.pal.sfondo }
             }
             Avatar { id: copiaColori; visible: false; nome: app.scelto && app.scelto.nome ? app.scelto.nome : "" }
@@ -164,13 +164,14 @@ Rectangle {
             Item { width: 1; height: 4 }
             Text { visible: !app.modifica; anchors.horizontalCenter: parent.horizontalCenter; width: app.width - 40; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
                    text: app.scelto ? app.scelto.nome : ""; color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(30); font.weight: Font.Bold }
-            Text { visible: !app.modifica && app.scelto && app.scelto.preferito; anchors.horizontalCenter: parent.horizontalCenter; text: "★ " + I18n.t("Preferito"); color: "#E6FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(14) }
+            Text { visible: !app.modifica && text !== ""; anchors.horizontalCenter: parent.horizontalCenter; width: app.width - 40; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
+                   text: app.scelto ? (app.scelto.note || (app.scelto.preferito ? "★ " + I18n.t("Preferito") : "")) : ""; color: "#D9FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.Medium }
         }
         // Azioni rapide
         Row {
             visible: !app.modifica
             anchors.horizontalCenter: parent.horizontalCenter
-            y: 344
+            y: 338
             spacing: 8
             Repeater {
                 model: [{ t: I18n.t("messaggio"), i: "mail-message-new-symbolic" }, { t: I18n.t("chiama"), i: "call-start-symbolic" },
@@ -202,7 +203,8 @@ Rectangle {
         }
         // Dettagli (lettura) o campi (modifica)
         Rectangle {
-            x: 16; y: app.modifica ? 210 : 426
+            visible: app.modifica
+            x: 16; y: 210
             width: parent.width - 32; height: dettagli.implicitHeight + 8
             radius: 16; color: app.sezione
             Column {
@@ -231,29 +233,64 @@ Rectangle {
                 TextField { id: campoNote; width: parent.width; height: 38; text: app.scelto ? app.scelto.note || "" : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); background: Item {} }
             }
         }
-        Rectangle {
+        // Gruppi come la scheda dell'iPhone: numeri, email, compleanno, azioni
+        Flickable {
             visible: !app.modifica
-            x: 16; anchors.top: parent.top; anchors.topMargin: 426 + dettagli.implicitHeight + 8 + 14
-            width: parent.width - 32; height: 106; radius: 16; color: app.sezione
+            x: 16; y: 420; width: parent.width - 32; height: parent.height - y - 24
+            contentHeight: gruppi.height; clip: true
+            component Gruppo: Rectangle {
+                default property alias righe: colG.data
+                width: gruppi.width; height: colG.height; radius: 14; color: app.sezione
+                visible: colG.children.length > 0
+                Column { id: colG; width: parent.width }
+            }
+            component Voce: Item {
+                id: vo
+                property string etichetta: ""
+                property string valore: ""
+                property bool cliccabile: true
+                property bool prima: true
+                signal tocco()
+                width: gruppi.width; height: 64
+                Rectangle { visible: !vo.prima; x: 16; width: parent.width - 16; height: 1; color: app.linea }
+                Column {
+                    x: 16; anchors.verticalCenter: parent.verticalCenter; spacing: 2
+                    Text { text: vo.etichetta; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Medium }
+                    Text { text: vo.valore; color: vo.cliccabile ? tel.accento : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16) }
+                }
+                MouseArea { anchors.fill: parent; enabled: vo.cliccabile; onClicked: vo.tocco() }
+            }
+            component Azione: Item {
+                id: az
+                property string testo: ""
+                property color colore: tel.accento
+                property bool prima: true
+                signal tocco()
+                width: gruppi.width; height: 48
+                Rectangle { visible: !az.prima; x: 16; width: parent.width - 16; height: 1; color: app.linea }
+                Text { x: 16; anchors.verticalCenter: parent.verticalCenter; text: az.testo; color: az.colore; font.family: Tema.font; font.pixelSize: tel.px(16) }
+                MouseArea { anchors.fill: parent; onClicked: az.tocco() }
+            }
             Column {
-                width: parent.width
-                Repeater {
-                    model: [{ t: app.scelto && app.scelto.preferito ? I18n.t("Togli dai preferiti") : I18n.t("Aggiungi ai preferiti"), c: tel.accento },
-                            { t: I18n.t("Condividi contatto"), c: tel.accento }]
-                    Item {
-                        required property var modelData
-                        required property int index
-                        width: parent.width; height: 53
-                        Text { x: 16; anchors.verticalCenter: parent.verticalCenter; text: parent.modelData.t; color: parent.modelData.c; font.family: Tema.font; font.pixelSize: tel.px(16) }
-                        Rectangle { visible: parent.index === 0; anchors.bottom: parent.bottom; x: 16; width: parent.width - 16; height: 1; color: app.linea }
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                if (parent.index === 0) { ponte.chiama("preferito", [app.scelto.id, !app.scelto.preferito]); app.aggiorna() }
-                                else { var r = ponte.chiama0("esportaVcard"); tel.avviso(r.messaggio) }
-                            }
-                        }
-                    }
+                id: gruppi
+                width: parent.width; spacing: 12
+                Gruppo {
+                    Voce { etichetta: I18n.t("cellulare"); valore: app.scelto ? app.scelto.numero || "" : ""; onTocco: tel.chiama(app.scelto.numero) }
+                    Voce { visible: !!(app.scelto && app.scelto.numero2); prima: false; etichetta: I18n.t("casa"); valore: app.scelto ? app.scelto.numero2 || "" : ""; onTocco: tel.chiama(app.scelto.numero2) }
+                }
+                Gruppo {
+                    visible: !!(app.scelto && app.scelto.email)
+                    Voce { etichetta: I18n.t("email"); valore: app.scelto ? app.scelto.email || "" : ""; onTocco: Qt.openUrlExternally("mailto:" + app.scelto.email) }
+                }
+                Gruppo {
+                    visible: !!(app.scelto && app.scelto.compleanno)
+                    Voce { etichetta: I18n.t("compleanno"); valore: app.scelto ? app.scelto.compleanno || "" : ""; cliccabile: false }
+                }
+                Gruppo {
+                    Azione { testo: I18n.t("Condividi contatto"); onTocco: { var r = ponte.chiama0("esportaVcard"); tel.avviso(r.messaggio) } }
+                    Azione { prima: false; testo: app.scelto && app.scelto.preferito ? I18n.t("Togli dai preferiti") : I18n.t("Aggiungi ai preferiti")
+                             onTocco: { ponte.chiama("preferito", [app.scelto.id, !app.scelto.preferito]); app.aggiorna() } }
+                    Azione { prima: false; testo: I18n.t("Blocca questo contatto"); colore: tel.rosso; onTocco: tel.avviso(I18n.t("Il blocco dei numeri arriva con il telefono vero")) }
                 }
             }
         }
