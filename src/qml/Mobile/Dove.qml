@@ -83,12 +83,12 @@ Rectangle {
             width: 84; height: 84; color: "transparent"
             Icona { anchors.centerIn: parent; nome: "nucleo-dove"; lato: 84 }
         }
-        Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Dov'è"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(26); font.weight: Font.Bold }
+        Punti { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Dov'è").toUpperCase(); font.pixelSize: 34 }
         Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap; text: I18n.t("Accedi con il tuo Solid ID per vedere sulla mappa il telefono e il PC, farli suonare o bloccarli a distanza."); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(15) }
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 220; height: 48; radius: 24; color: tel.accento
-            Text { anchors.centerIn: parent; text: I18n.t("Accedi al Solid ID"); color: "#ffffff"; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
+            width: 220; height: 52; radius: 26; color: tel.pal.pieno
+            Text { anchors.centerIn: parent; text: I18n.t("Accedi al Solid ID"); color: tel.pal.suPieno; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
             MouseArea { anchors.fill: parent; onClicked: { tel.appInterna = "impostazioni"; impostazioniApp.apri("solidid") } }
         }
     }
@@ -135,8 +135,8 @@ Rectangle {
                 id: elenco
                 width: parent.width
                 spacing: 10
-                Text { x: 20; text: I18n.t("Dispositivi"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(20); font.weight: Font.Bold }
-                Text { visible: app.errore !== ""; x: 20; width: parent.width - 40; wrapMode: Text.Wrap; text: app.errore; color: "#ef4444"; font.family: Tema.font; font.pixelSize: tel.px(13) }
+                Mono { x: 20; text: I18n.t("Dispositivi"); color: tel.pal.testo; font.pixelSize: tel.px(13) }
+                Text { visible: app.errore !== ""; x: 20; width: parent.width - 40; wrapMode: Text.Wrap; text: app.errore; color: tel.rosso; font.family: Tema.font; font.pixelSize: tel.px(13) }
                 Text { visible: app.caricato && app.errore === "" && app.dispositivi.length === 0; x: 20; text: I18n.t("Nessun dispositivo collegato"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(14) }
                 Rectangle {
                     visible: app.dispositivi.length > 0
@@ -202,19 +202,20 @@ Rectangle {
             }
             Text {
                 visible: app.dispositivo !== null && app.dispositivo.bloccato === true
-                text: I18n.t("Bloccato a distanza"); color: "#ef4444"; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold
+                text: I18n.t("Bloccato a distanza"); color: tel.rosso; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold
             }
             Row {
                 width: parent.width
                 spacing: 10
                 Repeater {
                     model: [{ k: "suona", t: I18n.t("Fai suonare"), i: "audio-volume-high-symbolic", c: "#3f7cf5" },
-                            { k: "blocca", t: I18n.t("Blocca"), i: "system-lock-screen-symbolic", c: "#ef4444" },
+                            { k: "blocca", t: I18n.t("Blocca"), i: "system-lock-screen-symbolic", c: tel.rosso },
                             { k: "strada", t: I18n.t("Indicazioni"), i: "mark-location-symbolic", c: "#22c55e" }]
                     Rectangle {
                         required property var modelData
                         readonly property bool attivo: !!app.dispositivo && !app.dispositivo.questo && (modelData.k !== "strada" || app.dispositivo.posizione)
-                        width: (parent.width - 20) / 3; height: 86; radius: 18
+                        width: (parent.width - 20) / 3; height: 90; radius: 22
+                        border.width: 1; border.color: tel.pal.bordo
                         color: app.sezione
                         opacity: attivo ? 1 : 0.4
                         Column {
@@ -222,8 +223,8 @@ Rectangle {
                             spacing: 8
                             Rectangle {
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                width: 38; height: 38; radius: 19; color: parent.parent.modelData.c
-                                Icona { anchors.centerIn: parent; nome: parent.parent.parent.modelData.i; lato: 20 }
+                                width: 40; height: 40; radius: 20; color: parent.parent.modelData.k === "blocca" ? tel.rosso : tel.pal.superficie2
+                                Icona { anchors.centerIn: parent; nome: parent.parent.parent.modelData.i; lato: 20; tema: parent.parent.parent.modelData.k === "blocca" ? "scuro" : "" }
                             }
                             Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData.t; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
                         }

@@ -1,6 +1,7 @@
-// Home: una scheda «Oggi» (data, ora grande, anello della batteria e notifiche), la griglia
-// delle app (senza ripetere quelle del Dock), ricerca e Dock. Scorrendo a sinistra si arriva
-// alla Libreria app. Le righe di app sono quante ne entrano: mai sovrapposizioni.
+// Home «Essenziale»: due widget (Batteria con i puntini, Oggi), la griglia delle app in tondi
+// con il disegno a linea (senza ripetere quelle del Dock), la ricerca e il Dock con i tondi
+// bianchi. Scorrendo a sinistra si arriva alla Libreria app. Le righe di app sono quante ne
+// entrano: mai sovrapposizioni.
 import QtQuick
 import QtQuick.Controls
 import SolidUI
@@ -20,35 +21,11 @@ Item {
     }
     readonly property int basso: tel.imp.navigazione === "tasti" ? 52 : 30   // spazio per la navigazione
     readonly property real cella: (width - 2 * tel.margine) / 4
-    readonly property real altezzaCella: tel.latoIcona + 26 + 18
+    readonly property real altezzaCella: tel.latoIcona + 28 + 16
     readonly property int batteria: tel.stato && tel.stato.batteria ? tel.stato.batteria.livello : 100
     readonly property int notifiche: tel.elencoNotifiche ? tel.elencoNotifiche.length : 0
-
-    // Anello della batteria
-    component Anello: Item {
-        id: an
-        property int livello: 100
-        property real spessore: 5
-        property bool conTesto: true
-        property int testo: 14
-        width: 52; height: 52
-        Canvas {
-            anchors.fill: parent
-            property int l: an.livello
-            property color c: an.livello <= 20 ? tel.pal.pericolo : tel.pal.successo
-            property color f: tel.pal.traccia
-            onLChanged: requestPaint()
-            onCChanged: requestPaint()
-            onWidthChanged: requestPaint()
-            onPaint: {
-                var g = getContext("2d"), r = width / 2 - an.spessore / 2 - 1
-                g.reset(); g.lineWidth = an.spessore; g.lineCap = "round"
-                g.strokeStyle = f; g.beginPath(); g.arc(width / 2, height / 2, r, 0, 2 * Math.PI); g.stroke()
-                g.strokeStyle = c; g.beginPath(); g.arc(width / 2, height / 2, r, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * l / 100); g.stroke()
-            }
-        }
-        Text { visible: an.conTesto; anchors.centerIn: parent; text: an.livello; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: an.testo; font.weight: Font.Bold }
-    }
+    // Un'app ha novità se c'è una sua notifica (puntino rosso sull'icona)
+    function haNovita(a) { return (tel.elencoNotifiche || []).some(function (n) { return n.icona === a.icona }) }
 
     SwipeView {
         id: pagine
@@ -58,37 +35,61 @@ Item {
         // ── Pagina 1: Home ────────────────────────────────────────────────
         Item {
             id: paginaHome
-            // Scheda «Oggi»: ora e data grandi, batteria e notifiche
-            Vetro {
+
+            // Widget
+            Row {
                 id: cima
-                x: tel.margine; y: 8
-                width: home.width - 2 * tel.margine; height: Math.min(168, Math.max(136, home.height * 0.19))
-                radius: 28
-                Column {
-                    x: 20; anchors.verticalCenter: parent.verticalCenter
-                    Text { text: tel.adesso.toLocaleDateString(Qt.locale("it_IT"), "dddd d MMMM"); color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.DemiBold; font.capitalization: Font.Capitalize }
-                    Text { text: tel.ora(); color: tel.pal.testo; font.family: tel.fontOra; font.pixelSize: 64; font.weight: Font.Bold; font.letterSpacing: -2 }
-                }
-                Column {
-                    anchors.right: parent.right; anchors.rightMargin: 20; anchors.verticalCenter: parent.verticalCenter
-                    spacing: 10
-                    Anello { anchors.horizontalCenter: parent.horizontalCenter; livello: home.batteria; width: 60; height: 60; testo: 16 }
-                    Text {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        text: tel.imp.non_disturbare ? I18n.t("Non disturbare") : (home.notifiche > 0 ? home.notifiche + " " + I18n.t("notifiche") : I18n.t("Tutto letto"))
-                        color: tel.imp.non_disturbare ? "#818CF8" : tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12); font.weight: Font.Medium
+                x: tel.margine; y: 14
+                spacing: 12
+                readonly property real lato: (home.width - 2 * tel.margine - 12) / 2
+                readonly property real alto: Math.min(166, Math.max(140, home.height * 0.19))
+
+                // Batteria: numero a puntini e barra di puntini
+                Vetro {
+                    width: cima.lato; height: cima.alto; radius: 24
+                    Mono { x: 16; y: 16; text: I18n.t("Batteria") }
+                    Punti { x: 16; y: 34; text: home.batteria; font.pixelSize: 58; color: home.batteria <= 20 ? tel.rosso : tel.pal.testo }
+                    BarraPunti {
+                        x: 16; width: parent.width - 32; height: 28
+                        anchors.bottom: parent.bottom; anchors.bottomMargin: 14
+                        valore: home.batteria
+                        acceso: home.batteria <= 20 ? tel.rosso : tel.pal.testo
                     }
+                    MouseArea { anchors.fill: parent; onClicked: { tel.apri({ "id": "interno:impostazioni" }); impostazioniApp.apri("batteria") } }
                 }
-                MouseArea { anchors.fill: parent; onClicked: tel.notifiche = true }
+                // Oggi: giorno, notifiche e il computer collegato
+                Vetro {
+                    width: cima.lato; height: cima.alto; radius: 24
+                    Mono { x: 16; y: 16; text: I18n.t("Oggi") }
+                    Rectangle { visible: home.notifiche > 0; anchors.right: parent.right; anchors.rightMargin: 18; y: 19; width: 8; height: 8; radius: 4; color: tel.rosso }
+                    Column {
+                        x: 16; anchors.verticalCenter: parent.verticalCenter; anchors.verticalCenterOffset: 4
+                        width: parent.width - 32
+                        spacing: 4
+                        Text { width: parent.width; elide: Text.ElideRight; text: tel.adesso.toLocaleDateString(Qt.locale("it_IT"), "dddd d"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(19); font.weight: Font.DemiBold; font.capitalization: Font.Capitalize }
+                        Mono {
+                            text: home.notifiche > 0 ? home.notifiche + " " + (home.notifiche === 1 ? I18n.t("notifica") : I18n.t("notifiche"))
+                                                     : I18n.t("Tutto letto")
+                            color: home.notifiche > 0 ? tel.pal.testo : tel.pal.testo2; font.pixelSize: tel.px(12)
+                        }
+                    }
+                    Mono {
+                        x: 16; anchors.bottom: parent.bottom; anchors.bottomMargin: 16
+                        width: parent.width - 32; elide: Text.ElideRight
+                        text: home.dispositivi.length ? home.dispositivi[0].nome + " " + home.dispositivi[0].batteria + "%"
+                                                      : (tel.stato.rete && tel.stato.rete.connesso ? tel.stato.rete.nome : I18n.t("Nessuna rete"))
+                    }
+                    MouseArea { anchors.fill: parent; onClicked: tel.notifiche = true }
+                }
             }
 
             // Griglia: 4 colonne, tante righe quante ne entrano
             Grid {
                 id: griglia
                 x: tel.margine
-                anchors.top: cima.bottom; anchors.topMargin: 24
+                anchors.top: cima.bottom; anchors.topMargin: 26
                 columns: 4
-                readonly property real spazio: ricerca.y - 16 - (cima.y + cima.height + 24)
+                readonly property real spazio: ricerca.y - 16 - (cima.y + cima.height + 26)
                 readonly property int righe: Math.max(1, Math.min(4, Math.floor(spazio / home.altezzaCella)))
                 Repeater {
                     model: home.appGriglia.slice(0, griglia.righe * 4)
@@ -96,43 +97,40 @@ Item {
                         required property var modelData
                         required property int index
                         width: home.cella; height: home.altezzaCella
-                        IconaApp { anchors.horizontalCenter: parent.horizontalCenter; app: parent.modelData; ritardo: 60 + parent.index * 35 }
+                        IconaApp { anchors.horizontalCenter: parent.horizontalCenter; app: parent.modelData; nuovo: home.haNovita(parent.modelData); ritardo: 40 + parent.index * 30 }
                     }
                 }
             }
 
             // Ricerca (porta alla Libreria)
-            Vetro {
+            Rectangle {
                 id: ricerca
                 anchors.horizontalCenter: parent.horizontalCenter
-                anchors.bottom: dockHome.top; anchors.bottomMargin: 14
-                width: cerca.implicitWidth + 46; height: 32; radius: 16
+                anchors.bottom: dockHome.top; anchors.bottomMargin: 18
+                width: cerca.implicitWidth + 50; height: 34; radius: 17
+                color: "transparent"; border.width: 1; border.color: tel.pal.bordo
                 Row {
-                    anchors.centerIn: parent; spacing: 7
+                    anchors.centerIn: parent; spacing: 8
                     Icona { nome: "system-search-symbolic"; lato: 14; anchors.verticalCenter: parent.verticalCenter }
-                    Text { id: cerca; text: I18n.t("Cerca"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Medium }
+                    Mono { id: cerca; anchors.verticalCenter: parent.verticalCenter; text: I18n.t("Cerca"); color: tel.pal.testo; font.pixelSize: tel.px(12) }
                 }
-                MouseArea { anchors.fill: parent; onClicked: pagine.currentIndex = 1 }
+                MouseArea { anchors.fill: parent; anchors.margins: -6; onClicked: pagine.currentIndex = 1 }
             }
 
-            // Dock
-            Vetro {
+            // Dock: tondi bianchi, senza nome
+            Row {
                 id: dockHome
                 anchors.left: parent.left; anchors.right: parent.right
-                anchors.leftMargin: tel.margine - 6; anchors.rightMargin: tel.margine - 6
-                anchors.bottom: parent.bottom; anchors.bottomMargin: home.basso
-                height: tel.latoIcona + 24; radius: tel.r3 + 4
-                Row {
-                    anchors.left: parent.left; anchors.leftMargin: 6
-                    anchors.verticalCenter: parent.verticalCenter
-                    Repeater {
-                        model: home.dock
-                        Item {
-                            required property var modelData
-                            required property int index
-                            width: (dockHome.width - 12) / Math.max(4, home.dock.length); height: tel.latoIcona
-                            IconaApp { anchors.horizontalCenter: parent.horizontalCenter; app: parent.modelData; conNome: false; ritardo: parent.index * 35 }
-                        }
+                anchors.leftMargin: tel.margine; anchors.rightMargin: tel.margine
+                anchors.bottom: parent.bottom; anchors.bottomMargin: home.basso + 4
+                height: tel.latoIcona + 6
+                Repeater {
+                    model: home.dock
+                    Item {
+                        required property var modelData
+                        required property int index
+                        width: dockHome.width / Math.max(4, home.dock.length); height: dockHome.height
+                        IconaApp { anchors.horizontalCenter: parent.horizontalCenter; app: parent.modelData; conNome: false; pieno: true; lato: tel.latoIcona + 4; nuovo: home.haNovita(parent.modelData); ritardo: parent.index * 30 }
                     }
                 }
             }
@@ -145,11 +143,11 @@ Item {
     PageIndicator {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: home.basso + tel.latoIcona + 24 + 14 + 32 + 10
+        anchors.bottomMargin: home.basso + 4 + tel.latoIcona + 6 + 18 + 34 + 12
         count: pagine.count
         currentIndex: pagine.currentIndex
         visible: pagine.currentIndex === 0
         spacing: 6
-        delegate: Rectangle { required property int index; width: index === pagine.currentIndex ? 16 : 6; height: 6; radius: 3; color: tel.pal.testo; opacity: index === pagine.currentIndex ? 0.9 : 0.3 }
+        delegate: Rectangle { required property int index; width: index === pagine.currentIndex ? 14 : 5; height: 5; radius: 2.5; color: tel.pal.testo; opacity: index === pagine.currentIndex ? 0.9 : 0.3 }
     }
 }

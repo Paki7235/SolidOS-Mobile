@@ -25,11 +25,10 @@ Rectangle {
     function chiama(n) { tel.chiama(n) }
 
     // ── Intestazione ──────────────────────────────────────────────────────
-    Text {
-        x: 20; y: 56
-        text: ({ preferiti: I18n.t("Preferiti"), recenti: I18n.t("Recenti"), contatti: I18n.t("Contatti"), tastierino: "" })[app.scheda]
-        color: tel.pal.testo
-        font.family: Tema.font; font.pixelSize: tel.px(30); font.weight: Font.Bold
+    Punti {
+        x: 20; y: 60
+        text: ({ preferiti: I18n.t("Preferiti"), recenti: I18n.t("Recenti"), contatti: I18n.t("Contatti"), tastierino: "" })[app.scheda].toUpperCase()
+        font.pixelSize: 36
     }
     Text {
         anchors.right: parent.right; anchors.rightMargin: 20; y: 64
@@ -38,12 +37,11 @@ Rectangle {
         font.family: Tema.font; font.pixelSize: tel.px(16)
         MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: { ponte.chiama0("cancellaRegistro"); app.aggiorna() } }
     }
-    Text {
-        anchors.right: parent.right; anchors.rightMargin: 20; y: 60
+    TastoTondo {
+        anchors.right: parent.right; anchors.rightMargin: 18; y: 62
         visible: app.scheda === "contatti"
-        text: "+"; color: tel.accento
-        font.family: Tema.font; font.pixelSize: 30
-        MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: nuovoContatto.open() }
+        icona: "list-add-symbolic"; pieno: true
+        onTocco: nuovoContatto.open()
     }
 
     // ── Avviso SIM ────────────────────────────────────────────────────────
@@ -71,17 +69,11 @@ Rectangle {
             id: voce
             required property var modelData
             width: elenco.width; height: 64
-            Rectangle {
-                x: 20; anchors.verticalCenter: parent.verticalCenter
-                width: 42; height: 42; radius: 21
-                color: app.scheda === "recenti" && voce.modelData.tipo === "persa" ? "#ef4444" : tel.accento
-                opacity: 0.9
-                Text { anchors.centerIn: parent; text: (voce.modelData.nome || "?").charAt(0).toUpperCase(); color: "#ffffff"; font.family: Tema.font; font.pixelSize: 17; font.weight: Font.Bold }
-            }
+            Avatar { x: 20; anchors.verticalCenter: parent.verticalCenter; lato: 44; nome: voce.modelData.nome || "?"; nuovo: app.scheda === "recenti" && voce.modelData.tipo === "persa" }
             Column {
                 x: 74; anchors.verticalCenter: parent.verticalCenter
                 width: parent.width - 150
-                Text { width: parent.width; elide: Text.ElideRight; text: voce.modelData.nome; color: app.scheda === "recenti" && voce.modelData.tipo === "persa" ? "#ef4444" : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
+                Text { width: parent.width; elide: Text.ElideRight; text: voce.modelData.nome; color: app.scheda === "recenti" && voce.modelData.tipo === "persa" ? tel.rosso : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
                 Text {
                     width: parent.width; elide: Text.ElideRight
                     text: app.scheda === "recenti"
@@ -96,12 +88,10 @@ Rectangle {
                 text: voce.modelData.testoQuando || ""
                 color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13)
             }
-            Rectangle {
+            TastoTondo {
                 anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter
-                width: 40; height: 40; radius: 20
-                color: tel.chiaro ? "#e7f6ec" : "#16301f"
-                Icona { anchors.centerIn: parent; nome: "call-start-symbolic"; lato: 20 }
-                MouseArea { anchors.fill: parent; onClicked: app.chiama(voce.modelData.numero) }
+                lato: 40; icona: "call-start-symbolic"
+                onTocco: app.chiama(voce.modelData.numero)
             }
             Rectangle { anchors.bottom: parent.bottom; x: 74; width: parent.width - 74; height: 1; color: app.linea }
             MouseArea {
@@ -134,7 +124,7 @@ Rectangle {
                 width: app.width - 40; horizontalAlignment: Text.AlignHCenter
                 text: app.numero || " "
                 elide: Text.ElideLeft
-                color: tel.pal.testo; font.family: Tema.font; font.pixelSize: app.numero.length > 13 ? 28 : 36; font.weight: Font.Medium
+                color: tel.pal.testo; font.family: tel.fontPunti; font.pixelSize: app.numero.length > 13 ? 30 : 40; font.weight: Font.Black; font.letterSpacing: -1
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -146,7 +136,7 @@ Rectangle {
                     }
                     return " "
                 }
-                color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(15)
+                color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15)
             }
         }
         Grid {
@@ -159,11 +149,12 @@ Rectangle {
                 Rectangle {
                     required property var modelData
                     width: 76; height: 76; radius: 38
-                    color: tasto.pressed ? (tel.chiaro ? "#d4d8e4" : "#3a4050") : (tel.pal.superficie2)
+                    color: tasto.pressed ? tel.pal.pieno : tel.pal.superficie2
+                    Behavior on color { ColorAnimation { duration: tel.tVeloce } }
                     Column {
                         anchors.centerIn: parent
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData[0]; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 32; font.weight: Font.Medium }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData[1]; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 1.5 }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData[0]; color: tasto.pressed ? tel.pal.suPieno : tel.pal.testo; font.family: Tema.font; font.pixelSize: 32; font.weight: Font.Medium }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData[1]; color: tasto.pressed ? tel.pal.suPieno : tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: 9; font.letterSpacing: 1.2 }
                     }
                     MouseArea {
                         id: tasto
@@ -179,9 +170,11 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom; anchors.bottomMargin: 18
             width: 76; height: 76; radius: 38
-            color: "#22c55e"
-            Icona { anchors.centerIn: parent; nome: "call-start-symbolic"; lato: 32 }
-            MouseArea { anchors.fill: parent; onClicked: if (app.numero) app.chiama(app.numero) }
+            color: tel.pal.successo
+            scale: toccoChiama.pressed ? 0.93 : 1
+            Behavior on scale { NumberAnimation { duration: tel.tVeloce } }
+            Icona { anchors.centerIn: parent; nome: "call-start-symbolic"; lato: 30; tema: "chiaro" }
+            MouseArea { id: toccoChiama; anchors.fill: parent; onClicked: if (app.numero) app.chiama(app.numero) }
         }
         Text {
             visible: app.numero !== ""
@@ -197,7 +190,7 @@ Rectangle {
         id: schede
         anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
         height: 84
-        color: app.sezione
+        color: tel.pal.sfondo
         Rectangle { width: parent.width; height: 1; color: app.linea }
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
@@ -208,11 +201,11 @@ Rectangle {
                 Item {
                     required property var modelData
                     width: (app.width - 20) / 4; height: 52
-                    opacity: app.scheda === modelData.s ? 1 : 0.55
+                    opacity: app.scheda === modelData.s ? 1 : 0.45
                     Column {
                         anchors.centerIn: parent; spacing: 3
                         Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: parent.parent.modelData.i; lato: 24 }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData.t; color: app.scheda === parent.parent.modelData.s ? tel.accento : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(11); font.weight: Font.DemiBold }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData.t; color: tel.pal.testo; font.family: tel.fontMono; font.pixelSize: tel.px(10); font.capitalization: Font.AllUppercase; font.letterSpacing: 0.5 }
                     }
                     MouseArea { anchors.fill: parent; onClicked: app.scheda = parent.modelData.s }
                 }

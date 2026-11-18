@@ -17,38 +17,37 @@ Rectangle {
         property string carattere: Tema.font
         property int misura: tel.px(14)
         signal scelta()
-        height: 38; radius: 12
-        width: et.implicitWidth + 26
-        color: attiva ? tel.accento : pers.spento
-        Text { id: et; anchors.centerIn: parent; text: sc.testo; color: sc.attiva ? "#ffffff" : tel.pal.testo; font.family: sc.carattere; font.pixelSize: sc.misura; font.weight: Font.DemiBold }
+        height: 40; radius: 20
+        width: et.implicitWidth + 30
+        color: attiva ? tel.pal.pieno : "transparent"
+        border.width: 1; border.color: attiva ? tel.pal.pieno : tel.pal.bordo
+        Behavior on color { ColorAnimation { duration: tel.tVeloce } }
+        Text { id: et; anchors.centerIn: parent; text: sc.testo; color: sc.attiva ? tel.pal.suPieno : tel.pal.testo; font.family: sc.carattere; font.pixelSize: sc.misura; font.weight: Font.DemiBold }
         MouseArea { anchors.fill: parent; onClicked: sc.scelta() }
     }
     component Sezione: Rectangle {
         property string titolo: ""
         default property alias contenuto: riga.data
-        width: parent.width; height: colonna.implicitHeight + 24; radius: 18
+        width: parent.width; height: colonna.implicitHeight + 28; radius: 22
         color: pers.sezione
+        border.width: 1; border.color: tel.pal.bordo
         Column {
             id: colonna
-            x: 14; y: 12; width: parent.width - 28
-            spacing: 10
-            Text { text: parent.parent.titolo; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+            x: 16; y: 14; width: parent.width - 32
+            spacing: 12
+            Mono { text: parent.parent.titolo }
             Flow { id: riga; width: parent.width; spacing: 8 }
         }
     }
 
-    Text {
-        x: 18; y: 56
-        text: "‹ " + I18n.t("Chiudi")
-        color: tel.accento
-        font.family: Tema.font; font.pixelSize: tel.px(16)
-        MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: tel.personalizza = false }
+    TitoloApp {
+        testo: I18n.t("Personalizza")
+        TastoTondo { icona: "go-up-symbolic"; rotation: 180; onTocco: tel.personalizza = false }
     }
-    Text { x: 18; y: 82; text: I18n.t("Personalizza"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(28); font.weight: Font.Bold }
 
     Flickable {
         anchors.fill: parent
-        anchors.topMargin: 130; anchors.bottomMargin: 20
+        anchors.topMargin: 122; anchors.bottomMargin: 20
         contentHeight: elenco.height + 20
         clip: true
         Column {
@@ -70,13 +69,13 @@ Rectangle {
             Sezione {
                 titolo: I18n.t("Colore")
                 Repeater {
-                    model: ["#3F7CF5", "#8B5CF6", "#12B886", "#FF7A3D", "#E8467C", "#6B7385"]
+                    model: ["#FF3B30", "#FFFFFF", "#3F7CF5", "#12B886", "#FF9F0A", "#BF5AF2"]
                     Rectangle {
                         required property string modelData
                         width: 38; height: 38; radius: 19
                         color: modelData
-                        border.width: 3
-                        border.color: tel.imp.accento.toUpperCase() === modelData ? tel.pal.testo : "transparent"
+                        border.width: tel.accento.toString().toUpperCase() === modelData ? 3 : 1
+                        border.color: tel.accento.toString().toUpperCase() === modelData ? tel.pal.testo3 : tel.pal.bordo
                         MouseArea { anchors.fill: parent; onClicked: tel.imposta("accento", parent.modelData) }
                     }
                 }
@@ -84,13 +83,13 @@ Rectangle {
             Sezione {
                 titolo: I18n.t("Sfondo")
                 Repeater {
-                    model: ["notte", "alba", "oceano", "aurora", "grafite"]
+                    model: ["nero", "puntini", "grafite"]
                     Rectangle {
                         required property string modelData
-                        width: 54; height: 74; radius: 12
+                        width: 62; height: 104; radius: 14
                         color: "transparent"
-                        border.width: 3
-                        border.color: tel.imp.sfondo === modelData ? tel.accento : "transparent"
+                        border.width: 2
+                        border.color: (["nero", "puntini", "grafite"].indexOf(tel.imp.sfondo) >= 0 ? tel.imp.sfondo : "nero") === modelData ? tel.pal.testo : tel.pal.bordo
                         clip: true
                         // Anteprima: lo stesso sfondo disegnato del telefono, in piccolo
                         Sfondo {
@@ -105,8 +104,8 @@ Rectangle {
             Sezione {
                 titolo: I18n.t("Orologio del blocco")
                 Repeater {
-                    model: [{ t: I18n.t("Moderno"), f: "League Spartan" }, { t: I18n.t("Pulito"), f: "Inter" }, { t: I18n.t("Elegante"), f: "Noto Serif" }]
-                    Scelta { required property var modelData; testo: modelData.t; carattere: modelData.f; misura: tel.px(16); attiva: tel.imp.orologio === modelData.f; onScelta: tel.imposta("orologio", modelData.f) }
+                    model: [{ t: I18n.t("Puntini"), f: "Doto" }, { t: I18n.t("Pulito"), f: "Space Grotesk" }, { t: I18n.t("Tecnico"), f: "Space Mono" }]
+                    Scelta { required property var modelData; testo: modelData.t; carattere: modelData.f; misura: tel.px(16); attiva: tel.fontOra === modelData.f; onScelta: tel.imposta("orologio", modelData.f) }
                 }
             }
             Sezione {

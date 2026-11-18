@@ -21,9 +21,9 @@ PREDEFINITE = {
     "riduci_movimento": False,   # Accessibilità: animazioni istantanee
     "tema": "scuro",          # scuro | chiaro
     "testo": 1,               # 0 piccolo, 1 normale, 2 grande
-    "accento": "#3F7CF5",
-    "sfondo": "notte",        # notte | alba | oceano
-    "orologio": "League Spartan",
+    "accento": "#FF3B30",
+    "sfondo": "nero",         # nero | puntini | grafite, o una foto
+    "orologio": "Doto",
     "icone": 1,               # 0 piccole, 1 normali, 2 grandi
     "navigazione": "gesti",   # gesti | tasti
     "dock": ["telefono", "messaggi", "fotocamera", "musica"],

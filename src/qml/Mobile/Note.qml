@@ -36,26 +36,18 @@ Rectangle {
     Item {
         anchors.fill: parent
         visible: !app.scrivendo
-        Text { x: 20; y: 56; text: I18n.t("Note"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(30); font.weight: Font.Bold }
-        Rectangle {
-            x: 16; y: 104; width: parent.width - 32; height: 40; radius: 12
-            color: tel.pal.superficie2
-            Icona { x: 12; anchors.verticalCenter: parent.verticalCenter; nome: "system-search-symbolic"; lato: 16 }
-            TextField {
-                x: 36; width: parent.width - 46; anchors.verticalCenter: parent.verticalCenter
-                placeholderText: I18n.t("Cerca"); placeholderTextColor: tel.pal.testo2; color: tel.pal.testo
-                font.family: Tema.font; font.pixelSize: tel.px(15)
-                onTextChanged: { app.cerca = text; app.aggiorna() }
-                background: Item {}
-            }
+        Punti { x: 20; y: 60; text: I18n.t("Note").toUpperCase(); font.pixelSize: 36 }
+        CampoCerca {
+            x: 16; y: 122; width: parent.width - 32
+            onTextChanged: { app.cerca = text; app.aggiorna() }
         }
         ListView {
-            x: 16; y: 158; width: parent.width - 32; height: parent.height - y - 30
+            x: 16; y: 180; width: parent.width - 32; height: parent.height - y - 30
             clip: true; spacing: 10
             model: app.elenco
             delegate: Rectangle {
                 required property var modelData
-                width: ListView.view.width; height: colonna.implicitHeight + 24; radius: 16
+                width: ListView.view.width; height: colonna.implicitHeight + 24; radius: 22
                 color: app.sezione
                 Column {
                     id: colonna
@@ -84,8 +76,8 @@ Rectangle {
         Rectangle {
             anchors.right: parent.right; anchors.rightMargin: 22
             anchors.bottom: parent.bottom; anchors.bottomMargin: 44
-            width: 60; height: 60; radius: 30; color: tel.accento
-            Text { anchors.centerIn: parent; text: "+"; color: "#ffffff"; font.pixelSize: 34; font.weight: Font.Light }
+            width: 60; height: 60; radius: 30; color: tel.pal.pieno
+            Icona { anchors.centerIn: parent; nome: "list-add-symbolic"; lato: 26; tema: tel.chiaro ? "scuro" : "chiaro" }
             MouseArea { anchors.fill: parent; onClicked: app.apri("") }
         }
     }
@@ -96,19 +88,19 @@ Rectangle {
         visible: app.scrivendo
         Text {
             x: 18; y: 58
-            text: "‹ " + I18n.t("Note"); color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(16)
+            text: "‹ " + I18n.t("Note"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
             MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: app.chiudi() }
         }
         Row {
             anchors.right: parent.right; anchors.rightMargin: 18; y: 58
             spacing: 22
             Text {
-                text: I18n.t("Condividi"); color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(16)
+                text: I18n.t("Condividi"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
                 visible: testo.text !== ""
                 MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: { app.salva(); tel.copia(testo.text); tel.avviso(I18n.t("Testo copiato")) } }
             }
             Text {
-                text: I18n.t("Fine"); color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold
+                text: I18n.t("Fine"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold
                 MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: app.chiudi() }
             }
         }

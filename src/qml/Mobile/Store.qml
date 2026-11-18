@@ -39,22 +39,15 @@ Rectangle {
         }
     }
 
-    Text { x: 20; y: 56; text: I18n.t("Store"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(30); font.weight: Font.Bold }
-    Rectangle {
-        x: 16; y: 104; width: parent.width - 32; height: 40; radius: 12
-        color: tel.pal.superficie2
-        Icona { x: 12; anchors.verticalCenter: parent.verticalCenter; nome: "system-search-symbolic"; lato: 16 }
-        TextField {
-            x: 36; width: parent.width - 46; anchors.verticalCenter: parent.verticalCenter
-            placeholderText: I18n.t("Cerca app su Flathub"); placeholderTextColor: tel.pal.testo2; color: tel.pal.testo
-            font.family: Tema.font; font.pixelSize: tel.px(15)
-            onTextChanged: { app.cerca = text.trim(); ritardo.restart() }
-            background: Item {}
-        }
+    Punti { x: 20; y: 60; text: I18n.t("Store").toUpperCase(); font.pixelSize: 36 }
+    CampoCerca {
+        x: 16; y: 122; width: parent.width - 32
+        suggerimento: I18n.t("Cerca app su Flathub")
+        onTextChanged: { app.cerca = text.trim(); ritardo.restart() }
     }
 
     Flickable {
-        x: 0; y: 156; width: parent.width; height: parent.height - y - 24
+        x: 0; y: 180; width: parent.width; height: parent.height - y - 24
         contentHeight: contenuto.height + 20; clip: true
         Column {
             id: contenuto
@@ -64,19 +57,19 @@ Rectangle {
                 visible: !app.disponibile
                 x: 20; width: parent.width - 40; wrapMode: Text.Wrap
                 text: I18n.t("Lo Store usa Flatpak, che su questo telefono non è installato.")
-                color: "#ef4444"; font.family: Tema.font; font.pixelSize: tel.px(13)
+                color: tel.rosso; font.family: Tema.font; font.pixelSize: tel.px(13)
             }
             Text {
                 x: 20; topPadding: 4
                 text: app.cerca ? (app.cercando ? I18n.t("Ricerca…") : I18n.t("Risultati")) : I18n.t("Consigliate per il telefono")
-                color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(19); font.weight: Font.Bold
+                color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(12); font.capitalization: Font.AllUppercase; font.letterSpacing: 0.6
             }
             Text {
                 visible: app.cerca !== "" && !app.cercando && app.risultati.length === 0
                 x: 20; text: I18n.t("Nessuna app trovata"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(14)
             }
             Rectangle {
-                x: 16; width: parent.width - 32; radius: 16; color: app.sezione
+                x: 16; width: parent.width - 32; radius: 22; color: app.sezione
                 height: righe.height
                 visible: (app.cerca ? app.risultati : app.consigliate).length > 0
                 Column {
@@ -101,12 +94,13 @@ Rectangle {
                             Rectangle {
                                 anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter
                                 width: 92; height: 32; radius: 16
-                                color: modelData.installata ? tel.pal.traccia : tel.accento
+                                color: modelData.installata ? "transparent" : tel.pal.pieno
+                                border.width: 1; border.color: modelData.installata ? tel.pal.bordo : tel.pal.pieno
                                 opacity: app.disponibile ? 1 : 0.4
                                 Text {
                                     anchors.centerIn: parent
                                     text: app.inCorso[modelData.id] ? "…" : (modelData.installata ? I18n.t("Rimuovi") : I18n.t("Installa"))
-                                    color: modelData.installata ? tel.pal.testo : "#ffffff"
+                                    color: modelData.installata ? tel.pal.testo : tel.pal.suPieno
                                     font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold
                                 }
                                 MouseArea { anchors.fill: parent; enabled: app.disponibile && !app.inCorso[modelData.id]; onClicked: app.azione(modelData) }

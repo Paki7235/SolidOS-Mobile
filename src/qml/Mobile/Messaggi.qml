@@ -24,45 +24,29 @@ Rectangle {
     Item {
         anchors.fill: parent
         visible: app.aperta === null && !app.nuova
-        Text { x: 20; y: 56; text: I18n.t("Messaggi"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(30); font.weight: Font.Bold }
-        Rectangle {
-            anchors.right: parent.right; anchors.rightMargin: 18; y: 58
-            width: 40; height: 40; radius: 20
-            color: tel.accento
-            Icona { anchors.centerIn: parent; nome: "document-edit-symbolic"; lato: 20 ; tema: "scuro" }
-            MouseArea { anchors.fill: parent; onClicked: { app.nuova = true; destinatario.text = ""; testoNuovo.text = "" } }
+        Punti { x: 20; y: 60; text: I18n.t("Messaggi").toUpperCase(); font.pixelSize: 36 }
+        TastoTondo {
+            anchors.right: parent.right; anchors.rightMargin: 18; y: 62
+            icona: "mail-message-new-symbolic"
+            onTocco: { app.nuova = true; destinatario.text = ""; testoNuovo.text = "" }
         }
-        Rectangle {
-            x: 16; y: 108; width: parent.width - 32; height: 40; radius: 12
-            color: tel.pal.superficie2
-            Row {
-                anchors.fill: parent; anchors.leftMargin: 12; spacing: 8
-                Icona { nome: "system-search-symbolic"; lato: 16; anchors.verticalCenter: parent.verticalCenter }
-                TextField {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width - 40
-                    placeholderText: I18n.t("Cerca"); placeholderTextColor: tel.pal.testo2
-                    color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15)
-                    background: Item {}
-                    onTextChanged: app.cerca = text.toLowerCase()
-                }
-            }
+        CampoCerca {
+            x: 16; y: 122; width: parent.width - 32
+            onTextChanged: app.cerca = text.toLowerCase()
         }
         ListView {
             id: lista
             anchors.left: parent.left; anchors.right: parent.right
-            anchors.top: parent.top; anchors.topMargin: 160; anchors.bottom: parent.bottom; anchors.bottomMargin: 30
+            anchors.top: parent.top; anchors.topMargin: 180; anchors.bottom: parent.bottom; anchors.bottomMargin: 30
             clip: true
             model: app.conversazioni.filter(function (c) { return !app.cerca || c.nome.toLowerCase().indexOf(app.cerca) >= 0 || c.ultimo.toLowerCase().indexOf(app.cerca) >= 0 })
             delegate: Item {
                 id: conv
                 required property var modelData
                 width: lista.width; height: 76
-                Rectangle {
+                Avatar {
                     x: 16; anchors.verticalCenter: parent.verticalCenter
-                    width: 48; height: 48; radius: 24
-                    color: tel.accento
-                    Text { anchors.centerIn: parent; text: conv.modelData.conNome ? conv.modelData.nome.charAt(0).toUpperCase() : "#"; color: "#ffffff"; font.family: Tema.font; font.pixelSize: 19; font.weight: Font.Bold }
+                    lato: 50; nome: conv.modelData.conNome ? conv.modelData.nome : ""; nuovo: conv.modelData.nuovi > 0
                 }
                 Column {
                     x: 76; anchors.verticalCenter: parent.verticalCenter
@@ -70,12 +54,12 @@ Rectangle {
                     Item {
                         width: parent.width; height: nomeConv.implicitHeight
                         Text { id: nomeConv; width: parent.width - 60; elide: Text.ElideRight; text: conv.modelData.nome; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
-                        Text { anchors.right: parent.right; text: conv.modelData.testoQuando; color: conv.modelData.nuovi ? tel.accento : tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
+                        Text { anchors.right: parent.right; text: conv.modelData.testoQuando.toUpperCase(); color: conv.modelData.nuovi ? tel.rosso : tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(11) }
                     }
                     Item {
                         width: parent.width; height: ultimo.implicitHeight
                         Text { id: ultimo; width: parent.width - 30; elide: Text.ElideRight; maximumLineCount: 2; wrapMode: Text.Wrap; text: conv.modelData.ultimo; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(14) }
-                        Rectangle { visible: conv.modelData.nuovi > 0; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; width: 10; height: 10; radius: 5; color: tel.accento }
+
                     }
                 }
                 Rectangle { anchors.bottom: parent.bottom; x: 76; width: parent.width - 76; height: 1; color: app.linea }
@@ -96,10 +80,10 @@ Rectangle {
         anchors.fill: parent
         visible: app.nuova
         Text {
-            x: 18; y: 60; text: "‹ " + I18n.t("Messaggi"); color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(16)
+            x: 18; y: 60; text: "‹ " + I18n.t("Messaggi"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
             MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: app.nuova = false }
         }
-        Text { x: 20; y: 92; text: I18n.t("Nuovo messaggio"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(24); font.weight: Font.Bold }
+        Punti { x: 20; y: 90; text: I18n.t("Nuovo").toUpperCase(); font.pixelSize: 32 }
         CampoTesto { id: destinatario; x: 16; y: 140; width: parent.width - 32; placeholderText: I18n.t("A: nome o numero"); inputMethodHints: Qt.ImhDialableCharactersOnly }
         Column {
             x: 16; y: 190; width: parent.width - 32
@@ -133,24 +117,19 @@ Rectangle {
             height: 110
             color: app.sezione
             z: 2
-            Text {
-                x: 16; y: 62; text: "‹"; color: tel.accento; font.pixelSize: 34
-                MouseArea { anchors.fill: parent; anchors.margins: -12; onClicked: { app.aperta = null; app.aggiorna() } }
+            TastoTondo {
+                x: 16; y: 58; lato: 40; icona: "go-previous-symbolic"
+                onTocco: { app.aperta = null; app.aggiorna() }
             }
             Column {
                 anchors.horizontalCenter: parent.horizontalCenter; y: 54
-                Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: 34; height: 34; radius: 17; color: tel.accento
-                    Text { anchors.centerIn: parent; text: app.aperta ? app.aperta.nome.charAt(0).toUpperCase() : ""; color: "#ffffff"; font.family: Tema.font; font.pixelSize: 15; font.weight: Font.Bold }
-                }
+                Avatar { anchors.horizontalCenter: parent.horizontalCenter; lato: 34; nome: app.aperta ? app.aperta.nome : "" }
                 Text { anchors.horizontalCenter: parent.horizontalCenter; text: app.aperta ? app.aperta.nome : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
             }
-            Rectangle {
-                anchors.right: parent.right; anchors.rightMargin: 16; y: 62
-                width: 36; height: 36; radius: 18; color: tel.chiaro ? "#e7f6ec" : "#16301f"
-                Icona { anchors.centerIn: parent; nome: "call-start-symbolic"; lato: 18 }
-                MouseArea { anchors.fill: parent; onClicked: tel.chiama(app.aperta.numero) }
+            TastoTondo {
+                anchors.right: parent.right; anchors.rightMargin: 16; y: 58
+                lato: 40; icona: "call-start-symbolic"
+                onTocco: tel.chiama(app.aperta.numero)
             }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: app.linea }
         }
@@ -174,14 +153,14 @@ Rectangle {
                     width: Math.min(testoMsg.implicitWidth + 28, chat.width * 0.76)
                     height: testoMsg.implicitHeight + ora.implicitHeight + 18
                     radius: 18
-                    color: msg.modelData.mio ? tel.accento : (tel.pal.superficie2)
+                    color: msg.modelData.mio ? tel.pal.pieno : tel.pal.superficie2
                     Text {
                         id: testoMsg
                         x: 14; y: 8
                         width: Math.min(implicitWidth, chat.width * 0.76 - 28)
                         wrapMode: Text.Wrap
                         text: msg.modelData.testo
-                        color: msg.modelData.mio ? "#ffffff" : tel.pal.testo
+                        color: msg.modelData.mio ? tel.pal.suPieno : tel.pal.testo
                         font.family: Tema.font; font.pixelSize: tel.px(16)
                     }
                     Text {
@@ -189,8 +168,8 @@ Rectangle {
                         anchors.right: parent.right; anchors.rightMargin: 12
                         anchors.top: testoMsg.bottom; anchors.topMargin: 2
                         text: msg.modelData.testoQuando
-                        color: msg.modelData.mio ? Qt.rgba(1, 1, 1, 0.75) : tel.pal.testo2
-                        font.family: Tema.font; font.pixelSize: tel.px(11)
+                        color: msg.modelData.mio ? (tel.chiaro ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.5)) : tel.pal.testo2
+                        font.family: tel.fontMono; font.pixelSize: tel.px(10)
                     }
                 }
             }

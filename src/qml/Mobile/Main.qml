@@ -21,45 +21,51 @@ Window {
     property var imp: ponte.chiama0("impostazioni")
     function imposta(chiave, valore) { imp = ponte.chiama("imposta", [chiave, valore]) }
 
-    // ── Tema: scuro/chiaro, grandezza del testo, colore d'accento ────────
+    // ── Tema «Essenziale»: nero puro e bianco, un solo colore (il rosso) per ciò che è nuovo ──
     readonly property bool chiaro: imp.tema === "chiaro"
     readonly property real k: [0.9, 1.0, 1.15][imp.testo] || 1.0
-    readonly property color accento: imp.accento
-    // Colori del design (sistema «Modern Dark»: ardesia profonda, mai nero puro sugli OLED).
-    // Contrasti verificati: testo ≥ 7:1, testo secondario ≥ 4,5:1 in entrambi i temi.
+    // L'accento è il rosso dello stile; chi ne ha scelto un altro in Personalizza lo tiene
+    readonly property color accento: (!imp.accento || imp.accento === "#3F7CF5") ? "#FF3B30" : imp.accento
+    readonly property color rosso: "#FF3B30"
+    // Colori del design (vedi docs/DESIGN.md). Superfici piene, mai trasparenti: sotto non si
+    // vede niente. Contrasti: testo ≥ 15:1, testo secondario ≥ 7:1 in entrambi i temi.
     readonly property QtObject pal: QtObject {
-        readonly property color sfondo: tel.chiaro ? "#F8FAFC" : "#0F172A"        // fondo delle app
-        readonly property color superficie: tel.chiaro ? "#FFFFFF" : "#1E293B"    // schede, righe
-        readonly property color superficie2: tel.chiaro ? "#E9EDF1" : "#272F42"   // campi, pulsanti
-        readonly property color bordo: tel.chiaro ? "#E2E8F0" : Qt.rgba(0.58, 0.64, 0.72, 0.16)
-        readonly property color testo: tel.chiaro ? "#0F172A" : "#F8FAFC"
-        readonly property color testo2: tel.chiaro ? "#64748B" : "#94A3B8"
-        readonly property color testo3: tel.chiaro ? "#94A3B8" : "#64748B"
-        // Pannelli sopra lo sfondo (blocco, Home, tendine)
-        readonly property color vetro: tel.chiaro ? Qt.rgba(1, 1, 1, 0.80) : Qt.rgba(0.118, 0.161, 0.231, 0.78)
-        readonly property color vetroBordo: tel.chiaro ? Qt.rgba(0.06, 0.09, 0.16, 0.07) : Qt.rgba(0.58, 0.64, 0.72, 0.16)
-        readonly property color traccia: tel.chiaro ? Qt.rgba(0.06, 0.09, 0.16, 0.08) : Qt.rgba(0.58, 0.64, 0.72, 0.18)
-        readonly property color velo: tel.chiaro ? Qt.rgba(0.95, 0.96, 0.98, 0.93) : Qt.rgba(0.04, 0.06, 0.12, 0.90)
-        readonly property color tessera: tel.chiaro ? "#FFFFFF" : "#1E293B"
-        readonly property color pieno: tel.chiaro ? "#0F172A" : "#F8FAFC"
-        readonly property color suPieno: tel.chiaro ? "#FFFFFF" : "#0F172A"
-        readonly property color successo: "#22C55E"
-        readonly property color pericolo: "#EF4444"
+        readonly property color sfondo: tel.chiaro ? "#F2F2F2" : "#000000"        // fondo delle app
+        readonly property color superficie: tel.chiaro ? "#FFFFFF" : "#111111"    // schede, righe
+        readonly property color superficie2: tel.chiaro ? "#EBEBEB" : "#1C1C1C"   // campi, pulsanti, tondi
+        readonly property color bordo: tel.chiaro ? "#DCDCDC" : "#262626"
+        readonly property color testo: tel.chiaro ? "#000000" : "#FFFFFF"
+        readonly property color testo2: tel.chiaro ? "#5C5C5C" : "#A3A3A3"
+        readonly property color testo3: tel.chiaro ? "#949494" : "#6B6B6B"
+        // Pannelli sopra lo sfondo (blocco, Home, tendine): pieni, con il bordo sottile
+        readonly property color vetro: tel.chiaro ? "#FFFFFF" : "#111111"
+        readonly property color vetroBordo: tel.chiaro ? "#DCDCDC" : "#262626"
+        readonly property color traccia: tel.chiaro ? "#E3E3E3" : "#242424"
+        readonly property color velo: tel.chiaro ? Qt.rgba(0.95, 0.95, 0.95, 0.98) : Qt.rgba(0, 0, 0, 0.97)
+        readonly property color tessera: tel.chiaro ? "#FFFFFF" : "#1C1C1C"
+        readonly property color pieno: tel.chiaro ? "#000000" : "#FFFFFF"
+        readonly property color suPieno: tel.chiaro ? "#FFFFFF" : "#000000"
+        readonly property color successo: "#30D158"
+        readonly property color pericolo: "#FF3B30"
     }
-    // Movimento (regole: entrata «expo» ~380 ms, uscita più rapida ~240 ms, pressione al 97%,
-    // 150–300 ms per i piccoli effetti). Con «Riduci animazioni» tutto diventa istantaneo.
+    // Movimento: preciso e rapido. Entrata con curva «quint» (parte veloce, si posa morbida),
+    // uscita più breve. Con «Riduci animazioni» tutto diventa istantaneo.
     readonly property bool movimento: imp.riduci_movimento !== true
     function durata(ms) { return movimento ? ms : 0 }
-    readonly property int tVeloce: durata(150)
-    readonly property int tNormale: durata(240)
-    readonly property int tEntrata: durata(380)
+    readonly property int tVeloce: durata(140)
+    readonly property int tNormale: durata(220)
+    readonly property int tEntrata: durata(340)
     // Misure del design: raggi e margini uguali ovunque
     readonly property int r1: 12      // controlli piccoli
-    readonly property int r2: 18      // schede
+    readonly property int r2: 20      // schede
     readonly property int r3: 24      // pannelli grandi
-    readonly property int margine: 18 // bordo dello schermo
+    readonly property int margine: 20 // bordo dello schermo
     function px(n) { return Math.round(n * k) }
-    readonly property string fontOra: imp.orologio || Tema.font
+    // Caratteri: Space Grotesk per i testi (Tema.font), Doto a puntini per ora e titoli,
+    // Space Mono per le etichette piccole
+    readonly property string fontPunti: "Doto"
+    readonly property string fontMono: "Space Mono"
+    readonly property string fontOra: (!imp.orologio || imp.orologio === "League Spartan") ? fontPunti : imp.orologio
     readonly property int latoIcona: [52, 58, 64][imp.icone === undefined ? 1 : imp.icone]
 
     // ── Stato del telefono ────────────────────────────────────────────────
@@ -182,6 +188,12 @@ Window {
         id: home
         anchors.fill: parent
         visible: tel.schermata === "home"
+        // Profondità: quando sopra si apre un'app la Home arretra un poco e si spegne
+        readonly property bool coperta: tel.appInterna !== ""
+        scale: coperta ? 0.94 : 1
+        opacity: coperta ? 0 : 1
+        Behavior on scale { NumberAnimation { duration: tel.tEntrata; easing.type: Easing.OutQuint } }
+        Behavior on opacity { NumberAnimation { duration: tel.tNormale; easing.type: Easing.OutQuad } }
     }
     Blocco {
         id: bloccoSchermata
@@ -195,41 +207,61 @@ Window {
         id: telefonoApp
         anchors.left: parent.left; anchors.right: parent.right
         height: parent.height
-        y: tel.appInterna === "telefono" ? 0 : tel.height
-        visible: tel.appInterna === "telefono" || y < tel.height - 1
-        Behavior on y { Movimento { apre: tel.appInterna === "telefono" } }
+        // Si apre ingrandendosi dal centro (94% → 100%) e comparendo; si chiude più in fretta
+        property real apertura: tel.appInterna === "telefono" ? 1 : 0
+        Behavior on apertura { Movimento { apre: tel.appInterna === "telefono" } }
+        y: (1 - apertura) * 40
+        opacity: apertura
+        scale: 0.94 + 0.06 * apertura
+        visible: apertura > 0.001
     }
     Dove {
         id: doveApp
         anchors.left: parent.left; anchors.right: parent.right
         height: parent.height
-        y: tel.appInterna === "dove" ? 0 : tel.height
-        visible: tel.appInterna === "dove" || y < tel.height - 1
-        Behavior on y { Movimento { apre: tel.appInterna === "dove" } }
+        // Si apre ingrandendosi dal centro (94% → 100%) e comparendo; si chiude più in fretta
+        property real apertura: tel.appInterna === "dove" ? 1 : 0
+        Behavior on apertura { Movimento { apre: tel.appInterna === "dove" } }
+        y: (1 - apertura) * 40
+        opacity: apertura
+        scale: 0.94 + 0.06 * apertura
+        visible: apertura > 0.001
     }
     Impostazioni {
         id: impostazioniApp
         anchors.left: parent.left; anchors.right: parent.right
         height: parent.height
-        y: tel.appInterna === "impostazioni" ? 0 : tel.height
-        visible: tel.appInterna === "impostazioni" || y < tel.height - 1
-        Behavior on y { Movimento { apre: tel.appInterna === "impostazioni" } }
+        // Si apre ingrandendosi dal centro (94% → 100%) e comparendo; si chiude più in fretta
+        property real apertura: tel.appInterna === "impostazioni" ? 1 : 0
+        Behavior on apertura { Movimento { apre: tel.appInterna === "impostazioni" } }
+        y: (1 - apertura) * 40
+        opacity: apertura
+        scale: 0.94 + 0.06 * apertura
+        visible: apertura > 0.001
     }
     Contatti {
         id: contattiApp
         anchors.left: parent.left; anchors.right: parent.right
         height: parent.height
-        y: tel.appInterna === "contatti" ? 0 : tel.height
-        visible: tel.appInterna === "contatti" || y < tel.height - 1
-        Behavior on y { Movimento { apre: tel.appInterna === "contatti" } }
+        // Si apre ingrandendosi dal centro (94% → 100%) e comparendo; si chiude più in fretta
+        property real apertura: tel.appInterna === "contatti" ? 1 : 0
+        Behavior on apertura { Movimento { apre: tel.appInterna === "contatti" } }
+        y: (1 - apertura) * 40
+        opacity: apertura
+        scale: 0.94 + 0.06 * apertura
+        visible: apertura > 0.001
     }
     Messaggi {
         id: messaggiApp
         anchors.left: parent.left; anchors.right: parent.right
         height: parent.height
-        y: tel.appInterna === "messaggi" ? 0 : tel.height
-        visible: tel.appInterna === "messaggi" || y < tel.height - 1
-        Behavior on y { Movimento { apre: tel.appInterna === "messaggi" } }
+        // Si apre ingrandendosi dal centro (94% → 100%) e comparendo; si chiude più in fretta
+        property real apertura: tel.appInterna === "messaggi" ? 1 : 0
+        Behavior on apertura { Movimento { apre: tel.appInterna === "messaggi" } }
+        y: (1 - apertura) * 40
+        opacity: apertura
+        scale: 0.94 + 0.06 * apertura
+        visible: apertura > 0.001
     }
 
     // ── App di base: caricate solo quando servono (meno memoria) ─────────
@@ -239,12 +271,15 @@ Window {
         property bool usata: false
         anchors.left: parent.left; anchors.right: parent.right
         height: parent.height
-        y: tel.appInterna === nome ? 0 : tel.height
-        visible: tel.appInterna === nome || y < tel.height - 1
+        property real apertura: tel.appInterna === nome ? 1 : 0
+        Behavior on apertura { Movimento { apre: tel.appInterna === nome } }
+        y: (1 - apertura) * 40
+        opacity: apertura
+        scale: 0.94 + 0.06 * apertura
+        visible: apertura > 0.001
         active: tel.appInterna === nome || visible || (resta && usata)
         onActiveChanged: if (active) usata = true
         asynchronous: false
-        Behavior on y { Movimento { apre: tel.appInterna === nome } }
     }
     PaginaApp { nome: "calcolatrice"; source: "Calcolatrice.qml" }
     PaginaApp { nome: "note"; source: "Note.qml" }
@@ -267,16 +302,20 @@ Window {
     Notifiche {
         anchors.left: parent.left; anchors.right: parent.right
         height: parent.height
-        y: tel.notifiche ? 0 : -tel.height
-        visible: tel.notifiche || y > -tel.height + 1
-        Behavior on y { Movimento { apre: tel.notifiche } }
+        property real apertura: tel.notifiche ? 1 : 0
+        Behavior on apertura { Movimento { apre: tel.notifiche } }
+        y: (apertura - 1) * 60
+        opacity: apertura
+        visible: apertura > 0.001
     }
     CentroControllo {
         anchors.left: parent.left; anchors.right: parent.right
         height: parent.height
-        y: tel.controllo ? 0 : -tel.height
-        visible: tel.controllo || y > -tel.height + 1
-        Behavior on y { Movimento { apre: tel.controllo } }
+        property real apertura: tel.controllo ? 1 : 0
+        Behavior on apertura { Movimento { apre: tel.controllo } }
+        y: (apertura - 1) * 60
+        opacity: apertura
+        visible: apertura > 0.001
     }
     Personalizza {
         anchors.left: parent.left; anchors.right: parent.right

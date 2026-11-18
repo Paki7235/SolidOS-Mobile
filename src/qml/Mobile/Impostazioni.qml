@@ -58,8 +58,9 @@ Rectangle {
         default property alias righe: colonna.data
         width: imp.width - 32; x: 16
         height: colonna.implicitHeight
-        radius: 16
+        radius: 22
         color: imp.sezione
+        border.width: 1; border.color: tel.pal.bordo
         Column { id: colonna; width: parent.width }
     }
     component Riga: Item {
@@ -76,19 +77,20 @@ Rectangle {
         property bool lucchetto: false
         signal scelta()
         signal cambiato(bool si)
-        width: parent ? parent.width : 300; height: 54
+        width: parent ? parent.width : 300; height: 58
+        // Icona a linea in un tondo grigio (stile «Essenziale»: niente quadratini colorati)
         Rectangle {
             visible: r.icona !== ""
-            x: 14; anchors.verticalCenter: parent.verticalCenter
-            width: 30; height: 30; radius: 8; color: r.coloreIcona
-            Icona { anchors.centerIn: parent; nome: r.icona; lato: 18; tema: "scuro" }   // bianca sul quadratino colorato
+            x: 12; anchors.verticalCenter: parent.verticalCenter
+            width: 36; height: 36; radius: 18; color: tel.pal.superficie2
+            Icona { anchors.centerIn: parent; nome: r.icona; lato: 18 }
         }
-        Text { x: r.icona !== "" ? 56 : 16; anchors.verticalCenter: parent.verticalCenter; text: r.titolo; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16) }
+        Text { x: r.icona !== "" ? 60 : 16; anchors.verticalCenter: parent.verticalCenter; text: r.titolo; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16) }
         Text {
             anchors.right: parent.right; anchors.rightMargin: r.freccia ? 34 : 16; anchors.verticalCenter: parent.verticalCenter
             visible: !r.interruttore
             width: Math.min(implicitWidth, parent.width * 0.45); elide: Text.ElideRight; horizontalAlignment: Text.AlignRight
-            text: r.valore; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(15)
+            text: r.valore; color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(12); font.capitalization: Font.AllUppercase
         }
         Text { visible: r.freccia && !r.interruttore; anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; text: "›"; color: tel.pal.testo2; font.pixelSize: 24 }
         Row {
@@ -118,15 +120,18 @@ Rectangle {
             visible: r.interruttore
             anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter
             width: 50; height: 30; radius: 15
-            color: r.acceso ? "#22c55e" : (tel.chiaro ? "#d4d8e4" : "#3a4050")
-            Rectangle { width: 26; height: 26; radius: 13; y: 2; x: r.acceso ? 22 : 2; color: "#ffffff"; Behavior on x { NumberAnimation { duration: 120 } } }
+            color: r.acceso ? tel.pal.pieno : tel.pal.superficie2
+            border.width: 1; border.color: r.acceso ? tel.pal.pieno : tel.pal.bordo
+            Behavior on color { ColorAnimation { duration: tel.tVeloce } }
+            Rectangle { width: 22; height: 22; radius: 11; y: 4; x: r.acceso ? 24 : 4; color: r.acceso ? tel.pal.suPieno : tel.pal.testo3
+                        Behavior on x { NumberAnimation { duration: tel.tNormale; easing.type: Easing.OutQuint } } }
         }
-        Rectangle { visible: !r.ultima; anchors.bottom: parent.bottom; x: r.icona !== "" ? 56 : 16; width: parent.width - x; height: 1; color: imp.linea }
+        Rectangle { visible: !r.ultima; anchors.bottom: parent.bottom; x: r.icona !== "" ? 60 : 16; width: parent.width - x; height: 1; color: imp.linea }
         MouseArea { anchors.fill: parent; onClicked: r.interruttore ? r.cambiato(!r.acceso) : r.scelta() }
     }
     component Titoletto: Text {
-        x: 32; topPadding: 18; bottomPadding: 6
-        color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold
+        x: 32; topPadding: 18; bottomPadding: 8
+        color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(11); font.capitalization: Font.AllUppercase; font.letterSpacing: 0.6
     }
     component Nota: Text {
         x: 32; width: imp.width - 64; topPadding: 6
@@ -138,11 +143,11 @@ Rectangle {
         property int valore: 50
         property string icona: ""
         signal mosso(int v)
-        width: parent ? parent.width - 28 : 300; x: 14; height: 44; radius: 12
-        color: tel.pal.traccia
+        width: parent ? parent.width - 28 : 300; x: 14; height: 48; radius: 24
+        color: tel.pal.superficie2
         clip: true
-        Rectangle { width: parent.width * cur.valore / 100; height: parent.height; radius: 12; color: tel.accento }
-        Icona { x: 12; anchors.verticalCenter: parent.verticalCenter; nome: cur.icona; lato: 20 ; tema: "scuro" }
+        Rectangle { width: Math.max(48, parent.width * cur.valore / 100); height: parent.height; radius: 24; color: tel.pal.pieno }
+        Icona { x: 14; anchors.verticalCenter: parent.verticalCenter; nome: cur.icona; lato: 20; tema: tel.chiaro ? "scuro" : "chiaro" }
         MouseArea {
             anchors.fill: parent
             function muovi(x) { var v = Math.max(0, Math.min(100, Math.round(x / width * 100))); cur.valore = v; cur.mosso(v) }
@@ -155,20 +160,22 @@ Rectangle {
     Text {
         visible: imp.pagina !== ""
         x: 18; y: 58
-        text: "‹ " + I18n.t("Impostazioni"); color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(16)
+        text: "‹ " + I18n.t("Impostazioni"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
         MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: { imp.pagina = ""; imp.riepilogo() } }
     }
     Text {
-        x: 20; y: imp.pagina === "" ? 56 : 84
+        x: 20; y: imp.pagina === "" ? 60 : 86
         text: ({ "": I18n.t("Impostazioni"), wifi: "Wi-Fi", bluetooth: "Bluetooth", rete: I18n.t("Rete mobile"), suoni: I18n.t("Suoni e vibrazione"),
                  schermo: I18n.t("Schermo"), notifiche: I18n.t("Notifiche"), batteria: I18n.t("Batteria"), solidid: "Solid ID", sicurezza: I18n.t("Codice di sblocco"), info: I18n.t("Info sul telefono") })[imp.pagina]
-        color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(imp.pagina === "" ? 30 : 26); font.weight: Font.Bold
+        color: tel.pal.testo; font.family: tel.fontPunti; font.pixelSize: imp.pagina === "" ? 36 : 30; font.weight: Font.Black; font.letterSpacing: -1
+        font.capitalization: Font.AllUppercase
+        width: parent.width - 40; elide: Text.ElideRight
     }
 
     Flickable {
         id: scorri
         anchors.fill: parent
-        anchors.topMargin: imp.pagina === "" ? 104 : 128
+        anchors.topMargin: imp.pagina === "" ? 114 : 134
         anchors.bottomMargin: 26
         contentHeight: contenuto.height + 30
         clip: true
@@ -182,27 +189,27 @@ Rectangle {
                 width: parent.width; spacing: 16
                 Gruppo {
                     Riga {
-                        icona: "avatar-default-symbolic"; coloreIcona: "#6b7385"; ultima: true
+                        icona: "avatar-default-symbolic"; ultima: true
                         titolo: imp.account.collegato ? (imp.account.nome || imp.account.email) : I18n.t("Accedi al Solid ID")
                         valore: imp.account.collegato ? "Solid ID" : ""
                         onScelta: imp.apri("solidid")
                     }
                 }
                 Gruppo {
-                    Riga { icona: "network-wireless-symbolic"; coloreIcona: "#3f7cf5"; titolo: "Wi-Fi"; valore: !imp.wifi.acceso ? I18n.t("No") : ((imp.wifi.reti || []).filter(function (x) { return x.connessa }).map(function (x) { return x.ssid })[0] || I18n.t("Non connesso")); onScelta: imp.apri("wifi") }
-                    Riga { icona: "bluetooth-active-symbolic"; coloreIcona: "#3f7cf5"; titolo: "Bluetooth"; valore: !imp.bt.disponibile ? I18n.t("Assente") : (imp.bt.acceso ? I18n.t("Sì") : I18n.t("No")); onScelta: imp.apri("bluetooth") }
-                    Riga { icona: "network-cellular-symbolic"; coloreIcona: "#22c55e"; titolo: I18n.t("Rete mobile"); valore: imp.mobile.sim ? (imp.mobile.operatore || "SIM") : I18n.t("Nessuna SIM"); ultima: true; onScelta: imp.apri("rete") }
+                    Riga { icona: "network-wireless-symbolic"; titolo: "Wi-Fi"; valore: !imp.wifi.acceso ? I18n.t("No") : ((imp.wifi.reti || []).filter(function (x) { return x.connessa }).map(function (x) { return x.ssid })[0] || I18n.t("Non connesso")); onScelta: imp.apri("wifi") }
+                    Riga { icona: "bluetooth-active-symbolic"; titolo: "Bluetooth"; valore: !imp.bt.disponibile ? I18n.t("Assente") : (imp.bt.acceso ? I18n.t("Sì") : I18n.t("No")); onScelta: imp.apri("bluetooth") }
+                    Riga { icona: "network-cellular-symbolic"; titolo: I18n.t("Rete mobile"); valore: imp.mobile.sim ? (imp.mobile.operatore || "SIM") : I18n.t("Nessuna SIM"); ultima: true; onScelta: imp.apri("rete") }
                 }
                 Gruppo {
-                    Riga { icona: "audio-volume-high-symbolic"; coloreIcona: "#ef4444"; titolo: I18n.t("Suoni e vibrazione"); onScelta: imp.apri("suoni") }
-                    Riga { icona: "preferences-system-notifications-symbolic"; coloreIcona: "#ef4444"; titolo: I18n.t("Notifiche"); valore: tel.imp.non_disturbare ? I18n.t("Non disturbare") : ""; onScelta: imp.apri("notifiche") }
-                    Riga { icona: "display-brightness-symbolic"; coloreIcona: "#3f7cf5"; titolo: I18n.t("Schermo"); onScelta: imp.apri("schermo") }
-                    Riga { icona: "preferences-desktop-wallpaper-symbolic"; coloreIcona: "#8b5cf6"; titolo: I18n.t("Personalizza"); ultima: true; onScelta: tel.personalizza = true }
+                    Riga { icona: "audio-volume-high-symbolic"; titolo: I18n.t("Suoni e vibrazione"); onScelta: imp.apri("suoni") }
+                    Riga { icona: "preferences-system-notifications-symbolic"; titolo: I18n.t("Notifiche"); valore: tel.imp.non_disturbare ? I18n.t("Non disturbare") : ""; onScelta: imp.apri("notifiche") }
+                    Riga { icona: "display-brightness-symbolic"; titolo: I18n.t("Schermo"); onScelta: imp.apri("schermo") }
+                    Riga { icona: "preferences-desktop-wallpaper-symbolic"; titolo: I18n.t("Personalizza"); ultima: true; onScelta: tel.personalizza = true }
                 }
                 Gruppo {
-                    Riga { icona: "battery-good-symbolic"; coloreIcona: "#22c55e"; titolo: I18n.t("Batteria"); valore: (imp.batteria.livello || 0) + "%"; onScelta: imp.apri("batteria") }
-                    Riga { icona: "system-lock-screen-symbolic"; coloreIcona: "#ef4444"; titolo: I18n.t("Codice di sblocco"); valore: imp.codice ? I18n.t("Sì") : I18n.t("No"); onScelta: imp.apri("sicurezza") }
-                    Riga { icona: "help-about-symbolic"; coloreIcona: "#6b7385"; titolo: I18n.t("Info sul telefono"); ultima: true; onScelta: imp.apri("info") }
+                    Riga { icona: "battery-good-symbolic"; titolo: I18n.t("Batteria"); valore: (imp.batteria.livello || 0) + "%"; onScelta: imp.apri("batteria") }
+                    Riga { icona: "system-lock-screen-symbolic"; titolo: I18n.t("Codice di sblocco"); valore: imp.codice ? I18n.t("Sì") : I18n.t("No"); onScelta: imp.apri("sicurezza") }
+                    Riga { icona: "help-about-symbolic"; titolo: I18n.t("Info sul telefono"); ultima: true; onScelta: imp.apri("info") }
                 }
             }
 
@@ -255,7 +262,7 @@ Rectangle {
                         Riga {
                             required property var modelData
                             required property int index
-                            icona: modelData.tipo || "bluetooth-active-symbolic"; coloreIcona: "#6b7385"
+                            icona: modelData.tipo || "bluetooth-active-symbolic"
                             titolo: modelData.nome; valore: modelData.connesso ? I18n.t("Connesso") : I18n.t("Non connesso")
                             ultima: index === (imp.bt.dispositivi || []).length - 1
                             onScelta: { var r = ponte.chiama("btAzione", [modelData.indirizzo, modelData.connesso ? "disconnetti" : "connetti"]); tel.avviso(r.messaggio); imp.bt = ponte.chiama0("btStato") }
@@ -270,7 +277,7 @@ Rectangle {
                         model: imp.trovatiBt
                         Riga {
                             required property var modelData
-                            icona: modelData.tipo || "bluetooth-active-symbolic"; coloreIcona: "#6b7385"
+                            icona: modelData.tipo || "bluetooth-active-symbolic"
                             titolo: modelData.nome; valore: I18n.t("Associa")
                             onScelta: { var r = ponte.chiama("btAzione", [modelData.indirizzo, "associa"]); tel.avviso(r.messaggio); imp.bt = ponte.chiama0("btStato"); imp.trovatiBt = [] }
                         }
@@ -377,13 +384,14 @@ Rectangle {
                 width: parent.width
                 Item {
                     width: parent.width; height: 120
-                    Text { anchors.horizontalCenter: parent.horizontalCenter; y: 6; text: (imp.batteria.livello || 0) + "%"; color: tel.pal.testo; font.family: tel.fontOra; font.pixelSize: 56; font.weight: Font.Bold }
-                    Rectangle {
-                        anchors.horizontalCenter: parent.horizontalCenter; y: 76
-                        width: imp.width - 64; height: 16; radius: 8; color: tel.pal.traccia
-                        Rectangle { width: parent.width * (imp.batteria.livello || 0) / 100; height: parent.height; radius: 8; color: (imp.batteria.livello || 0) <= 20 ? "#ef4444" : "#22c55e" }
+                    Text { anchors.horizontalCenter: parent.horizontalCenter; y: 6; text: (imp.batteria.livello || 0) + "%"; color: tel.pal.testo; font.family: tel.fontPunti; font.pixelSize: 56; font.weight: Font.Black }
+                    BarraPunti {
+                        anchors.horizontalCenter: parent.horizontalCenter; y: 72
+                        width: imp.width - 64; height: 24; righe: 3
+                        valore: imp.batteria.livello || 0
+                        acceso: (imp.batteria.livello || 0) <= 20 ? tel.rosso : tel.pal.testo
                     }
-                    Text { anchors.horizontalCenter: parent.horizontalCenter; y: 98; text: imp.batteria.stato || ""; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
+                    Text { anchors.horizontalCenter: parent.horizontalCenter; y: 98; text: (imp.batteria.stato || "").toUpperCase(); color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(11) }
                 }
                 Gruppo {
                     Riga { titolo: I18n.t("Risparmio energetico"); interruttore: true; acceso: imp.batteria.risparmio === true; freccia: false
@@ -427,8 +435,8 @@ Rectangle {
                         width: parent.width; height: 110
                         Rectangle {
                             anchors.horizontalCenter: parent.horizontalCenter; y: 6
-                            width: 70; height: 70; radius: 35; color: tel.accento
-                            Icona { anchors.centerIn: parent; nome: "avatar-default-symbolic"; lato: 36 ; tema: "scuro" }
+                            width: 70; height: 70; radius: 35; color: tel.pal.superficie2
+                            Icona { anchors.centerIn: parent; nome: "avatar-default-symbolic"; lato: 32 }
                         }
                         Text { anchors.horizontalCenter: parent.horizontalCenter; y: 84; text: paginaSid.modo === "accedi" ? I18n.t("Accedi al Solid ID") : I18n.t("Crea il tuo Solid ID"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(18); font.weight: Font.Bold }
                     }
@@ -449,7 +457,7 @@ Rectangle {
                             TextField { id: sidPw; x: 16; width: parent.width - 32; anchors.verticalCenter: parent.verticalCenter; echoMode: TextInput.Password; placeholderText: paginaSid.modo === "crea" ? I18n.t("Password (almeno 8 caratteri)") : I18n.t("Password"); placeholderTextColor: tel.pal.testo2; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); onAccepted: vaiSid.premi(); background: Item {} }
                         }
                     }
-                    Text { visible: paginaSid.esito !== ""; x: 32; width: imp.width - 64; topPadding: 10; wrapMode: Text.Wrap; text: paginaSid.esito; color: paginaSid.errore ? "#ef4444" : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13) }
+                    Text { visible: paginaSid.esito !== ""; x: 32; width: imp.width - 64; topPadding: 10; wrapMode: Text.Wrap; text: paginaSid.esito; color: paginaSid.errore ? tel.rosso : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13) }
                     Item { width: 1; height: 14 }
                     Rectangle {
                         id: vaiSid
@@ -459,9 +467,9 @@ Rectangle {
                             if (paginaSid.modo === "accedi") ponte.avvia("sidAccedi", [sidEmail.text, sidPw.text], "imp-sid")
                             else ponte.avvia("sidCrea", [sidNome.text, sidEmail.text, sidPw.text], "imp-sid")
                         }
-                        x: 16; width: imp.width - 32; height: 50; radius: 14
-                        color: tel.accento; opacity: sidEmail.text && sidPw.text ? 1 : 0.5
-                        Text { anchors.centerIn: parent; text: paginaSid.inCorso ? I18n.t("Attendi…") : (paginaSid.modo === "accedi" ? I18n.t("Accedi") : I18n.t("Crea Solid ID")); color: "#ffffff"; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
+                        x: 16; width: imp.width - 32; height: 52; radius: 26
+                        color: tel.pal.pieno; opacity: sidEmail.text && sidPw.text ? 1 : 0.4
+                        Text { anchors.centerIn: parent; text: paginaSid.inCorso ? I18n.t("Attendi…") : (paginaSid.modo === "accedi" ? I18n.t("Accedi") : I18n.t("Crea Solid ID")); color: tel.pal.suPieno; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
                         MouseArea { anchors.fill: parent; onClicked: vaiSid.premi() }
                     }
                     Item { width: 1; height: 10 }
@@ -481,11 +489,7 @@ Rectangle {
                     width: parent.width
                     Item {
                         width: parent.width; height: 130
-                        Rectangle {
-                            anchors.horizontalCenter: parent.horizontalCenter; y: 4
-                            width: 76; height: 76; radius: 38; color: tel.accento
-                            Text { anchors.centerIn: parent; text: (imp.account.nome || imp.account.email || "?").charAt(0).toUpperCase(); color: "#ffffff"; font.family: Tema.font; font.pixelSize: 32; font.weight: Font.Bold }
-                        }
+                        Avatar { anchors.horizontalCenter: parent.horizontalCenter; y: 4; lato: 76; nome: imp.account.nome || imp.account.email || "?" }
                         Text { anchors.horizontalCenter: parent.horizontalCenter; y: 88; text: imp.account.nome || ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(20); font.weight: Font.Bold }
                         Text { anchors.horizontalCenter: parent.horizontalCenter; y: 112; text: imp.account.email || ""; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
                     }
@@ -585,7 +589,7 @@ Rectangle {
             CampoTesto { id: cAttuale; visible: codiceDlg.modo !== "imposta"; width: parent.width; echoMode: TextInput.Password; inputMethodHints: Qt.ImhDigitsOnly; placeholderText: I18n.t("Codice attuale") }
             CampoTesto { id: cNuovo; visible: codiceDlg.modo !== "togli"; width: parent.width; echoMode: TextInput.Password; inputMethodHints: Qt.ImhDigitsOnly; placeholderText: I18n.t("Nuovo codice (4-8 cifre)") }
             CampoTesto { id: cRipeti; visible: codiceDlg.modo !== "togli"; width: parent.width; echoMode: TextInput.Password; inputMethodHints: Qt.ImhDigitsOnly; placeholderText: I18n.t("Ripeti il nuovo codice") }
-            Text { id: cEsito; visible: text !== ""; width: parent.width; wrapMode: Text.Wrap; color: "#ef4444"; font.family: Tema.font; font.pixelSize: tel.px(13) }
+            Text { id: cEsito; visible: text !== ""; width: parent.width; wrapMode: Text.Wrap; color: tel.rosso; font.family: Tema.font; font.pixelSize: tel.px(13) }
             Row {
                 spacing: 10; anchors.right: parent.right
                 Pulsante { text: I18n.t("Annulla"); onClicked: codiceDlg.close() }

@@ -37,27 +37,28 @@ Rectangle {
     Text {
         visible: !app.inLuoghi
         x: 18; y: 58
-        text: "‹ " + (app.cartella.su ? I18n.t("Indietro") : I18n.t("Luoghi")); color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(16)
+        text: "‹ " + (app.cartella.su ? I18n.t("Indietro") : I18n.t("Luoghi")); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
         MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: app.indietro() }
     }
     Text {
         visible: !app.inLuoghi
         anchors.right: parent.right; anchors.rightMargin: 20; y: 58
-        text: I18n.t("Nuova cartella"); color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(16)
+        text: I18n.t("Nuova cartella"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
         MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: { campo.modo = "cartella"; campo.voce = null; campo.open() } }
     }
     Text {
-        x: 20; y: app.inLuoghi ? 56 : 84
+        x: 20; y: app.inLuoghi ? 60 : 86
         width: parent.width - 40; elide: Text.ElideRight
         text: app.inLuoghi ? I18n.t("File") : app.cartella.titolo
-        color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(app.inLuoghi ? 30 : 26); font.weight: Font.Bold
+        color: tel.pal.testo; font.family: tel.fontPunti; font.pixelSize: app.inLuoghi ? 36 : 30; font.weight: Font.Black; font.letterSpacing: -1
+        font.capitalization: Font.AllUppercase
     }
 
     // ── Luoghi ───────────────────────────────────────────────────────────
     Rectangle {
         visible: app.inLuoghi
-        x: 16; y: 110; width: parent.width - 32; radius: 16
-        height: colLuoghi.height; color: app.sezione
+        x: 16; y: 120; width: parent.width - 32; radius: 22
+        height: colLuoghi.height; color: app.sezione; border.width: 1; border.color: tel.pal.bordo
         Column {
             id: colLuoghi
             width: parent.width
@@ -67,7 +68,7 @@ Rectangle {
                     required property var modelData
                     required property int index
                     width: colLuoghi.width; height: 54
-                    Icona { x: 14; anchors.verticalCenter: parent.verticalCenter; nome: modelData.icona; lato: 28 }
+                    Icona { x: 18; anchors.verticalCenter: parent.verticalCenter; nome: modelData.icona; lato: 22 }
                     Text { x: 56; anchors.verticalCenter: parent.verticalCenter; text: modelData.nome; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16) }
                     Text { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; text: "›"; color: tel.pal.testo2; font.pixelSize: 24 }
                     Rectangle { visible: index < app.luoghi.length - 1; anchors.bottom: parent.bottom; x: 56; width: parent.width - 56; height: 1; color: app.linea }
@@ -135,12 +136,12 @@ Rectangle {
         }
         Text {
             x: 18; y: 58
-            text: "‹ " + I18n.t("Indietro"); color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(16)
+            text: "‹ " + I18n.t("Indietro"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
             MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: app.anteprima = null }
         }
         Text {
             anchors.right: parent.right; anchors.rightMargin: 20; y: 58
-            text: I18n.t("Condividi"); color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(16)
+            text: I18n.t("Condividi"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
             MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: tel.condividi([app.anteprima.percorso]) }
         }
     }

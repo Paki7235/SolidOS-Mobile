@@ -25,12 +25,12 @@ Item {
     Rectangle {
         id: barraCerca
         x: Math.round((lib.width - width) / 2); y: 8
-        width: 2 * lib.latoCartella + lib.spazio; height: 38; radius: 10
-        color: tel.pal.vetro
-        border.color: tel.pal.vetroBordo; border.width: 1
+        width: 2 * lib.latoCartella + lib.spazio; height: 44; radius: 22
+        color: "transparent"
+        border.color: campo.activeFocus ? tel.pal.testo2 : tel.pal.bordo; border.width: 1
         Row {
-            anchors.fill: parent; anchors.leftMargin: 12; spacing: 8
-            Icona { nome: "system-search-symbolic"; lato: 16; anchors.verticalCenter: parent.verticalCenter; opacity: 0.8 }
+            anchors.fill: parent; anchors.leftMargin: 16; spacing: 10
+            Icona { nome: "system-search-symbolic"; lato: 17; anchors.verticalCenter: parent.verticalCenter; opacity: 0.8 }
             TextField {
                 id: campo
                 anchors.verticalCenter: parent.verticalCenter
@@ -100,8 +100,8 @@ Item {
                         horizontalAlignment: Text.AlignHCenter
                         elide: Text.ElideRight
                         text: casella.modelData.nome
-                        color: tel.pal.testo
-                        font.family: Tema.font; font.pixelSize: tel.px(12); font.weight: Font.Medium
+                        color: tel.pal.testo2
+                        font.family: tel.fontMono; font.pixelSize: tel.px(11); font.capitalization: Font.AllUppercase; font.letterSpacing: 0.6
                     }
                 }
             }

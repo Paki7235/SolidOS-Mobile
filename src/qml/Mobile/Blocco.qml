@@ -1,5 +1,6 @@
-// Schermata di blocco: data, ora grande (carattere e colore da Personalizza),
-// widget in vetro, torcia e fotocamera. Si sblocca scorrendo in su dalla barretta.
+// Schermata di blocco «Essenziale»: data in piccolo, ora grande a puntini, una riga di stato
+// (novità in rosso, batteria, rete), le notifiche in basso, torcia e fotocamera.
+// Si sblocca scorrendo in su dalla barretta: il contenuto segue il dito.
 import QtQuick
 import SolidUI
 
@@ -13,7 +14,7 @@ Item {
     property real trascinamento: 0
     readonly property real presenza: Math.max(0, 1 + trascinamento / (height * 0.45))
     Translate { id: spinta; y: blocco.trascinamento * 0.8 }
-    NumberAnimation { id: ritorno; target: blocco; property: "trascinamento"; to: 0; duration: tel.tEntrata; easing.type: Easing.OutBack; easing.overshoot: 1.1 }
+    NumberAnimation { id: ritorno; target: blocco; property: "trascinamento"; to: 0; duration: tel.tEntrata; easing.type: Easing.OutQuint }
     SequentialAnimation {
         id: uscita
         NumberAnimation { target: blocco; property: "trascinamento"; to: -blocco.height * 0.5; duration: tel.tNormale; easing.type: Easing.InCubic }
@@ -39,53 +40,35 @@ Item {
         }
     }
 
-    // Data e ora (come nella prima versione): orologio grande e deciso
+    // Data, ora a puntini e riga di stato, allineate a sinistra
     Column {
         id: orologio
         transform: spinta; opacity: blocco.presenza
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: Math.round(Math.min(74, blocco.height * 0.088))
-        spacing: 2
-        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: "system-lock-screen-symbolic"; lato: 20 }
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: tel.giorno()
-            color: tel.pal.testo2
-            font.family: Tema.font; font.pixelSize: tel.px(20); font.weight: Font.DemiBold
-        }
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
+        x: 24
+        y: Math.round(Math.min(92, blocco.height * 0.105))
+        spacing: 6
+        Mono { text: tel.adesso.toLocaleDateString(Qt.locale("it_IT"), "dddd · d MMM"); font.pixelSize: tel.px(13) }
+        Punti {
             text: tel.ora()
-            color: tel.pal.testo
-            font.family: tel.fontOra; font.pixelSize: Math.min(104, Math.round(blocco.width * 0.27)); font.weight: Font.Bold
-            font.letterSpacing: -2
+            font.family: tel.fontOra
+            font.pixelSize: Math.min(116, Math.round(blocco.width * 0.29))
+            font.letterSpacing: -3
         }
-    }
-
-    // Widget: batteria di questo telefono, rete e Bluetooth (come nella prima versione)
-    Row {
-        id: pillole
-        transform: spinta; opacity: blocco.presenza
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: orologio.bottom; anchors.topMargin: 20
-        spacing: 10
-        Vetro {
-            width: 72; height: 72; radius: 36
-            Column {
-                anchors.centerIn: parent
-                spacing: 2
-                Text { anchors.horizontalCenter: parent.horizontalCenter; text: (tel.stato.batteria ? tel.stato.batteria.livello : 100) + "%"; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.Bold }
-                Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("batteria"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(11) }
+        Row {
+            id: pillole
+            spacing: 8
+            topPadding: 4
+            Rectangle { visible: tel.elencoNotifiche.length > 0; anchors.verticalCenter: parent.verticalCenter; width: 8; height: 8; radius: 4; color: tel.rosso }
+            Mono {
+                visible: tel.elencoNotifiche.length > 0
+                text: tel.elencoNotifiche.length + " " + (tel.elencoNotifiche.length === 1 ? I18n.t("nuova") : I18n.t("nuove"))
+                color: tel.pal.testo; font.pixelSize: tel.px(13)
             }
-        }
-        Vetro {
-            width: 172; height: 72; radius: 22
-            Column {
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.left: parent.left; anchors.leftMargin: 14
-                spacing: 2
-                Text { text: tel.stato.rete && tel.stato.rete.connesso ? tel.stato.rete.nome : I18n.t("Nessuna rete"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold; width: 144; elide: Text.ElideRight }
-                Text { text: tel.stato.bluetooth ? I18n.t("Bluetooth acceso") : I18n.t("Bluetooth spento"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
+            Mono {
+                text: (tel.elencoNotifiche.length > 0 ? "· " : "") + (tel.stato.batteria ? tel.stato.batteria.livello : 100) + "%"
+                      + " · " + (tel.stato.rete && tel.stato.rete.connesso ? tel.stato.rete.nome : I18n.t("Nessuna rete"))
+                      + (tel.imp.non_disturbare ? " · " + I18n.t("Non disturbare") : "")
+                font.pixelSize: tel.px(13)
             }
         }
     }
@@ -93,7 +76,7 @@ Item {
     Column {
         transform: spinta; opacity: blocco.presenza
         x: 14
-        anchors.top: pillole.bottom; anchors.topMargin: 28
+        anchors.bottom: parent.bottom; anchors.bottomMargin: 116
         width: parent.width - 28
         spacing: 8
         visible: !blocco.chiedeCodice
@@ -101,8 +84,8 @@ Item {
         Rectangle {
             visible: tel.messaggioRemoto !== ""
             width: parent.width; height: remoto.implicitHeight + 28; radius: tel.r2
-            color: tel.chiaro ? "#FFF1F1" : "#2A1517"
-            border.color: tel.pal.pericolo; border.width: 1
+            color: tel.pal.superficie
+            border.color: tel.rosso; border.width: 1
             Column {
                 id: remoto
                 x: 16; y: 14; width: parent.width - 32; spacing: 4
@@ -119,13 +102,7 @@ Item {
             visible: tel.elencoNotifiche.length > mostrate && !tel.messaggioRemoto
             anchors.horizontalCenter: parent.horizontalCenter
             text: I18n.t("e altre") + " " + (tel.elencoNotifiche.length - mostrate)
-            color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13)
-        }
-        Text {
-            visible: tel.elencoNotifiche.length === 0
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: tel.imp.non_disturbare ? I18n.t("Non disturbare attivo") : I18n.t("Nessuna notifica")
-            color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(14)
+            color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(12)
         }
     }
 
@@ -133,24 +110,15 @@ Item {
     Row {
         transform: spinta; opacity: blocco.presenza
         anchors.left: parent.left; anchors.right: parent.right
-        anchors.bottom: parent.bottom; anchors.bottomMargin: 44
-        leftPadding: 46; rightPadding: 46
-        spacing: parent.width - 92 - 104
+        anchors.bottom: parent.bottom; anchors.bottomMargin: 42
+        leftPadding: 32; rightPadding: 32
+        spacing: parent.width - 64 - 108
         Repeater {
             model: [{ i: "torcia", t: I18n.t("Torcia") }, { i: "camera-photo-symbolic", t: I18n.t("Fotocamera") }]
-            Vetro {
+            TastoTondo {
                 required property var modelData
-                width: 52; height: 52; radius: 26
-                Icona { anchors.centerIn: parent; visible: parent.modelData.i !== "torcia"; nome: parent.modelData.i; lato: 22 }
-                // Torcia disegnata (non tutti i temi di icone ce l'hanno)
-                Item {
-                    visible: parent.modelData.i === "torcia"
-                    anchors.centerIn: parent; width: 14; height: 24
-                    Rectangle { width: 14; height: 7; radius: 2; color: tel.pal.testo }
-                    Rectangle { y: 6; x: 3; width: 8; height: 17; radius: 2; color: tel.pal.testo }
-                    Rectangle { y: 10; x: 6; width: 2; height: 4; radius: 1; color: tel.pal.suPieno }
-                }
-                MouseArea { anchors.fill: parent; onClicked: tel.avviso(parent.modelData.t + ": " + I18n.t("arriva con il telefono vero")) }
+                icona: modelData.i; lato: 54; latoIcona: 22
+                onTocco: tel.avviso(modelData.t + ": " + I18n.t("arriva con il telefono vero"))
             }
         }
     }
@@ -164,12 +132,12 @@ Item {
             anchors.bottom: parent.bottom; anchors.bottomMargin: 22
             text: I18n.t("Scorri in su per entrare")
             color: tel.pal.testo2
-            font.family: Tema.font; font.pixelSize: tel.px(13)
+            font.family: tel.fontMono; font.pixelSize: tel.px(11); font.capitalization: Font.AllUppercase; font.letterSpacing: 0.6
         }
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom; anchors.bottomMargin: 8
-            width: 134; height: 5; radius: 3
+            width: 120; height: 4; radius: 2
             color: tel.pal.testo
         }
         visible: !blocco.chiedeCodice
@@ -198,7 +166,7 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             y: 130
             spacing: 16
-            Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Inserisci il codice"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(20); font.weight: Font.DemiBold }
+            Mono { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Inserisci il codice"); color: tel.pal.testo; font.pixelSize: tel.px(13) }
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 14
@@ -212,7 +180,7 @@ Item {
                     }
                 }
             }
-            Text { anchors.horizontalCenter: parent.horizontalCenter; height: 20; text: blocco.errore; color: "#ef4444"; font.family: Tema.font; font.pixelSize: tel.px(14) }
+            Text { anchors.horizontalCenter: parent.horizontalCenter; height: 20; text: blocco.errore; color: tel.rosso; font.family: Tema.font; font.pixelSize: tel.px(14) }
         }
         Grid {
             anchors.horizontalCenter: parent.horizontalCenter
@@ -223,10 +191,11 @@ Item {
                 Rectangle {
                     required property string modelData
                     width: 78; height: 78; radius: 39
-                    color: modelData === "" || modelData === "⌫" ? "transparent" : tel.pal.vetro
-                    border.color: modelData === "" || modelData === "⌫" ? "transparent" : tel.pal.vetroBordo
-                    Text { anchors.centerIn: parent; text: parent.modelData; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: parent.modelData === "⌫" ? 26 : 32 }
+                    color: modelData === "" || modelData === "⌫" ? "transparent" : (tasto.pressed ? tel.pal.pieno : tel.pal.superficie2)
+                    Behavior on color { ColorAnimation { duration: tel.tVeloce } }
+                    Text { anchors.centerIn: parent; text: parent.modelData; color: tasto.pressed && parent.modelData !== "⌫" ? tel.pal.suPieno : tel.pal.testo; font.family: Tema.font; font.pixelSize: parent.modelData === "⌫" ? 24 : 30; font.weight: Font.Medium }
                     MouseArea {
+                        id: tasto
                         anchors.fill: parent; enabled: parent.modelData !== ""
                         onClicked: parent.modelData === "⌫" ? blocco.codice = blocco.codice.slice(0, -1) : blocco.cifra(parent.modelData)
                     }

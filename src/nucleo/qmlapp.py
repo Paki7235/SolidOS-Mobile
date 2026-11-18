@@ -167,7 +167,13 @@ def _provider_icone():
         def requestPixmap(self, ident, richiesta, *_):
             lato = max(richiesta.width(), richiesta.height(), 0) or 48
             nome, _, opzioni = ident.partition("?")
-            icona = QIcon(nome) if nome.startswith("/") else QIcon.fromTheme(nome)
+            # Icone a linea dello stile «Essenziale» (SolidOS Mobile): hanno la precedenza
+            linea = next((f for f in (CARTELLA_QML.parent / "icone" / "linea" / f"{nome}.svg",
+                                      CARTELLA_QML.parent / "dati" / "icone" / "linea" / f"{nome}.svg") if f.is_file()), None)
+            if linea:
+                icona = QIcon(str(linea))
+            else:
+                icona = QIcon(nome) if nome.startswith("/") else QIcon.fromTheme(nome)
             if icona.isNull() and not nome.startswith("/"):
                 # Icone proprie del sistema (es. Dov'è): Qt cerca le icone di riserva solo nella
                 # prima cartella «hicolor» che trova, quindi le nostre si cercano direttamente
@@ -185,10 +191,10 @@ def _provider_icone():
                 pixmap.fill()
             # «?tema=chiaro|scuro» (SolidOS Mobile): le icone simboliche (monocromatiche) si
             # ricolorano come fanno i sistemi Linux: scure sui fondi chiari, chiare sui fondi scuri
-            if nome.endswith("-symbolic") and "tema=" in opzioni:
+            if (linea or nome.endswith("-symbolic")) and "tema=" in opzioni:
                 from PyQt6.QtGui import QColor, QPainter
 
-                colore = QColor("#0F172A") if "tema=chiaro" in opzioni else QColor("#F8FAFC")
+                colore = QColor("#000000") if "tema=chiaro" in opzioni else QColor("#FFFFFF")
                 tinta = QPixmap(pixmap.size())
                 tinta.setDevicePixelRatio(pixmap.devicePixelRatio())
                 tinta.fill(QColor(0, 0, 0, 0))

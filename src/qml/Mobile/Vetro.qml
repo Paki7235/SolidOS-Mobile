@@ -1,5 +1,5 @@
-// Pannello sopra lo sfondo (blocco, Home, tendine): scuro o chiaro e quasi pieno,
-// bordo sottile, angoli del design. Niente sfocatura (costa memoria e batteria).
+// Scheda dello stile «Essenziale»: superficie piena (sotto non si vede niente), bordo
+// sottile di un pixel, angoli del design. È la base di schede, pannelli e tasti.
 import QtQuick
 
 Rectangle {

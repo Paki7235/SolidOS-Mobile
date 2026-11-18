@@ -1,5 +1,5 @@
-// Schermata della chiamata (in uscita, in arrivo, in corso): nome, stato o durata,
-// muto, tastierino, vivavoce, e i tasti per rispondere o chiudere.
+// Schermata della chiamata «Essenziale» (in uscita, in arrivo, in corso): nome, numero e
+// durata in Space Mono, muto, tastierino, vivavoce (acceso = bianco), rispondi e chiudi.
 import QtQuick
 import SolidUI
 
@@ -8,10 +8,7 @@ Rectangle {
     property var info: ({})
     property bool tastierino: false
     property string toni: ""
-    gradient: Gradient {
-        GradientStop { position: 0.0; color: "#101a3a" }
-        GradientStop { position: 1.0; color: "#05070f" }
-    }
+    color: tel.pal.sfondo
 
     component Tasto: Column {
         id: t
@@ -23,26 +20,32 @@ Rectangle {
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             width: 76; height: 76; radius: 38
-            color: t.attivo ? "#ffffff" : Qt.rgba(1, 1, 1, 0.16)
-            Icona { anchors.centerIn: parent; nome: t.icona; lato: 30 }
-            MouseArea { anchors.fill: parent; onClicked: t.premuto() }
+            color: t.attivo ? tel.pal.pieno : tel.pal.superficie2
+            scale: toccoT.pressed ? 0.93 : 1
+            Behavior on scale { NumberAnimation { duration: tel.tVeloce } }
+            Behavior on color { ColorAnimation { duration: tel.tVeloce } }
+            Icona { anchors.centerIn: parent; nome: t.icona; lato: 28; tema: t.attivo ? (tel.chiaro ? "scuro" : "chiaro") : "" }
+            MouseArea { id: toccoT; anchors.fill: parent; onClicked: t.premuto() }
         }
-        Text { anchors.horizontalCenter: parent.horizontalCenter; text: t.testo; color: "#ffffff"; font.family: Tema.font; font.pixelSize: tel.px(13) }
+        Mono { anchors.horizontalCenter: parent.horizontalCenter; text: t.testo; color: tel.pal.testo2 }
     }
 
     Column {
         anchors.horizontalCenter: parent.horizontalCenter
         y: 110
         spacing: 10
-        Rectangle {
+        Avatar { anchors.horizontalCenter: parent.horizontalCenter; lato: 104; nome: ch.info.nome || "?" }
+        Item { width: 1; height: 6 }
+        Text { anchors.horizontalCenter: parent.horizontalCenter; text: ch.info.nome || ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(30); font.weight: Font.DemiBold }
+        Mono { anchors.horizontalCenter: parent.horizontalCenter; visible: ch.info.nome !== ch.info.numero; text: ch.info.numero || ""; font.pixelSize: tel.px(13) }
+        Row {
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 96; height: 96; radius: 48
-            color: tel.accento
-            Text { anchors.centerIn: parent; text: (ch.info.nome || "?").charAt(0).toUpperCase(); color: "#ffffff"; font.family: Tema.font; font.pixelSize: 40; font.weight: Font.Bold }
+            spacing: 8
+            Rectangle { visible: !ch.tastierino; anchors.verticalCenter: parent.verticalCenter; width: 8; height: 8; radius: 4; color: ch.info.inArrivo ? tel.rosso : tel.pal.successo
+                SequentialAnimation on opacity { running: ch.visible && tel.movimento; loops: Animation.Infinite
+                    NumberAnimation { to: 0.25; duration: 700; easing.type: Easing.InOutSine } NumberAnimation { to: 1; duration: 700; easing.type: Easing.InOutSine } } }
+            Mono { text: ch.tastierino ? ch.toni : (ch.info.testo || ""); color: tel.pal.testo; font.pixelSize: tel.px(14) }
         }
-        Text { anchors.horizontalCenter: parent.horizontalCenter; text: ch.info.nome || ""; color: "#ffffff"; font.family: Tema.font; font.pixelSize: tel.px(30); font.weight: Font.DemiBold }
-        Text { anchors.horizontalCenter: parent.horizontalCenter; visible: ch.info.nome !== ch.info.numero; text: ch.info.numero || ""; color: "#aab4c8"; font.family: Tema.font; font.pixelSize: tel.px(15) }
-        Text { anchors.horizontalCenter: parent.horizontalCenter; text: ch.tastierino ? ch.toni : (ch.info.testo || ""); color: "#dbe3f5"; font.family: Tema.font; font.pixelSize: tel.px(17) }
     }
 
     // In corso: comandi
@@ -70,8 +73,8 @@ Rectangle {
             Rectangle {
                 required property string modelData
                 width: 70; height: 70; radius: 35
-                color: Qt.rgba(1, 1, 1, 0.16)
-                Text { anchors.centerIn: parent; text: parent.modelData; color: "#ffffff"; font.family: Tema.font; font.pixelSize: 30 }
+                color: tel.pal.superficie2
+                Text { anchors.centerIn: parent; text: parent.modelData; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 30 }
                 MouseArea { anchors.fill: parent; onClicked: { ch.toni += parent.modelData; ponte.chiama("tono", [parent.modelData]) } }
             }
         }
@@ -80,7 +83,7 @@ Rectangle {
         visible: ch.tastierino
         anchors.right: parent.right; anchors.rightMargin: 40
         anchors.verticalCenter: chiudi.verticalCenter
-        text: I18n.t("Nascondi"); color: "#ffffff"; font.family: Tema.font; font.pixelSize: tel.px(16)
+        text: I18n.t("Nascondi"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
         MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: ch.tastierino = false }
     }
 
@@ -92,15 +95,15 @@ Rectangle {
         visible: ch.info.inArrivo === true
         Column {
             spacing: 8
-            Rectangle { width: 76; height: 76; radius: 38; color: "#ef4444"; Icona { anchors.centerIn: parent; nome: "call-start-symbolic"; lato: 32; rotation: 135 }
+            Rectangle { width: 76; height: 76; radius: 38; color: tel.rosso; Icona { anchors.centerIn: parent; nome: "call-start-symbolic"; lato: 30; rotation: 135; tema: "scuro" }
                 MouseArea { anchors.fill: parent; onClicked: ponte.chiama0("riaggancia") } }
-            Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Rifiuta"); color: "#ffffff"; font.family: Tema.font; font.pixelSize: tel.px(13) }
+            Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Rifiuta"); color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(11); font.capitalization: Font.AllUppercase }
         }
         Column {
             spacing: 8
-            Rectangle { width: 76; height: 76; radius: 38; color: "#22c55e"; Icona { anchors.centerIn: parent; nome: "call-start-symbolic"; lato: 32 }
+            Rectangle { width: 76; height: 76; radius: 38; color: tel.pal.successo; Icona { anchors.centerIn: parent; nome: "call-start-symbolic"; lato: 30; tema: "chiaro" }
                 MouseArea { anchors.fill: parent; onClicked: ponte.chiama0("rispondi") } }
-            Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Rispondi"); color: "#ffffff"; font.family: Tema.font; font.pixelSize: tel.px(13) }
+            Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Rispondi"); color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(11); font.capitalization: Font.AllUppercase }
         }
     }
     Rectangle {
@@ -109,8 +112,8 @@ Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom; anchors.bottomMargin: 70
         width: 76; height: 76; radius: 38
-        color: "#ef4444"
-        Icona { anchors.centerIn: parent; nome: "call-start-symbolic"; lato: 32; rotation: 135 }
+        color: tel.rosso
+        Icona { anchors.centerIn: parent; nome: "call-start-symbolic"; lato: 30; rotation: 135; tema: "scuro" }
         MouseArea { anchors.fill: parent; onClicked: { ponte.chiama0("riaggancia"); ch.tastierino = false; ch.toni = "" } }
     }
 }

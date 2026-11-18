@@ -28,41 +28,22 @@ Rectangle {
     Item {
         anchors.fill: parent
         visible: app.scelto === null
-        Text { x: 20; y: 56; text: I18n.t("Contatti"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(30); font.weight: Font.Bold }
+        Punti { x: 20; y: 60; text: I18n.t("Contatti").toUpperCase(); font.pixelSize: 36 }
         Row {
-            anchors.right: parent.right; anchors.rightMargin: 18; y: 58
+            anchors.right: parent.right; anchors.rightMargin: 18; y: 62
             spacing: 10
-            Rectangle {
-                width: 40; height: 40; radius: 20; color: tel.pal.traccia
-                Icona { anchors.centerIn: parent; nome: "document-send-symbolic"; lato: 18 }
-                MouseArea { anchors.fill: parent; onClicked: vcard.open() }
-            }
-            Rectangle {
-                width: 40; height: 40; radius: 20; color: tel.accento
-                Text { anchors.centerIn: parent; text: "+"; color: "#ffffff"; font.pixelSize: 26 }
-                MouseArea { anchors.fill: parent; onClicked: app.nuovo() }
-            }
+            TastoTondo { icona: "document-send-symbolic"; onTocco: vcard.open() }
+            TastoTondo { icona: "list-add-symbolic"; pieno: true; onTocco: app.nuovo() }
         }
-        Rectangle {
-            x: 16; y: 108; width: parent.width - 32; height: 40; radius: 12
-            color: tel.pal.superficie2
-            Row {
-                anchors.fill: parent; anchors.leftMargin: 12; spacing: 8
-                Icona { nome: "system-search-symbolic"; lato: 16; anchors.verticalCenter: parent.verticalCenter }
-                TextField {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width - 40
-                    placeholderText: I18n.t("Cerca tra") + " " + app.contatti.length + " " + I18n.t("contatti"); placeholderTextColor: tel.pal.testo2
-                    color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15)
-                    background: Item {}
-                    onTextChanged: app.cerca = text.toLowerCase()
-                }
-            }
+        CampoCerca {
+            x: 16; y: 122; width: parent.width - 32
+            suggerimento: I18n.t("Cerca tra") + " " + app.contatti.length + " " + I18n.t("contatti")
+            onTextChanged: app.cerca = text.toLowerCase()
         }
         ListView {
             id: elenco
             anchors.left: parent.left; anchors.right: parent.right
-            anchors.top: parent.top; anchors.topMargin: 160; anchors.bottom: parent.bottom; anchors.bottomMargin: 30
+            anchors.top: parent.top; anchors.topMargin: 178; anchors.bottom: parent.bottom; anchors.bottomMargin: 30
             clip: true
             model: app.filtrati
             section.property: "nome"
@@ -71,21 +52,17 @@ Rectangle {
                 required property string section
                 x: 20; height: 28; verticalAlignment: Text.AlignBottom
                 text: section.toUpperCase()
-                color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Bold
+                color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(12); font.bold: true
             }
             delegate: Item {
                 id: voce
                 required property var modelData
                 width: elenco.width; height: 58
-                Rectangle {
-                    x: 20; anchors.verticalCenter: parent.verticalCenter
-                    width: 40; height: 40; radius: 20; color: tel.accento
-                    Text { anchors.centerIn: parent; text: voce.modelData.nome.charAt(0).toUpperCase(); color: "#ffffff"; font.family: Tema.font; font.pixelSize: 16; font.weight: Font.Bold }
-                }
+                Avatar { x: 20; anchors.verticalCenter: parent.verticalCenter; lato: 42; nome: voce.modelData.nome }
                 Column {
                     x: 72; anchors.verticalCenter: parent.verticalCenter
                     Text { text: voce.modelData.nome + (voce.modelData.preferito ? "  ★" : ""); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
-                    Text { text: voce.modelData.numero; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
+                    Text { text: voce.modelData.numero; color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(12) }
                 }
                 Rectangle { anchors.bottom: parent.bottom; x: 72; width: parent.width - 72; height: 1; color: app.linea }
                 MouseArea { anchors.fill: parent; onClicked: app.apri(voce.modelData) }
@@ -105,13 +82,13 @@ Rectangle {
         anchors.fill: parent
         visible: app.scelto !== null
         Text {
-            x: 18; y: 60; text: "‹ " + I18n.t("Contatti"); color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(16)
+            x: 18; y: 60; text: "‹ " + I18n.t("Contatti"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
             MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: { app.scelto = null; app.modifica = false } }
         }
         Text {
             anchors.right: parent.right; anchors.rightMargin: 20; y: 60
             text: app.modifica ? I18n.t("Salva") : I18n.t("Modifica")
-            color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold
+            color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold
             MouseArea {
                 anchors.fill: parent; anchors.margins: -10
                 onClicked: {
@@ -126,12 +103,8 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             y: 100
             spacing: 8
-            Rectangle {
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: 96; height: 96; radius: 48; color: tel.accento
-                Text { anchors.centerIn: parent; text: app.scelto && app.scelto.nome ? app.scelto.nome.charAt(0).toUpperCase() : "+"; color: "#ffffff"; font.family: Tema.font; font.pixelSize: 40; font.weight: Font.Bold }
-            }
-            Text { visible: !app.modifica; anchors.horizontalCenter: parent.horizontalCenter; text: app.scelto ? app.scelto.nome : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(28); font.weight: Font.Bold }
+            Avatar { anchors.horizontalCenter: parent.horizontalCenter; lato: 104; nome: app.scelto && app.scelto.nome ? app.scelto.nome : "+" }
+            Text { visible: !app.modifica; anchors.horizontalCenter: parent.horizontalCenter; text: app.scelto ? app.scelto.nome : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(28); font.weight: Font.DemiBold }
         }
         // Azioni rapide
         Row {
@@ -144,12 +117,13 @@ Rectangle {
                 Rectangle {
                     required property var modelData
                     required property int index
-                    width: (app.width - 64) / 3; height: 66; radius: 16
-                    color: index === 2 && app.scelto && app.scelto.preferito ? tel.accento : app.sezione
+                    width: (app.width - 64) / 3; height: 70; radius: 22
+                    color: index === 2 && app.scelto && app.scelto.preferito ? tel.pal.pieno : app.sezione
+                    border.width: 1; border.color: index === 2 && app.scelto && app.scelto.preferito ? tel.pal.pieno : tel.pal.bordo
                     Column {
                         anchors.centerIn: parent; spacing: 4
-                        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: parent.parent.modelData.i; lato: 22; tema: parent.parent.index === 2 && app.scelto && app.scelto.preferito ? "scuro" : "" }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData.t; color: parent.parent.index === 2 && app.scelto && app.scelto.preferito ? "#ffffff" : tel.accento; font.family: Tema.font; font.pixelSize: tel.px(12); font.weight: Font.DemiBold }
+                        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: parent.parent.modelData.i; lato: 22; tema: parent.parent.index === 2 && app.scelto && app.scelto.preferito ? (tel.chiaro ? "scuro" : "chiaro") : "" }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData.t; color: parent.parent.index === 2 && app.scelto && app.scelto.preferito ? tel.pal.suPieno : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(12); font.weight: Font.DemiBold }
                     }
                     MouseArea {
                         anchors.fill: parent
@@ -166,7 +140,7 @@ Rectangle {
         Rectangle {
             x: 16; y: app.modifica ? 210 : 344
             width: parent.width - 32; height: dettagli.implicitHeight + 8
-            radius: 16; color: app.sezione
+            radius: 22; color: app.sezione
             Column {
                 id: dettagli
                 width: parent.width
@@ -174,10 +148,10 @@ Rectangle {
                     model: [{ e: I18n.t("Nome"), c: "nome", solo: true }, { e: I18n.t("Cellulare"), c: "numero" }, { e: I18n.t("Email"), c: "email" }, { e: I18n.t("Note"), c: "note" }]
                     Item {
                         required property var modelData
-                        visible: app.modifica ? true : (!modelData.solo && app.scelto && app.scelto[modelData.c])
+                        visible: app.modifica ? true : !!(!modelData.solo && app.scelto && app.scelto[modelData.c])
                         width: parent.width; height: visible ? 62 : 0
-                        Text { x: 16; y: 10; text: parent.modelData.e; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
-                        Text { x: 16; y: 30; visible: !app.modifica; text: app.scelto ? (app.scelto[parent.modelData.c] || "") : ""; color: parent.modelData.c === "numero" ? tel.accento : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16) }
+                        Text { x: 16; y: 10; text: parent.modelData.e.toUpperCase(); color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(11); font.letterSpacing: 0.6 }
+                        Text { x: 16; y: 30; visible: !app.modifica; text: app.scelto ? (app.scelto[parent.modelData.c] || "") : ""; color: tel.pal.testo; font.family: parent.modelData.c === "numero" ? tel.fontMono : Tema.font; font.pixelSize: tel.px(16) }
                         Rectangle { anchors.bottom: parent.bottom; x: 16; width: parent.width - 16; height: 1; color: app.linea }
                     }
                 }
