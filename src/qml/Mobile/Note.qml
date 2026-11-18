@@ -36,7 +36,7 @@ Rectangle {
     Item {
         anchors.fill: parent
         visible: !app.scrivendo
-        Punti { x: 20; y: 60; text: I18n.t("Note").toUpperCase(); font.pixelSize: 36 }
+        Punti { x: 20; y: 60; text: I18n.t("Note"); font.pixelSize: 32 }
         CampoCerca {
             x: 16; y: 122; width: parent.width - 32
             onTextChanged: { app.cerca = text; app.aggiorna() }

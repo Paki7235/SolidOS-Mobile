@@ -21,9 +21,9 @@ PREDEFINITE = {
     "riduci_movimento": False,   # Accessibilità: animazioni istantanee
     "tema": "scuro",          # scuro | chiaro
     "testo": 1,               # 0 piccolo, 1 normale, 2 grande
-    "accento": "#FF3B30",
-    "sfondo": "nero",         # nero | puntini | grafite, o una foto
-    "orologio": "Doto",
+    "accento": "#4C7DFF",
+    "sfondo": "notte",        # notte | alba | oceano | aurora | grafite, o una foto
+    "orologio": "Inter",
     "icone": 1,               # 0 piccole, 1 normali, 2 grandi
     "navigazione": "gesti",   # gesti | tasti
     "dock": ["telefono", "messaggi", "fotocamera", "musica"],
@@ -186,6 +186,39 @@ def _batteria() -> dict:
         except (OSError, ValueError):
             continue
     return {"presente": False, "livello": 100, "carica": True}
+
+
+def _colori_sfondo(indirizzo: str, proporzione: float, fasce: int = 48) -> list:
+    from PyQt6.QtCore import QRectF, Qt, QUrl
+    from PyQt6.QtGui import QColor, QImage, QPainter
+
+    percorso = QUrl(indirizzo).toLocalFile() if indirizzo.startswith("file:") else indirizzo
+    if not percorso or not Path(percorso).is_file():
+        return []
+    if percorso.endswith(".svg"):
+        from PyQt6.QtSvg import QSvgRenderer
+
+        r = QSvgRenderer(percorso)
+        vb = r.viewBoxF()
+        immagine = QImage(int(vb.width()), int(vb.height()), QImage.Format.Format_RGB32)
+        immagine.fill(QColor("black"))
+        p = QPainter(immagine)
+        r.render(p, QRectF(0, 0, vb.width(), vb.height()))
+        p.end()
+    else:
+        immagine = QImage(percorso)
+        if immagine.isNull():
+            return []
+    # Ritaglio al centro con le proporzioni dello schermo (come PreserveAspectCrop)
+    w, h = immagine.width(), immagine.height()
+    if w / h > proporzione:
+        nw = max(1, int(h * proporzione))
+        immagine = immagine.copy((w - nw) // 2, 0, nw, h)
+    else:
+        nh = max(1, int(w / proporzione))
+        immagine = immagine.copy(0, (h - nh) // 2, w, nh)
+    colonna = immagine.scaled(1, fasce, Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
+    return [colonna.pixelColor(0, y).name() for y in range(fasce)]
 
 
 class BackendMobile(Backend):
@@ -559,6 +592,27 @@ class BackendMobile(Backend):
 
         self.imposta("risparmio", bool(si))
         impostazioni.imposta_risparmio(bool(si))
+
+    def sfondo(self, nome: str, chiaro: bool) -> str:
+        """Indirizzo dello sfondo del PC (colline) per la schermata del telefono."""
+        nome = nome if nome in ("notte", "alba", "oceano", "aurora", "grafite") else "notte"
+        file = f"{nome}-chiaro.svg" if chiaro else f"{nome}.svg"
+        from ..qmlapp import CARTELLA_QML
+
+        for base in (CARTELLA_QML.parent / "sfondi", CARTELLA_QML.parent / "dati" / "sfondi"):
+            if (base / file).is_file():
+                return (base / file).as_uri()
+        return ""
+
+    def coloriSfondo(self, indirizzo: str, proporzione: float) -> list:
+        """Colori dello sfondo dall'alto in basso (48 fasce), come si vede sullo schermo del
+        telefono: servono ai pannelli di vetro, che ne prendono la sfumatura della loro zona
+        (un vetro sfocato che funziona anche senza scheda video)."""
+        chiave = (indirizzo, round(float(proporzione), 3))
+        cache = self.__dict__.setdefault("_colori_sfondo", {})
+        if chiave not in cache:
+            cache[chiave] = _colori_sfondo(indirizzo, float(proporzione))
+        return cache[chiave]
 
     def infoTelefono(self) -> dict:
         from . import aggiornamento, impostazioni

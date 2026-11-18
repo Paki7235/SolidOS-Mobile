@@ -8,7 +8,13 @@ Rectangle {
     property var info: ({})
     property bool tastierino: false
     property string toni: ""
-    color: tel.pal.sfondo
+    // Sfondo della chiamata: le sfumature dello sfondo del telefono, scurite
+    gradient: Gradient {
+        GradientStop { position: 0.0; color: tel.coloreSfondo(0.1) }
+        GradientStop { position: 0.6; color: tel.coloreSfondo(0.6) }
+        GradientStop { position: 1.0; color: tel.coloreSfondo(1.0) }
+    }
+    Rectangle { anchors.fill: parent; color: tel.chiaro ? Qt.rgba(1, 1, 1, 0.35) : Qt.rgba(0, 0, 0, 0.35) }
 
     component Tasto: Column {
         id: t
@@ -97,13 +103,13 @@ Rectangle {
             spacing: 8
             Rectangle { width: 76; height: 76; radius: 38; color: tel.rosso; Icona { anchors.centerIn: parent; nome: "call-start-symbolic"; lato: 30; rotation: 135; tema: "scuro" }
                 MouseArea { anchors.fill: parent; onClicked: ponte.chiama0("riaggancia") } }
-            Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Rifiuta"); color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(11); font.capitalization: Font.AllUppercase }
+            Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Rifiuta"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(11) }
         }
         Column {
             spacing: 8
             Rectangle { width: 76; height: 76; radius: 38; color: tel.pal.successo; Icona { anchors.centerIn: parent; nome: "call-start-symbolic"; lato: 30; tema: "chiaro" }
                 MouseArea { anchors.fill: parent; onClicked: ponte.chiama0("rispondi") } }
-            Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Rispondi"); color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(11); font.capitalization: Font.AllUppercase }
+            Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Rispondi"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(11) }
         }
     }
     Rectangle {

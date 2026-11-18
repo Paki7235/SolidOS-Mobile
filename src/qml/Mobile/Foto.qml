@@ -19,7 +19,7 @@ Rectangle {
     Component.onCompleted: aggiorna()
 
     // ══ Griglia ══════════════════════════════════════════════════════════
-    Punti { x: 20; y: 60; text: I18n.t("Foto").toUpperCase(); font.pixelSize: 36 }
+    Punti { x: 20; y: 60; text: I18n.t("Foto"); font.pixelSize: 32 }
     Text { x: 22; y: 96; text: app.elenco.length + " " + I18n.t("elementi"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
     GridView {
         id: griglia
@@ -105,7 +105,7 @@ Rectangle {
                         required property var modelData
                         spacing: 4
                         Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: parent.modelData.i; lato: 24; tema: "scuro" }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.modelData.t.toUpperCase(); color: "#ffffff"; font.family: tel.fontMono; font.pixelSize: tel.px(10) }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.modelData.t; color: "#ffffff"; font.family: Tema.font; font.pixelSize: tel.px(12) }
                         MouseArea {
                             width: 60; height: 50; x: (parent.width - 60) / 2; y: -6
                             onClicked: {

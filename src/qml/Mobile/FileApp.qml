@@ -50,8 +50,7 @@ Rectangle {
         x: 20; y: app.inLuoghi ? 60 : 86
         width: parent.width - 40; elide: Text.ElideRight
         text: app.inLuoghi ? I18n.t("File") : app.cartella.titolo
-        color: tel.pal.testo; font.family: tel.fontPunti; font.pixelSize: app.inLuoghi ? 36 : 30; font.weight: Font.Black; font.letterSpacing: -1
-        font.capitalization: Font.AllUppercase
+        color: tel.pal.testo; font.family: Tema.font; font.pixelSize: app.inLuoghi ? 32 : 28; font.weight: Font.Bold; font.letterSpacing: -0.6
     }
 
     // ── Luoghi ───────────────────────────────────────────────────────────

@@ -19,18 +19,16 @@ Rectangle {
         signal scelta()
         height: 40; radius: 20
         width: et.implicitWidth + 30
-        color: attiva ? tel.pal.pieno : "transparent"
-        border.width: 1; border.color: attiva ? tel.pal.pieno : tel.pal.bordo
+        color: attiva ? tel.accento : pers.spento
         Behavior on color { ColorAnimation { duration: tel.tVeloce } }
-        Text { id: et; anchors.centerIn: parent; text: sc.testo; color: sc.attiva ? tel.pal.suPieno : tel.pal.testo; font.family: sc.carattere; font.pixelSize: sc.misura; font.weight: Font.DemiBold }
+        Text { id: et; anchors.centerIn: parent; text: sc.testo; color: sc.attiva ? "#FFFFFF" : tel.pal.testo; font.family: sc.carattere; font.pixelSize: sc.misura; font.weight: Font.DemiBold }
         MouseArea { anchors.fill: parent; onClicked: sc.scelta() }
     }
     component Sezione: Rectangle {
         property string titolo: ""
         default property alias contenuto: riga.data
-        width: parent.width; height: colonna.implicitHeight + 28; radius: 22
+        width: parent.width; height: colonna.implicitHeight + 28; radius: 16
         color: pers.sezione
-        border.width: 1; border.color: tel.pal.bordo
         Column {
             id: colonna
             x: 16; y: 14; width: parent.width - 32
@@ -69,7 +67,7 @@ Rectangle {
             Sezione {
                 titolo: I18n.t("Colore")
                 Repeater {
-                    model: ["#FF3B30", "#FFFFFF", "#3F7CF5", "#12B886", "#FF9F0A", "#BF5AF2"]
+                    model: ["#4C7DFF", "#8B5CF6", "#12B886", "#FF7A3D", "#E8467C", "#6B7385"]
                     Rectangle {
                         required property string modelData
                         width: 38; height: 38; radius: 19
@@ -83,19 +81,21 @@ Rectangle {
             Sezione {
                 titolo: I18n.t("Sfondo")
                 Repeater {
-                    model: ["nero", "puntini", "grafite"]
+                    model: ["notte", "alba", "oceano", "aurora", "grafite"]
                     Rectangle {
                         required property string modelData
-                        width: 62; height: 104; radius: 14
+                        width: 56; height: 96; radius: 12
                         color: "transparent"
-                        border.width: 2
-                        border.color: (["nero", "puntini", "grafite"].indexOf(tel.imp.sfondo) >= 0 ? tel.imp.sfondo : "nero") === modelData ? tel.pal.testo : tel.pal.bordo
+                        border.width: 3
+                        border.color: tel.nomeSfondo === modelData && !(tel.imp.sfondo || "").startsWith("/") ? tel.accento : "transparent"
                         clip: true
                         // Anteprima: lo stesso sfondo disegnato del telefono, in piccolo
-                        Sfondo {
+                        // Anteprima: lo stesso sfondo del PC, in piccolo
+                        Image {
                             anchors.fill: parent; anchors.margins: 3
-                            nome: parent.modelData
-                            chiaro: tel.chiaro
+                            source: ponte.chiama("sfondo", [parent.modelData, tel.chiaro])
+                            fillMode: Image.PreserveAspectCrop
+                            sourceSize.height: 200
                         }
                         MouseArea { anchors.fill: parent; onClicked: tel.imposta("sfondo", parent.modelData) }
                     }
@@ -104,7 +104,7 @@ Rectangle {
             Sezione {
                 titolo: I18n.t("Orologio del blocco")
                 Repeater {
-                    model: [{ t: I18n.t("Puntini"), f: "Doto" }, { t: I18n.t("Pulito"), f: "Space Grotesk" }, { t: I18n.t("Tecnico"), f: "Space Mono" }]
+                    model: [{ t: I18n.t("Moderno"), f: "Inter" }, { t: I18n.t("Morbido"), f: "Plus Jakarta Sans" }, { t: I18n.t("Elegante"), f: "Noto Serif" }]
                     Scelta { required property var modelData; testo: modelData.t; carattere: modelData.f; misura: tel.px(16); attiva: tel.fontOra === modelData.f; onScelta: tel.imposta("orologio", modelData.f) }
                 }
             }

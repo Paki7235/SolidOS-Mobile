@@ -101,7 +101,7 @@ Item {
                         elide: Text.ElideRight
                         text: casella.modelData.nome
                         color: tel.pal.testo2
-                        font.family: tel.fontMono; font.pixelSize: tel.px(11); font.capitalization: Font.AllUppercase; font.letterSpacing: 0.6
+                        font.family: Tema.font; font.pixelSize: tel.px(11); font.letterSpacing: 0.6
                     }
                 }
             }

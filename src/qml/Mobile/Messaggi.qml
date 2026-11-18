@@ -24,7 +24,7 @@ Rectangle {
     Item {
         anchors.fill: parent
         visible: app.aperta === null && !app.nuova
-        Punti { x: 20; y: 60; text: I18n.t("Messaggi").toUpperCase(); font.pixelSize: 36 }
+        Punti { x: 20; y: 60; text: I18n.t("Messaggi"); font.pixelSize: 32 }
         TastoTondo {
             anchors.right: parent.right; anchors.rightMargin: 18; y: 62
             icona: "mail-message-new-symbolic"
@@ -54,7 +54,7 @@ Rectangle {
                     Item {
                         width: parent.width; height: nomeConv.implicitHeight
                         Text { id: nomeConv; width: parent.width - 60; elide: Text.ElideRight; text: conv.modelData.nome; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
-                        Text { anchors.right: parent.right; text: conv.modelData.testoQuando.toUpperCase(); color: conv.modelData.nuovi ? tel.rosso : tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(11) }
+                        Text { anchors.right: parent.right; text: conv.modelData.testoQuando; color: conv.modelData.nuovi ? tel.accento : tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
                     }
                     Item {
                         width: parent.width; height: ultimo.implicitHeight
@@ -83,7 +83,7 @@ Rectangle {
             x: 18; y: 60; text: "‹ " + I18n.t("Messaggi"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
             MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: app.nuova = false }
         }
-        Punti { x: 20; y: 90; text: I18n.t("Nuovo").toUpperCase(); font.pixelSize: 32 }
+        Punti { x: 20; y: 90; text: I18n.t("Nuovo"); font.pixelSize: 32 }
         CampoTesto { id: destinatario; x: 16; y: 140; width: parent.width - 32; placeholderText: I18n.t("A: nome o numero"); inputMethodHints: Qt.ImhDialableCharactersOnly }
         Column {
             x: 16; y: 190; width: parent.width - 32
@@ -169,7 +169,7 @@ Rectangle {
                         anchors.top: testoMsg.bottom; anchors.topMargin: 2
                         text: msg.modelData.testoQuando
                         color: msg.modelData.mio ? (tel.chiaro ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.5)) : tel.pal.testo2
-                        font.family: tel.fontMono; font.pixelSize: tel.px(10)
+                        font.family: Tema.font; font.pixelSize: tel.px(10)
                     }
                 }
             }

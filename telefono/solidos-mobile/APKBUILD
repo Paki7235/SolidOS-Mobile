@@ -35,6 +35,7 @@ package() {
 	cp -r "$srcdir"/src/nucleo "$pkgdir"/usr/share/solidos-mobile/
 	cp -r "$srcdir"/src/qml "$pkgdir"/usr/share/solidos-mobile/
 	cp -r "$srcdir"/src/dati/font "$pkgdir"/usr/share/solidos-mobile/font
+	cp -r "$srcdir"/src/dati/sfondi "$pkgdir"/usr/share/solidos-mobile/sfondi
 	# icone proprie (se ce ne sono: per ora tutte dal tema di sistema, come sul PC)
 	if [ -d "$srcdir"/src/dati/icone ]; then
 		cp -r "$srcdir"/src/dati/icone "$pkgdir"/usr/share/solidos-mobile/icone

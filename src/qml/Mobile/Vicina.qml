@@ -26,7 +26,7 @@ Rectangle {
         }
     }
 
-    Punti { x: 20; y: 60; text: I18n.t("Vicina").toUpperCase(); font.pixelSize: 36 }
+    Punti { x: 20; y: 60; text: I18n.t("Vicina"); font.pixelSize: 32 }
 
     Flickable {
         x: 0; y: 104; width: parent.width; height: parent.height - y - 24

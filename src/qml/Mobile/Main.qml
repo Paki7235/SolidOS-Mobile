@@ -21,51 +21,61 @@ Window {
     property var imp: ponte.chiama0("impostazioni")
     function imposta(chiave, valore) { imp = ponte.chiama("imposta", [chiave, valore]) }
 
-    // ── Tema «Essenziale»: nero puro e bianco, un solo colore (il rosso) per ciò che è nuovo ──
+    // ── Tema «Vetro»: i colori, lo sfondo e il carattere del PC, con pannelli di vetro sfocato ──
     readonly property bool chiaro: imp.tema === "chiaro"
     readonly property real k: [0.9, 1.0, 1.15][imp.testo] || 1.0
-    // L'accento è il rosso dello stile; chi ne ha scelto un altro in Personalizza lo tiene
-    readonly property color accento: (!imp.accento || imp.accento === "#3F7CF5") ? "#FF3B30" : imp.accento
-    readonly property color rosso: "#FF3B30"
-    // Colori del design (vedi docs/DESIGN.md). Superfici piene, mai trasparenti: sotto non si
-    // vede niente. Contrasti: testo ≥ 15:1, testo secondario ≥ 7:1 in entrambi i temi.
+    // Accento blu di SolidOS (lo stesso del PC); chi ne ha scelto un altro in Personalizza lo tiene
+    readonly property color accento: (!imp.accento || imp.accento === "#3F7CF5" || imp.accento === "#FF3B30")
+                                     ? (chiaro ? "#2F5FD0" : "#4C7DFF") : imp.accento
+    readonly property color rosso: "#E5484D"
+    // Colori del design (vedi docs/DESIGN.md), uguali a quelli del PC
     readonly property QtObject pal: QtObject {
-        readonly property color sfondo: tel.chiaro ? "#F2F2F2" : "#000000"        // fondo delle app
-        readonly property color superficie: tel.chiaro ? "#FFFFFF" : "#111111"    // schede, righe
-        readonly property color superficie2: tel.chiaro ? "#EBEBEB" : "#1C1C1C"   // campi, pulsanti, tondi
-        readonly property color bordo: tel.chiaro ? "#DCDCDC" : "#262626"
-        readonly property color testo: tel.chiaro ? "#000000" : "#FFFFFF"
-        readonly property color testo2: tel.chiaro ? "#5C5C5C" : "#A3A3A3"
-        readonly property color testo3: tel.chiaro ? "#949494" : "#6B6B6B"
-        // Pannelli sopra lo sfondo (blocco, Home, tendine): pieni, con il bordo sottile
-        readonly property color vetro: tel.chiaro ? "#FFFFFF" : "#111111"
-        readonly property color vetroBordo: tel.chiaro ? "#DCDCDC" : "#262626"
-        readonly property color traccia: tel.chiaro ? "#E3E3E3" : "#242424"
-        readonly property color velo: tel.chiaro ? Qt.rgba(0.95, 0.95, 0.95, 0.98) : Qt.rgba(0, 0, 0, 0.97)
-        readonly property color tessera: tel.chiaro ? "#FFFFFF" : "#1C1C1C"
-        readonly property color pieno: tel.chiaro ? "#000000" : "#FFFFFF"
-        readonly property color suPieno: tel.chiaro ? "#FFFFFF" : "#000000"
-        readonly property color successo: "#30D158"
-        readonly property color pericolo: "#FF3B30"
+        readonly property color sfondo: tel.chiaro ? "#F2F2F7" : "#1E1F24"        // fondo delle app
+        readonly property color superficie: tel.chiaro ? "#FFFFFF" : "#26272D"    // schede, righe
+        readonly property color superficie2: tel.chiaro ? "#E9E9EE" : "#2F3037"   // campi, pulsanti, tondi
+        readonly property color bordo: tel.chiaro ? "#E5E5EA" : "#3A3B42"
+        readonly property color testo: tel.chiaro ? "#1D1D1F" : "#F5F5F7"
+        readonly property color testo2: tel.chiaro ? "#6E6E73" : "#A1A1AA"
+        readonly property color testo3: tel.chiaro ? "#A1A1AA" : "#71717A"
+        // Vetro: velatura sopra lo sfondo sfocato (blocco, Home, tendine)
+        readonly property color vetro: tel.chiaro ? Qt.rgba(0.98, 0.98, 0.99, 0.62) : Qt.rgba(0.11, 0.114, 0.133, 0.58)
+        readonly property color vetroBordo: tel.chiaro ? Qt.rgba(0, 0, 0, 0.07) : Qt.rgba(1, 1, 1, 0.10)
+        readonly property color traccia: tel.chiaro ? Qt.rgba(0, 0, 0, 0.06) : Qt.rgba(1, 1, 1, 0.10)
+        readonly property color velo: tel.chiaro ? Qt.rgba(0.95, 0.95, 0.97, 0.30) : Qt.rgba(0.04, 0.05, 0.08, 0.38)
+        readonly property color tessera: tel.chiaro ? "#FFFFFF" : "#26272D"
+        readonly property color pieno: tel.accento
+        readonly property color suPieno: "#FFFFFF"
+        readonly property color successo: "#30A46C"
+        readonly property color pericolo: "#E5484D"
     }
-    // Movimento: preciso e rapido. Entrata con curva «quint» (parte veloce, si posa morbida),
-    // uscita più breve. Con «Riduci animazioni» tutto diventa istantaneo.
+    // Movimento: aperture con curva «quint» (partono veloci e si posano morbide), chiusure più
+    // brevi. Con «Riduci animazioni» tutto diventa istantaneo.
     readonly property bool movimento: imp.riduci_movimento !== true
     function durata(ms) { return movimento ? ms : 0 }
-    readonly property int tVeloce: durata(140)
-    readonly property int tNormale: durata(220)
-    readonly property int tEntrata: durata(340)
+    readonly property int tVeloce: durata(150)
+    readonly property int tNormale: durata(230)
+    readonly property int tEntrata: durata(360)
     // Misure del design: raggi e margini uguali ovunque
     readonly property int r1: 12      // controlli piccoli
-    readonly property int r2: 20      // schede
+    readonly property int r2: 18      // schede
     readonly property int r3: 24      // pannelli grandi
-    readonly property int margine: 20 // bordo dello schermo
+    readonly property int margine: 18 // bordo dello schermo
     function px(n) { return Math.round(n * k) }
-    // Caratteri: Space Grotesk per i testi (Tema.font), Doto a puntini per ora e titoli,
-    // Space Mono per le etichette piccole
-    readonly property string fontPunti: "Doto"
-    readonly property string fontMono: "Space Mono"
-    readonly property string fontOra: (!imp.orologio || imp.orologio === "League Spartan") ? fontPunti : imp.orologio
+    // Caratteri: Inter ovunque, come sul PC (titoli grandi in grassetto, ora in semibold)
+    readonly property string fontPunti: Tema.font
+    readonly property string fontMono: Tema.font
+    readonly property string fontOra: (!imp.orologio || ["League Spartan", "Doto", "Space Grotesk", "Space Mono"].indexOf(imp.orologio) >= 0) ? Tema.font : imp.orologio
+    // Sfondo del PC (colline): file SVG e la sua versione chiara
+    readonly property string nomeSfondo: ["notte", "alba", "oceano", "aurora", "grafite"].indexOf(imp.sfondo) >= 0 ? imp.sfondo : "notte"
+    readonly property string sfondo: (imp.sfondo || "").charAt(0) === "/" ? "file://" + imp.sfondo
+                                     : ponte.chiama("sfondo", [nomeSfondo, chiaro])
+    // Colori dello sfondo dall'alto in basso: i pannelli di vetro ne prendono la sfumatura
+    readonly property var coloriSfondo: sfondo ? ponte.chiama("coloriSfondo", [sfondo, Math.max(0.2, width / Math.max(1, height))]) : []
+    function coloreSfondo(frazione) {
+        var c = coloriSfondo
+        if (!c || !c.length) return chiaro ? "#C9D3EE" : "#18203A"
+        return c[Math.max(0, Math.min(c.length - 1, Math.round(frazione * (c.length - 1))))]
+    }
     readonly property int latoIcona: [52, 58, 64][imp.icone === undefined ? 1 : imp.icone]
 
     // ── Stato del telefono ────────────────────────────────────────────────
@@ -179,8 +189,6 @@ Window {
     // ── Sfondo: disegnato dal sistema (niente file), oppure una foto scelta in Foto ──
     Sfondo {
         anchors.fill: parent
-        nome: tel.imp.sfondo
-        chiaro: tel.chiaro
     }
 
     // ── Schermate ─────────────────────────────────────────────────────────
@@ -290,13 +298,20 @@ Window {
     PaginaApp { nome: "store"; source: "Store.qml" }
     PaginaApp { nome: "vicina"; source: "Vicina.qml" }
 
-    // Velo scuro sotto le tendine
+    // Sotto le tendine: lo sfondo «sfocato» (le sue sfumature) con una velatura, che copre la Home
     Rectangle {
         anchors.fill: parent
-        color: tel.pal.velo
         opacity: (tel.notifiche || tel.controllo || tel.personalizza) ? 1 : 0
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: tel.tNormale; easing.type: Easing.OutCubic } }
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: tel.coloreSfondo(0.0) }
+            GradientStop { position: 0.25; color: tel.coloreSfondo(0.25) }
+            GradientStop { position: 0.5; color: tel.coloreSfondo(0.5) }
+            GradientStop { position: 0.75; color: tel.coloreSfondo(0.75) }
+            GradientStop { position: 1.0; color: tel.coloreSfondo(1.0) }
+        }
+        Rectangle { anchors.fill: parent; color: tel.pal.velo }
         MouseArea { anchors.fill: parent; onClicked: tel.chiudiTutto() }
     }
     Notifiche {

@@ -35,14 +35,14 @@ Rectangle {
         width: parent.width - 48; horizontalAlignment: Text.AlignRight
         text: app.espressione || "0"
         color: tel.pal.testo; elide: Text.ElideLeft
-        font.family: tel.fontPunti; font.pixelSize: app.espressione.length > 12 ? 44 : 68; font.weight: Font.Black; font.letterSpacing: -1
+        font.family: Tema.font; font.pixelSize: app.espressione.length > 12 ? 44 : 72; font.weight: Font.Light; font.letterSpacing: -1
     }
     Text {
         anchors.right: parent.right; anchors.rightMargin: 24
         anchors.bottom: tastiera.top; anchors.bottomMargin: 46
         text: app.risultato ? (app.errore ? app.risultato : "= " + app.risultato) : ""
         color: app.errore ? tel.rosso : tel.pal.testo2
-        font.family: tel.fontMono; font.pixelSize: 24
+        font.family: Tema.font; font.pixelSize: 24
         MouseArea { anchors.fill: parent; onClicked: app.tasto("=") }
     }
 
@@ -60,11 +60,11 @@ Rectangle {
                 readonly property bool funzione: ["C", "()", "%", "√"].indexOf(modelData) >= 0
                 width: tastiera.lato; height: tastiera.lato; radius: width / 2
                 // «=» rosso pieno, operatori bianchi pieni, funzioni a contorno, cifre grigie
-                color: modelData === "=" ? tel.rosso
+                color: modelData === "=" ? tel.accento
                        : operatore ? tel.pal.pieno
-                       : funzione ? "transparent"
+                       : funzione ? tel.pal.superficie
                        : tel.pal.superficie2
-                border.width: funzione ? 1 : 0; border.color: tel.pal.bordo
+
                 Text {
                     anchors.centerIn: parent; text: parent.modelData === "()" ? "( )" : parent.modelData
                     color: parent.modelData === "=" ? "#ffffff" : (parent.operatore ? tel.pal.suPieno : tel.pal.testo)

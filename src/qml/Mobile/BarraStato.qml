@@ -1,5 +1,5 @@
-// Barra in alto «Essenziale»: ora in Space Mono a sinistra (con la chiamata in corso, se
-// ridotta), a destra rete, Wi-Fi e la batteria scritta in numero (rossa se sta finendo).
+// Barra in alto: ora a sinistra (con la chiamata in corso, se ridotta), a destra rete, Wi-Fi
+// e la batteria disegnata (rossa se sta finendo, verde mentre si carica).
 import QtQuick
 import SolidUI
 
@@ -18,7 +18,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             text: tel.ora()
             color: tel.pal.testo
-            font.family: tel.fontMono; font.pixelSize: 14; font.bold: true
+            font.family: Tema.font; font.pixelSize: 15; font.weight: Font.DemiBold
         }
         // Chiamata ridotta: una pillola verde con la durata, si tocca per tornare alla chiamata
         Rectangle {
@@ -26,8 +26,8 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             height: 24; radius: 12; width: durata.implicitWidth + 34
             color: tel.pal.successo
-            Rectangle { x: 10; anchors.verticalCenter: parent.verticalCenter; width: 8; height: 8; radius: 4; color: "#000000" }
-            Text { id: durata; x: 24; anchors.verticalCenter: parent.verticalCenter; text: tel.chiamataInfo.testo || ""; color: "#000000"; font.family: tel.fontMono; font.pixelSize: 12; font.bold: true }
+            Rectangle { x: 10; anchors.verticalCenter: parent.verticalCenter; width: 8; height: 8; radius: 4; color: "#ffffff" }
+            Text { id: durata; x: 24; anchors.verticalCenter: parent.verticalCenter; text: tel.chiamataInfo.testo || ""; color: "#ffffff"; font.family: Tema.font; font.pixelSize: 12; font.weight: Font.DemiBold }
             MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: tel.chiamataRidotta = false }
         }
     }
@@ -38,11 +38,22 @@ Item {
         spacing: 8
         Icona { anchors.verticalCenter: parent.verticalCenter; nome: "network-cellular-symbolic"; lato: 15 }
         Icona { anchors.verticalCenter: parent.verticalCenter; visible: barra.st.rete && barra.st.rete.connesso; nome: "network-wireless-symbolic"; lato: 15 }
-        Text {
+        // Batteria
+        Item {
             anchors.verticalCenter: parent.verticalCenter
-            text: barra.bat.livello + (barra.bat.carica && barra.bat.livello < 100 ? "+" : "")
-            color: barra.bat.livello <= 20 && !barra.bat.carica ? tel.rosso : tel.pal.testo
-            font.family: tel.fontMono; font.pixelSize: 14; font.bold: true
+            width: 27; height: 13
+            Rectangle {
+                width: 24; height: 13; radius: 4
+                color: "transparent"
+                border.color: Qt.rgba(tel.pal.testo.r, tel.pal.testo.g, tel.pal.testo.b, 0.5); border.width: 1.2
+                Rectangle {
+                    x: 2; y: 2; height: parent.height - 4; radius: 2
+                    width: Math.max(2, (parent.width - 4) * barra.bat.livello / 100)
+                    color: barra.bat.livello <= 20 && !barra.bat.carica ? tel.rosso
+                           : (barra.bat.carica && barra.bat.livello < 100 ? tel.pal.successo : tel.pal.testo)
+                }
+            }
+            Rectangle { x: 25; anchors.verticalCenter: parent.verticalCenter; width: 2; height: 5; radius: 1; color: Qt.rgba(tel.pal.testo.r, tel.pal.testo.g, tel.pal.testo.b, 0.5) }
         }
     }
 }

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Sfondo «Alba (chiaro)» di SolidOS (generato: colline stratificate). Reso a 1920x1080. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="cielo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBE1D3"/><stop offset="0.55" stop-color="#FDF0E8"/><stop offset="1" stop-color="#F8D6C3"/></linearGradient>
+    <radialGradient id="luce" cx="0.68" cy="0.42" r="0.5"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+    <linearGradient id="d1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F2A98B"/><stop offset="1" stop-color="#F8C9B4"/></linearGradient>
+    <linearGradient id="d2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E8907A"/><stop offset="1" stop-color="#F3B7A1"/></linearGradient>
+    <linearGradient id="d3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D9775F"/><stop offset="1" stop-color="#EDA58E"/></linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#cielo)"/>
+  <rect width="1280" height="720" fill="url(#luce)"/>
+  <path d="M0 423 C 220 360 380 468 620 405 S 1020 297 1280 369 V720 H0Z" fill="url(#d1)"/>
+  <path d="M0 504 C 260 450 470 549 720 504 S 1080 423 1280 477 V720 H0Z" fill="url(#d2)"/>
+  <path d="M0 594 C 300 549 520 630 820 585 S 1140 540 1280 576 V720 H0Z" fill="url(#d3)"/>
+</svg>

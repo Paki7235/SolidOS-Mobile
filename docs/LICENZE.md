@@ -8,8 +8,9 @@ stesse condizioni. Il codice sorgente completo è in questo repository.
 |---|---|---|
 | Codice di SolidOS Mobile (`src/`, `telefono/`, `scripts/`) | interfaccia, servizi, build | GPL-3.0-or-later |
 | Icone delle app `nucleo-*` (`src/dati/icone/hicolor`) | Home, Libreria, notifiche | GPL-3.0-or-later, disegni originali |
-| Icone a linea (`src/dati/icone/linea`) | comandi e app nello stile Essenziale | ISC (tracciati di [Lucide](https://lucide.dev)) — vedi sotto |
-| Doto, Space Grotesk, Space Mono, Plus Jakarta Sans (`src/dati/font`) | caratteri | SIL Open Font License 1.1 (file `OFL*.txt` accanto) |
+| Icone a linea (`src/dati/icone/linea`) | comandi | ISC (tracciati di [Lucide](https://lucide.dev)) — vedi sotto |
+| Inter, Plus Jakarta Sans (`src/dati/font`) | caratteri | SIL Open Font License 1.1 (file `OFL*.txt` accanto) |
+| Sfondi (`src/dati/sfondi`) | gli stessi di SolidOS per PC | CC BY-SA 4.0 |
 | PyQt6, Qt 6 | interfaccia | GPL-3.0 / LGPL-3.0 |
 | postmarketOS, Alpine Linux | sistema di base del telefono | licenze dei singoli pacchetti (in maggioranza GPL, MIT, BSD) |
 | Papirus | icone delle app dello Store | GPL-3.0 |

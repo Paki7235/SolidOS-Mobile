@@ -54,7 +54,7 @@ Rectangle {
     }
 
     // ══ Elenco ═══════════════════════════════════════════════════════════
-    Punti { x: 20; y: 60; text: I18n.t("Musica").toUpperCase(); font.pixelSize: 36 }
+    Punti { x: 20; y: 60; text: I18n.t("Musica"); font.pixelSize: 32 }
     ListView {
         x: 16; y: 110; width: parent.width - 32; height: parent.height - y - (app.brano ? 110 : 30)
         clip: true
@@ -66,13 +66,16 @@ Rectangle {
             Rectangle {
                 x: 2; anchors.verticalCenter: parent.verticalCenter
                 width: 46; height: 46; radius: 14
-                color: index === app.attuale ? tel.pal.pieno : tel.pal.superficie2
-                Icona { anchors.centerIn: parent; nome: "linea-musica"; lato: 20; tema: index === app.attuale ? (tel.chiaro ? "scuro" : "chiaro") : "" }
+                gradient: Gradient {
+                    GradientStop { position: 0; color: Qt.hsla((0.62 + index * 0.11) % 1, 0.65, 0.58, 1) }
+                    GradientStop { position: 1; color: Qt.hsla((0.72 + index * 0.11) % 1, 0.6, 0.45, 1) }
+                }
+                Icona { anchors.centerIn: parent; nome: "linea-musica"; lato: 20; tema: "scuro" }
             }
             Column {
                 x: 58; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 64; spacing: 2
                 Text { width: parent.width; elide: Text.ElideRight; text: modelData.titolo; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: index === app.attuale ? Font.DemiBold : Font.Normal }
-                Text { width: parent.width; elide: Text.ElideRight; text: modelData.artista.toUpperCase(); color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(11) }
+                Text { width: parent.width; elide: Text.ElideRight; text: modelData.artista; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
             }
             Rectangle { anchors.bottom: parent.bottom; x: 58; width: parent.width - 58; height: 1; color: app.linea }
             MouseArea { anchors.fill: parent; onClicked: app.suonaIndice(index) }
@@ -116,12 +119,13 @@ Rectangle {
         TastoTondo { x: 18; y: 58; lato: 40; icona: "go-up-symbolic"; rotation: 180; onTocco: app.grande = false }
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter; y: 120
-            width: parent.width - 80; height: width; radius: 32
-            color: tel.pal.superficie
-            border.width: 1; border.color: tel.pal.bordo
-            // Copertina «Essenziale»: numero del brano a puntini e un'onda di barrette che si muove
-            Mono { x: 20; y: 20; text: I18n.t("Brano") }
-            Punti { x: 20; y: 38; text: ("0" + (app.attuale + 1)).slice(-2); font.pixelSize: 64 }
+            width: parent.width - 80; height: width; radius: 28
+            // Copertina: sfumatura colorata con un'onda di barrette che si muove mentre suona
+            gradient: Gradient {
+                GradientStop { position: 0; color: Qt.hsla((0.62 + app.attuale * 0.11) % 1, 0.65, 0.58, 1) }
+                GradientStop { position: 1; color: Qt.hsla((0.72 + app.attuale * 0.11) % 1, 0.6, 0.4, 1) }
+            }
+            Icona { x: 22; y: 22; nome: "linea-musica"; lato: 34; tema: "scuro" }
             Row {
                 anchors.bottom: parent.bottom; anchors.bottomMargin: 28; anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 5
@@ -130,7 +134,7 @@ Rectangle {
                     Rectangle {
                         required property int index
                         anchors.bottom: parent.bottom
-                        width: 5; radius: 2.5; color: tel.pal.testo
+                        width: 5; radius: 2.5; color: "#FFFFFF"; opacity: 0.85
                         property real base: 12 + Math.abs(Math.sin(index * 1.7)) * 70
                         height: base
                         SequentialAnimation on height {
@@ -151,13 +155,13 @@ Rectangle {
             // Avanzamento (si può toccare per spostarsi)
             Rectangle {
                 width: parent.width; height: 6; radius: 3; color: tel.pal.traccia
-                Rectangle { width: app.durata > 0 ? parent.width * app.posizione / app.durata : 0; height: 6; radius: 3; color: tel.rosso }
+                Rectangle { width: app.durata > 0 ? parent.width * app.posizione / app.durata : 0; height: 6; radius: 3; color: tel.accento }
                 MouseArea { anchors.fill: parent; anchors.margins: -12; onClicked: function (m) { if (app.durata > 0) app.lettore.position = app.durata * Math.max(0, Math.min(1, (m.x - 12) / parent.width)) } }
             }
             Item {
                 width: parent.width; height: 18
-                Text { text: app.tempo(app.posizione); color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(11) }
-                Text { anchors.right: parent.right; text: app.tempo(app.durata); color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(11) }
+                Text { text: app.tempo(app.posizione); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(11) }
+                Text { anchors.right: parent.right; text: app.tempo(app.durata); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(11) }
             }
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter

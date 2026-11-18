@@ -39,7 +39,7 @@ Rectangle {
         }
     }
 
-    Punti { x: 20; y: 60; text: I18n.t("Store").toUpperCase(); font.pixelSize: 36 }
+    Punti { x: 20; y: 60; text: I18n.t("Store"); font.pixelSize: 32 }
     CampoCerca {
         x: 16; y: 122; width: parent.width - 32
         suggerimento: I18n.t("Cerca app su Flathub")
@@ -62,7 +62,7 @@ Rectangle {
             Text {
                 x: 20; topPadding: 4
                 text: app.cerca ? (app.cercando ? I18n.t("Ricerca…") : I18n.t("Risultati")) : I18n.t("Consigliate per il telefono")
-                color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(12); font.capitalization: Font.AllUppercase; font.letterSpacing: 0.6
+                color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12); font.letterSpacing: 0.6
             }
             Text {
                 visible: app.cerca !== "" && !app.cercando && app.risultati.length === 0

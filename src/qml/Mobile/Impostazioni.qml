@@ -58,15 +58,18 @@ Rectangle {
         default property alias righe: colonna.data
         width: imp.width - 32; x: 16
         height: colonna.implicitHeight
-        radius: 22
+        radius: 16
         color: imp.sezione
-        border.width: 1; border.color: tel.pal.bordo
         Column { id: colonna; width: parent.width }
     }
     component Riga: Item {
         id: r
         property string icona: ""
-        property color coloreIcona: tel.accento
+        // Colore del quadratino secondo l'argomento (come sul PC)
+        property color coloreIcona: ({ "network-wireless-symbolic": "#4C7DFF", "bluetooth-active-symbolic": "#4C7DFF", "network-cellular-symbolic": "#30A46C",
+            "audio-volume-high-symbolic": "#E5484D", "preferences-system-notifications-symbolic": "#E5484D", "display-brightness-symbolic": "#4C7DFF",
+            "preferences-desktop-wallpaper-symbolic": "#8B5CF6", "battery-good-symbolic": "#30A46C", "system-lock-screen-symbolic": "#E5484D",
+            "help-about-symbolic": "#71717A", "avatar-default-symbolic": "#71717A" })[icona] || "#71717A"
         property string titolo: ""
         property string valore: ""
         property bool freccia: true
@@ -78,19 +81,19 @@ Rectangle {
         signal scelta()
         signal cambiato(bool si)
         width: parent ? parent.width : 300; height: 58
-        // Icona a linea in un tondo grigio (stile «Essenziale»: niente quadratini colorati)
+        // Icona bianca in un quadratino colorato, come nelle Impostazioni del PC
         Rectangle {
             visible: r.icona !== ""
-            x: 12; anchors.verticalCenter: parent.verticalCenter
-            width: 36; height: 36; radius: 18; color: tel.pal.superficie2
-            Icona { anchors.centerIn: parent; nome: r.icona; lato: 18 }
+            x: 14; anchors.verticalCenter: parent.verticalCenter
+            width: 32; height: 32; radius: 9; color: r.coloreIcona
+            Icona { anchors.centerIn: parent; nome: r.icona; lato: 18; tema: "scuro" }
         }
         Text { x: r.icona !== "" ? 60 : 16; anchors.verticalCenter: parent.verticalCenter; text: r.titolo; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16) }
         Text {
             anchors.right: parent.right; anchors.rightMargin: r.freccia ? 34 : 16; anchors.verticalCenter: parent.verticalCenter
             visible: !r.interruttore
             width: Math.min(implicitWidth, parent.width * 0.45); elide: Text.ElideRight; horizontalAlignment: Text.AlignRight
-            text: r.valore; color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(12); font.capitalization: Font.AllUppercase
+            text: r.valore; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12)
         }
         Text { visible: r.freccia && !r.interruttore; anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; text: "›"; color: tel.pal.testo2; font.pixelSize: 24 }
         Row {
@@ -123,7 +126,7 @@ Rectangle {
             color: r.acceso ? tel.pal.pieno : tel.pal.superficie2
             border.width: 1; border.color: r.acceso ? tel.pal.pieno : tel.pal.bordo
             Behavior on color { ColorAnimation { duration: tel.tVeloce } }
-            Rectangle { width: 22; height: 22; radius: 11; y: 4; x: r.acceso ? 24 : 4; color: r.acceso ? tel.pal.suPieno : tel.pal.testo3
+            Rectangle { width: 22; height: 22; radius: 11; y: 4; x: r.acceso ? 24 : 4; color: "#FFFFFF"
                         Behavior on x { NumberAnimation { duration: tel.tNormale; easing.type: Easing.OutQuint } } }
         }
         Rectangle { visible: !r.ultima; anchors.bottom: parent.bottom; x: r.icona !== "" ? 60 : 16; width: parent.width - x; height: 1; color: imp.linea }
@@ -131,7 +134,7 @@ Rectangle {
     }
     component Titoletto: Text {
         x: 32; topPadding: 18; bottomPadding: 8
-        color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(11); font.capitalization: Font.AllUppercase; font.letterSpacing: 0.6
+        color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(11); font.letterSpacing: 0.6
     }
     component Nota: Text {
         x: 32; width: imp.width - 64; topPadding: 6
@@ -167,8 +170,7 @@ Rectangle {
         x: 20; y: imp.pagina === "" ? 60 : 86
         text: ({ "": I18n.t("Impostazioni"), wifi: "Wi-Fi", bluetooth: "Bluetooth", rete: I18n.t("Rete mobile"), suoni: I18n.t("Suoni e vibrazione"),
                  schermo: I18n.t("Schermo"), notifiche: I18n.t("Notifiche"), batteria: I18n.t("Batteria"), solidid: "Solid ID", sicurezza: I18n.t("Codice di sblocco"), info: I18n.t("Info sul telefono") })[imp.pagina]
-        color: tel.pal.testo; font.family: tel.fontPunti; font.pixelSize: imp.pagina === "" ? 36 : 30; font.weight: Font.Black; font.letterSpacing: -1
-        font.capitalization: Font.AllUppercase
+        color: tel.pal.testo; font.family: Tema.font; font.pixelSize: imp.pagina === "" ? 32 : 28; font.weight: Font.Bold; font.letterSpacing: -0.6
         width: parent.width - 40; elide: Text.ElideRight
     }
 
@@ -384,14 +386,14 @@ Rectangle {
                 width: parent.width
                 Item {
                     width: parent.width; height: 120
-                    Text { anchors.horizontalCenter: parent.horizontalCenter; y: 6; text: (imp.batteria.livello || 0) + "%"; color: tel.pal.testo; font.family: tel.fontPunti; font.pixelSize: 56; font.weight: Font.Black }
+                    Text { anchors.horizontalCenter: parent.horizontalCenter; y: 6; text: (imp.batteria.livello || 0) + "%"; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 56; font.weight: Font.DemiBold }
                     BarraPunti {
                         anchors.horizontalCenter: parent.horizontalCenter; y: 72
                         width: imp.width - 64; height: 24; righe: 3
                         valore: imp.batteria.livello || 0
                         acceso: (imp.batteria.livello || 0) <= 20 ? tel.rosso : tel.pal.testo
                     }
-                    Text { anchors.horizontalCenter: parent.horizontalCenter; y: 98; text: (imp.batteria.stato || "").toUpperCase(); color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(11) }
+                    Text { anchors.horizontalCenter: parent.horizontalCenter; y: 98; text: imp.batteria.stato || ""; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
                 }
                 Gruppo {
                     Riga { titolo: I18n.t("Risparmio energetico"); interruttore: true; acceso: imp.batteria.risparmio === true; freccia: false

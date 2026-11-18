@@ -98,7 +98,7 @@ NOMI = {
     "folder-pictures": "foto", "folder-videos": "video", "image-x-generic": "foto", "audio-x-generic": "musica",
     "video-x-generic": "video", "text-x-generic": "note", "application-pdf": "documento",
     "audio-headphones": "cuffie", "audio-car": "auto", "audio-speakers": "cassa",
-    "x-office-calendar": "calendario", "x-office-calendar-symbolic": "calendario", "dialog-information": "info",
+    "x-office-calendar-symbolic": "calendario", "dialog-information": "info",
     "media-playback-start-symbolic": "play", "media-playback-pause-symbolic": "pausa",
     "media-skip-forward-symbolic": "avanti", "media-skip-backward-symbolic": "indietro",
 }

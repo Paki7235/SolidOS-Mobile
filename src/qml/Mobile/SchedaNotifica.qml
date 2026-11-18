@@ -1,6 +1,6 @@
-// Una notifica «Essenziale»: in alto l'app (icona a linea e nome in piccolo) e quando,
-// poi il titolo e il testo. Toccandola si apre l'app collegata; la × (o scorrendo di lato)
-// la chiude, con la scheda che segue il dito.
+// Una notifica in un pannello di vetro: icona dell'app, titolo e quando, testo e azioni.
+// Toccandola si apre l'app collegata; la × (o scorrendo di lato) la chiude, con la scheda
+// che segue il dito. «pieno»: il banner che compare sopra le app, su fondo pieno.
 import QtQuick
 import SolidUI
 
@@ -8,10 +8,10 @@ Vetro {
     id: scheda
     property var n: ({})
     property bool compatta: false
-    property bool pieno: false          // banner: sopra qualsiasi schermata, con un'ombra
-    readonly property string icona: (n.icona || "dialog-information")
+    property bool pieno: false
+    sfocato: !pieno
     width: parent ? parent.width : 300
-    height: contenuto.implicitHeight + 28
+    height: Math.max(66, contenuto.implicitHeight + 26)
     radius: 22
     x: trascina.active ? trascina.translation.x : 0
     opacity: 1 - Math.min(0.8, Math.abs(x) / width)
@@ -24,39 +24,30 @@ Vetro {
         tel.chiudiNotifica(scheda.n.id)
     }
 
+    Icona { x: 14; y: 14; nome: scheda.n.icona || "dialog-information"; lato: 38 }
     Column {
         id: contenuto
-        x: 16; y: 14
-        width: parent.width - 32
-        spacing: 3
+        x: 64; y: 13
+        width: parent.width - 64 - 14
+        spacing: 1
         Item {
-            width: parent.width; height: 18
+            width: parent.width; height: titolo.implicitHeight
+            Text { id: titolo; width: parent.width - quando.implicitWidth - (chiudi.visible ? 30 : 8); elide: Text.ElideRight
+                   text: scheda.n.titolo || ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
             Row {
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 6
-                Icona {
-                    anchors.verticalCenter: parent.verticalCenter
-                    nome: scheda.icona.indexOf("nucleo-") === 0 ? "linea-" + scheda.icona.substring(7) : scheda.icona
-                    lato: 13
-                }
-                Mono { anchors.verticalCenter: parent.verticalCenter; text: scheda.n.app || ""; width: Math.min(implicitWidth, contenuto.width - 110); elide: Text.ElideRight }
-            }
-            Row {
-                anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+                anchors.right: parent.right; anchors.verticalCenter: titolo.verticalCenter
                 spacing: 10
-                Mono { anchors.verticalCenter: parent.verticalCenter; text: scheda.n.ora || "" }
+                Text { id: quando; anchors.verticalCenter: parent.verticalCenter; text: scheda.n.ora || ""; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
                 Text {
                     id: chiudi
                     visible: !scheda.compatta
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "×"; color: tel.pal.testo2; font.pixelSize: 20
+                    text: "×"; color: tel.pal.testo2; font.pixelSize: 19
                     MouseArea { anchors.fill: parent; anchors.margins: -12; onClicked: tel.chiudiNotifica(scheda.n.id) }
                 }
             }
         }
-        Item { width: 1; height: 3 }
-        Text { width: parent.width; text: scheda.n.titolo || ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold; elide: Text.ElideRight }
-        Text { width: parent.width; visible: text !== ""; text: scheda.n.testo || ""; textFormat: Text.PlainText; color: tel.pal.testo; opacity: 0.72; font.family: Tema.font; font.pixelSize: tel.px(14); wrapMode: Text.Wrap; maximumLineCount: scheda.compatta ? 2 : 4; elide: Text.ElideRight; lineHeight: 1.08 }
+        Text { width: parent.width; visible: text !== ""; text: scheda.n.testo || ""; textFormat: Text.PlainText; color: tel.pal.testo; opacity: 0.82; font.family: Tema.font; font.pixelSize: tel.px(14); wrapMode: Text.Wrap; maximumLineCount: scheda.compatta ? 2 : 4; elide: Text.ElideRight }
         Row {
             visible: !scheda.compatta && (scheda.n.azioni || []).filter(function (a) { return a.chiave.indexOf("apri:") !== 0 }).length > 0
             spacing: 8; topPadding: 8
@@ -64,8 +55,8 @@ Vetro {
                 model: (scheda.n.azioni || []).filter(function (a) { return a.chiave.indexOf("apri:") !== 0 })
                 Rectangle {
                     required property var modelData
-                    height: 34; width: testoAz.implicitWidth + 28; radius: 17
-                    color: "transparent"; border.width: 1; border.color: tel.pal.bordo
+                    height: 32; width: testoAz.implicitWidth + 26; radius: 10
+                    color: tel.pal.traccia
                     Text { id: testoAz; anchors.centerIn: parent; text: parent.modelData.testo; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
                     MouseArea { anchors.fill: parent; onClicked: { ponte.chiama("azioneNotifica", [scheda.n.id, parent.modelData.chiave]); tel.chiudiNotifica(scheda.n.id) } }
                 }

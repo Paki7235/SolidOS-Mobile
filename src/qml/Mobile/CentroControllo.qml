@@ -1,7 +1,7 @@
-// Centro di controllo (dall'angolo in alto a destra), stile «Essenziale»: data e ora a
-// puntini, otto tasti quadrati (accesi = bianchi), luminosità e volume fatti di puntini che
-// si trascinano, i «Momenti» (un tocco prepara il telefono per la notte, il lavoro o per
-// durare di più), il brano in riproduzione e le scorciatoie.
+// Centro di controllo (dall'angolo in alto a destra), stile «Vetro»: riquadri di vetro su una
+// griglia di 4 colonne. Connessioni in tondi colorati, il brano in riproduzione, Non disturbare,
+// Silenzioso e Risparmio, luminosità e volume verticali da trascinare, i «Momenti» (un tocco
+// prepara il telefono per la notte, il lavoro o per durare di più) e le scorciatoie.
 import QtQuick
 import SolidUI
 
@@ -12,94 +12,149 @@ Item {
     onVisibleChanged: if (visible) { luce = ponte.chiama0("luminosita"); audio = ponte.chiama0("volume") }
     readonly property var st: tel.stato || ({})
     readonly property bool wifiAcceso: st.rete ? st.rete.wifi : false
-    readonly property real largh: width - 2 * tel.margine
-    readonly property real latoTasto: Math.floor((largh - 3 * 12) / 4)
-    readonly property bool conLettore: height >= 800
+    readonly property real spazio: 12
+    readonly property real cima: 64
+    readonly property real u: Math.floor((width - 36 - 3 * spazio) / 4)
+    readonly property real alto: Math.min(u, Math.floor((height - cima - 40 - 5 * spazio) / 6))
+    function px(c) { return 18 + c * (u + spazio) }
+    function py(r) { return cima + r * (alto + spazio) }
+    function largo(n) { return n * u + (n - 1) * spazio }
+    function altoN(n) { return n * alto + (n - 1) * spazio }
 
     MouseArea { anchors.fill: parent; onClicked: tel.controllo = false }
 
-    // Tasto quadrato: grigio scuro, bianco quando è acceso
-    component Tasto: Rectangle {
-        id: ta
+    // Riquadro di vetro che si preme
+    component Riquadro: Vetro {
+        id: rq
+        signal tocco()
+        radius: 26
+        scale: toccoRq.pressed ? 0.96 : 1
+        Behavior on scale { NumberAnimation { duration: tel.tVeloce; easing.type: Easing.OutQuad } }
+        MouseArea { id: toccoRq; anchors.fill: parent; z: -1; onClicked: rq.tocco() }
+    }
+    // Tondo colorato quando è acceso
+    component Tondo: Rectangle {
+        id: td
         property string icona: ""
         property bool acceso: false
+        property color colore: tel.accento
+        property int lato: 54
         signal tocco()
-        width: cc.latoTasto; height: cc.latoTasto; radius: 24
-        color: acceso ? tel.pal.pieno : tel.pal.superficie
-        border.width: 1; border.color: acceso ? tel.pal.pieno : tel.pal.bordo
-        scale: toccoTa.pressed ? 0.93 : 1
-        Behavior on scale { NumberAnimation { duration: tel.tVeloce; easing.type: Easing.OutQuad } }
+        width: lato; height: lato; radius: lato / 2
+        color: acceso ? colore : tel.pal.traccia
+        scale: toccoTd.pressed ? 0.9 : 1
+        Behavior on scale { NumberAnimation { duration: tel.tVeloce } }
         Behavior on color { ColorAnimation { duration: tel.tVeloce } }
-        Icona { anchors.centerIn: parent; nome: ta.icona; lato: 24; tema: ta.acceso ? (tel.chiaro ? "scuro" : "chiaro") : "" }
-        MouseArea { id: toccoTa; anchors.fill: parent; onClicked: ta.tocco() }
+        Icona { anchors.centerIn: parent; nome: td.icona; lato: Math.round(td.lato * 0.42); tema: td.acceso ? "scuro" : "" }
+        MouseArea { id: toccoTd; anchors.fill: parent; anchors.margins: -4; onClicked: td.tocco() }
     }
-    // Cursore di puntini a tutta larghezza, con l'icona a sinistra e il numero a destra
+    // Cursore verticale: si riempie dal basso
     component Cursore: Vetro {
         id: cur
         property string icona: ""
         property int valore: 50
         signal cambia(int v)
-        width: cc.largh; height: 62; radius: 22
-        Icona { x: 18; anchors.verticalCenter: parent.verticalCenter; nome: cur.icona; lato: 22 }
-        BarraPunti {
-            id: punti
-            x: 54; width: parent.width - 54 - 58; height: parent.height - 20
-            anchors.verticalCenter: parent.verticalCenter
-            valore: cur.valore; righe: 6
+        radius: 26
+        Rectangle {
+            id: pieno
+            anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+            height: Math.max(cur.radius * 2, parent.height * cur.valore / 100); radius: cur.radius
+            color: tel.chiaro ? tel.accento : "#F5F5F7"
         }
-        Mono { anchors.right: parent.right; anchors.rightMargin: 18; anchors.verticalCenter: parent.verticalCenter; text: cur.valore; color: tel.pal.testo; font.pixelSize: tel.px(14); font.bold: true }
+        Rectangle {   // bordo superiore dritto del riempimento
+            anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.bottomMargin: cur.radius
+            height: Math.max(0, pieno.height - cur.radius * 2); color: pieno.color
+        }
+        Icona { anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; anchors.bottomMargin: 18
+                nome: cur.icona; lato: 22; tema: tel.chiaro ? "scuro" : "chiaro" }
         MouseArea {
             anchors.fill: parent
-            function muovi(x) { cur.cambia(Math.max(5, Math.min(100, Math.round((x - punti.x) / punti.width * 100)))) }
-            onPressed: function (e) { muovi(e.x) }
-            onPositionChanged: function (e) { muovi(e.x) }
+            function muovi(y) { cur.cambia(Math.max(5, Math.min(100, Math.round((1 - y / height) * 100)))) }
+            onPressed: function (e) { muovi(e.y) }
+            onPositionChanged: function (e) { muovi(e.y) }
         }
     }
 
-    Column {
-        x: tel.margine; y: 56
-        width: cc.largh
-        spacing: 12
-
-        // ── Data, ora e connessioni ──────────────────────────────────────
-        Item {
-            width: parent.width; height: 92
-            Column {
-                anchors.bottom: parent.bottom; anchors.bottomMargin: 10
-                spacing: 4
-                Mono { text: tel.adesso.toLocaleDateString(Qt.locale("it_IT"), "dddd · d MMM"); font.pixelSize: tel.px(12) }
-                Punti { text: tel.ora(); font.family: tel.fontOra; font.pixelSize: 54; font.letterSpacing: -2 }
-            }
-            Column {
-                anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.bottomMargin: 16
-                spacing: 4
-                Mono { anchors.right: parent.right; text: cc.st.rete && cc.st.rete.connesso ? cc.st.rete.nome : I18n.t("Nessuna rete") }
-                Mono { anchors.right: parent.right; text: (cc.st.batteria ? cc.st.batteria.livello : 100) + "% " + I18n.t("batteria") }
-            }
-        }
-
-        // ── Otto tasti ───────────────────────────────────────────────────
+    // ── Righe 0–1: connessioni e musica ──────────────────────────────────
+    Riquadro {
+        x: cc.px(0); y: cc.py(0); width: cc.largo(2); height: cc.altoN(2); radius: 30
         Grid {
-            columns: 4; spacing: 12
-            Tasto { icona: "network-wireless-symbolic"; acceso: cc.wifiAcceso; onTocco: { ponte.chiama("wifi", [!cc.wifiAcceso]); ponte.avvia("stato", [], "stato") } }
-            Tasto { icona: "bluetooth-active-symbolic"; acceso: cc.st.bluetooth === true; onTocco: { ponte.chiama("bluetooth", [!cc.st.bluetooth]); ponte.avvia("stato", [], "stato") } }
-            Tasto { icona: "network-cellular-symbolic"; acceso: tel.imp.dati_mobili === true; onTocco: { ponte.avvia("datiMobili", [!tel.imp.dati_mobili], "dati"); tel.imposta("dati_mobili", !tel.imp.dati_mobili) } }
-            Tasto { icona: "airplane-mode-symbolic"; onTocco: tel.avviso(I18n.t("Modalità aereo: arriva con il telefono vero")) }
-            Tasto { icona: "weather-clear-night-symbolic"; acceso: tel.imp.non_disturbare === true; onTocco: tel.nonDisturbare(!tel.imp.non_disturbare) }
-            Tasto { icona: "audio-volume-muted-symbolic"; acceso: tel.imp.silenzioso === true; onTocco: tel.imposta("silenzioso", !tel.imp.silenzioso) }
-            Tasto { icona: "battery-good-symbolic"; acceso: tel.imp.risparmio === true; onTocco: tel.imposta("risparmio", !tel.imp.risparmio) }
-            Tasto { icona: "display-brightness-symbolic"; acceso: tel.chiaro; onTocco: tel.imposta("tema", tel.chiaro ? "scuro" : "chiaro") }
+            anchors.centerIn: parent
+            columns: 2
+            columnSpacing: (parent.width - 2 * 54) / 3; rowSpacing: (parent.height - 2 * 54) / 3
+            Tondo { icona: "airplane-mode-symbolic"; colore: "#F59E0B"; onTocco: tel.avviso(I18n.t("Modalità aereo: arriva con il telefono vero")) }
+            Tondo { icona: "network-cellular-symbolic"; colore: tel.pal.successo; acceso: tel.imp.dati_mobili === true
+                    onTocco: { ponte.avvia("datiMobili", [!tel.imp.dati_mobili], "dati"); tel.imposta("dati_mobili", !tel.imp.dati_mobili) } }
+            Tondo { icona: "network-wireless-symbolic"; acceso: cc.wifiAcceso
+                    onTocco: { ponte.chiama("wifi", [!cc.wifiAcceso]); ponte.avvia("stato", [], "stato") } }
+            Tondo { icona: "bluetooth-active-symbolic"; acceso: cc.st.bluetooth === true
+                    onTocco: { ponte.chiama("bluetooth", [!cc.st.bluetooth]); ponte.avvia("stato", [], "stato") } }
         }
-
-        // ── Luminosità e volume ──────────────────────────────────────────
-        Cursore { icona: "display-brightness-symbolic"; valore: cc.luce; onCambia: function (v) { cc.luce = v; ponte.chiama("impostaLuminosita", [v]) } }
-        Cursore { icona: "audio-volume-high-symbolic"; valore: cc.audio; onCambia: function (v) { cc.audio = v; ponte.chiama("impostaVolume", [v]) } }
-
-        // ── Momenti: un tocco prepara il telefono ────────────────────────
+    }
+    Riquadro {
+        x: cc.px(2); y: cc.py(0); width: cc.largo(2); height: cc.altoN(2); radius: 30
+        onTocco: { tel.controllo = false; tel.apri({ "id": "interno:musica" }) }
+        Rectangle {
+            x: 16; y: 16; width: 50; height: 50; radius: 12
+            gradient: Gradient { GradientStop { position: 0; color: "#4C7DFF" } GradientStop { position: 1; color: "#8B5CF6" } }
+            Icona { anchors.centerIn: parent; nome: "linea-musica"; lato: 22; tema: "scuro" }
+        }
+        Column {
+            x: 16; y: 76; width: parent.width - 32
+            Text { width: parent.width; elide: Text.ElideRight; text: I18n.t("Nessun brano"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.DemiBold }
+            Text { text: I18n.t("Musica"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
+        }
         Row {
-            id: momenti
-            spacing: 8
-            readonly property real largo: (cc.largh - 2 * spacing) / 3
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 14; anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 26
+            Icona { nome: "media-skip-backward-symbolic"; lato: 20 }
+            Icona { nome: "media-playback-start-symbolic"; lato: 22 }
+            Icona { nome: "media-skip-forward-symbolic"; lato: 20 }
+        }
+    }
+
+    // ── Riga 2: Non disturbare, Silenzioso, Risparmio ────────────────────
+    Riquadro {
+        x: cc.px(0); y: cc.py(2); width: cc.largo(2); height: cc.alto; radius: height / 2
+        onTocco: tel.nonDisturbare(!tel.imp.non_disturbare)
+        Row {
+            x: 10; anchors.verticalCenter: parent.verticalCenter; spacing: 10
+            Tondo { anchors.verticalCenter: parent.verticalCenter; lato: Math.min(52, cc.alto - 20); icona: "weather-clear-night-symbolic"; colore: "#6366F1"
+                    acceso: tel.imp.non_disturbare === true; onTocco: tel.nonDisturbare(!tel.imp.non_disturbare) }
+            Column {
+                anchors.verticalCenter: parent.verticalCenter
+                width: cc.largo(2) - cc.alto - 10
+                Text { width: parent.width; wrapMode: Text.WordWrap; maximumLineCount: 2; text: I18n.t("Non disturbare"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.DemiBold }
+                Text { text: tel.imp.non_disturbare ? I18n.t("Attivo") : I18n.t("Spento"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
+            }
+        }
+    }
+    Repeater {
+        model: [{ i: "audio-volume-muted-symbolic", k: "silenzioso", c: "#E5484D" }, { i: "battery-good-symbolic", k: "risparmio", c: "#F59E0B" }]
+        Riquadro {
+            required property var modelData
+            required property int index
+            readonly property bool acceso: tel.imp[modelData.k] === true
+            x: cc.px(2 + index); y: cc.py(2); width: cc.u; height: cc.alto; radius: height / 2
+            onTocco: tel.imposta(modelData.k, !acceso)
+            Rectangle { anchors.fill: parent; radius: parent.radius; color: parent.modelData.c; opacity: parent.acceso ? 1 : 0
+                        Behavior on opacity { NumberAnimation { duration: tel.tVeloce } } }
+            Icona { anchors.centerIn: parent; nome: parent.modelData.i; lato: 22; tema: parent.acceso ? "scuro" : "" }
+        }
+    }
+
+    // ── Righe 3–4: cursori e Momenti ─────────────────────────────────────
+    Cursore { x: cc.px(0); y: cc.py(3); width: cc.u; height: cc.altoN(2); icona: "display-brightness-symbolic"; valore: cc.luce
+              onCambia: function (v) { cc.luce = v; ponte.chiama("impostaLuminosita", [v]) } }
+    Cursore { x: cc.px(1); y: cc.py(3); width: cc.u; height: cc.altoN(2); icona: "audio-volume-high-symbolic"; valore: cc.audio
+              onCambia: function (v) { cc.audio = v; ponte.chiama("impostaVolume", [v]) } }
+    Vetro {
+        x: cc.px(2); y: cc.py(3); width: cc.largo(2); height: cc.altoN(2); radius: 26
+        Text { x: 16; y: 14; text: I18n.t("Momenti"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+        Column {
+            x: 12; anchors.bottom: parent.bottom; anchors.bottomMargin: 12
+            width: parent.width - 24
+            spacing: 6
             Repeater {
                 model: [
                     { i: "weather-clear-night-symbolic", t: I18n.t("Notte"),
@@ -115,62 +170,32 @@ Item {
                 Rectangle {
                     id: mo
                     required property var modelData
-                    width: momenti.largo; height: 44; radius: 22
-                    color: modelData.on ? tel.pal.pieno : "transparent"
-                    border.width: 1; border.color: modelData.on ? tel.pal.pieno : tel.pal.bordo
-                    scale: toccoMo.pressed ? 0.95 : 1
-                    Behavior on scale { NumberAnimation { duration: tel.tVeloce } }
+                    width: parent.width; height: Math.max(30, (cc.altoN(2) - 60) / 3); radius: 12
+                    color: modelData.on ? tel.accento : tel.pal.traccia
                     Behavior on color { ColorAnimation { duration: tel.tVeloce } }
                     Row {
-                        anchors.centerIn: parent; spacing: 8
-                        Icona { anchors.verticalCenter: parent.verticalCenter; nome: mo.modelData.i; lato: 16; tema: mo.modelData.on ? (tel.chiaro ? "scuro" : "chiaro") : "" }
-                        Text { anchors.verticalCenter: parent.verticalCenter; text: mo.modelData.t; color: mo.modelData.on ? tel.pal.suPieno : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+                        x: 10; anchors.verticalCenter: parent.verticalCenter; spacing: 8
+                        Icona { anchors.verticalCenter: parent.verticalCenter; nome: mo.modelData.i; lato: 15; tema: mo.modelData.on ? "scuro" : "" }
+                        Text { anchors.verticalCenter: parent.verticalCenter; text: mo.modelData.t; color: mo.modelData.on ? "#FFFFFF" : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
                     }
-                    MouseArea { id: toccoMo; anchors.fill: parent; onClicked: mo.modelData.f(!mo.modelData.on) }
+                    MouseArea { anchors.fill: parent; onClicked: mo.modelData.f(!mo.modelData.on) }
                 }
             }
         }
+    }
 
-        // ── In riproduzione ──────────────────────────────────────────────
-        Vetro {
-            visible: cc.conLettore
-            width: cc.largh; height: 122; radius: 24
-            Column {
-                x: 18; y: 16
-                spacing: 2
-                Mono { text: I18n.t("Musica") }
-                Text { text: I18n.t("Nessun brano"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(17); font.weight: Font.DemiBold }
-            }
-            // Onda a barrette (ferma finché non suona niente)
-            Row {
-                anchors.right: parent.right; anchors.rightMargin: 18; y: 18
-                spacing: 4
-                Repeater {
-                    model: [10, 22, 16, 28, 12, 24, 18, 8, 20, 14]
-                    Rectangle { required property int modelData; anchors.bottom: parent.bottom; width: 3; height: modelData; radius: 1.5; color: tel.pal.testo3 }
-                }
-            }
-            Row {
-                x: 18; anchors.bottom: parent.bottom; anchors.bottomMargin: 14
-                spacing: 18
-                Icona { anchors.verticalCenter: parent.verticalCenter; nome: "media-skip-backward-symbolic"; lato: 20 }
-                TastoTondo { anchors.verticalCenter: parent.verticalCenter; icona: "media-playback-start-symbolic"; pieno: true; lato: 42 }
-                Icona { anchors.verticalCenter: parent.verticalCenter; nome: "media-skip-forward-symbolic"; lato: 20 }
-                Rectangle { anchors.verticalCenter: parent.verticalCenter; width: cc.largh - 18 * 2 - 20 * 2 - 42 - 18 * 3 - 4; height: 2; color: tel.pal.traccia }
-            }
-            MouseArea { anchors.fill: parent; z: -1; onClicked: { tel.controllo = false; tel.apri({ "id": "interno:musica" }) } }
-        }
-
-        // ── Scorciatoie ──────────────────────────────────────────────────
-        Grid {
-            columns: 4; spacing: 12
-            Repeater {
-                model: [{ i: "accessories-calculator-symbolic", f: function () { tel.controllo = false; tel.apri({ "id": "interno:calcolatrice" }) } },
-                        { i: "camera-photo-symbolic", f: function () { tel.controllo = false; tel.apri({ "id": "interno:fotocamera" }) } },
-                        { i: "system-lock-screen-symbolic", f: function () { tel.controllo = false; tel.schermata = "blocco" } },
-                        { i: "preferences-system-symbolic", f: function () { tel.controllo = false; tel.apri({ "id": "interno:impostazioni" }) } }]
-                Tasto { required property var modelData; icona: modelData.i; height: 64; radius: 22; onTocco: modelData.f() }
-            }
+    // ── Riga 5: scorciatoie ──────────────────────────────────────────────
+    Repeater {
+        model: [{ i: "accessories-calculator-symbolic", f: function () { tel.controllo = false; tel.apri({ "id": "interno:calcolatrice" }) } },
+                { i: "camera-photo-symbolic", f: function () { tel.controllo = false; tel.apri({ "id": "interno:fotocamera" }) } },
+                { i: "system-lock-screen-symbolic", f: function () { tel.controllo = false; tel.schermata = "blocco" } },
+                { i: "preferences-system-symbolic", f: function () { tel.controllo = false; tel.apri({ "id": "interno:impostazioni" }) } }]
+        Riquadro {
+            required property var modelData
+            required property int index
+            x: cc.px(index); y: cc.py(5); width: cc.u; height: cc.alto; radius: height / 2
+            onTocco: modelData.f()
+            Icona { anchors.centerIn: parent; nome: parent.modelData.i; lato: 22 }
         }
     }
 }

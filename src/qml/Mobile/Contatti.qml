@@ -28,7 +28,7 @@ Rectangle {
     Item {
         anchors.fill: parent
         visible: app.scelto === null
-        Punti { x: 20; y: 60; text: I18n.t("Contatti").toUpperCase(); font.pixelSize: 36 }
+        Punti { x: 20; y: 60; text: I18n.t("Contatti"); font.pixelSize: 32 }
         Row {
             anchors.right: parent.right; anchors.rightMargin: 18; y: 62
             spacing: 10
@@ -52,7 +52,7 @@ Rectangle {
                 required property string section
                 x: 20; height: 28; verticalAlignment: Text.AlignBottom
                 text: section.toUpperCase()
-                color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(12); font.bold: true
+                color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Bold
             }
             delegate: Item {
                 id: voce
@@ -62,7 +62,7 @@ Rectangle {
                 Column {
                     x: 72; anchors.verticalCenter: parent.verticalCenter
                     Text { text: voce.modelData.nome + (voce.modelData.preferito ? "  ★" : ""); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
-                    Text { text: voce.modelData.numero; color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(12) }
+                    Text { text: voce.modelData.numero; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
                 }
                 Rectangle { anchors.bottom: parent.bottom; x: 72; width: parent.width - 72; height: 1; color: app.linea }
                 MouseArea { anchors.fill: parent; onClicked: app.apri(voce.modelData) }
@@ -150,7 +150,7 @@ Rectangle {
                         required property var modelData
                         visible: app.modifica ? true : !!(!modelData.solo && app.scelto && app.scelto[modelData.c])
                         width: parent.width; height: visible ? 62 : 0
-                        Text { x: 16; y: 10; text: parent.modelData.e.toUpperCase(); color: tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: tel.px(11); font.letterSpacing: 0.6 }
+                        Text { x: 16; y: 10; text: parent.modelData.e; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
                         Text { x: 16; y: 30; visible: !app.modifica; text: app.scelto ? (app.scelto[parent.modelData.c] || "") : ""; color: tel.pal.testo; font.family: parent.modelData.c === "numero" ? tel.fontMono : Tema.font; font.pixelSize: tel.px(16) }
                         Rectangle { anchors.bottom: parent.bottom; x: 16; width: parent.width - 16; height: 1; color: app.linea }
                     }

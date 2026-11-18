@@ -83,7 +83,7 @@ Rectangle {
             width: 84; height: 84; color: "transparent"
             Icona { anchors.centerIn: parent; nome: "nucleo-dove"; lato: 84 }
         }
-        Punti { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Dov'è").toUpperCase(); font.pixelSize: 34 }
+        Punti { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Dov'è"); font.pixelSize: 34 }
         Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap; text: I18n.t("Accedi con il tuo Solid ID per vedere sulla mappa il telefono e il PC, farli suonare o bloccarli a distanza."); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(15) }
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter

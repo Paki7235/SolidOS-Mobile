@@ -27,8 +27,8 @@ Rectangle {
     // ── Intestazione ──────────────────────────────────────────────────────
     Punti {
         x: 20; y: 60
-        text: ({ preferiti: I18n.t("Preferiti"), recenti: I18n.t("Recenti"), contatti: I18n.t("Contatti"), tastierino: "" })[app.scheda].toUpperCase()
-        font.pixelSize: 36
+        text: ({ preferiti: I18n.t("Preferiti"), recenti: I18n.t("Recenti"), contatti: I18n.t("Contatti"), tastierino: "" })[app.scheda]
+        font.pixelSize: 32
     }
     Text {
         anchors.right: parent.right; anchors.rightMargin: 20; y: 64
@@ -73,7 +73,7 @@ Rectangle {
             Column {
                 x: 74; anchors.verticalCenter: parent.verticalCenter
                 width: parent.width - 150
-                Text { width: parent.width; elide: Text.ElideRight; text: voce.modelData.nome; color: app.scheda === "recenti" && voce.modelData.tipo === "persa" ? tel.rosso : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
+                Text { width: parent.width; elide: Text.ElideRight; text: voce.modelData.nome; color: app.scheda === "recenti" && voce.modelData.tipo === "persa" ? tel.accento : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
                 Text {
                     width: parent.width; elide: Text.ElideRight
                     text: app.scheda === "recenti"
@@ -124,7 +124,7 @@ Rectangle {
                 width: app.width - 40; horizontalAlignment: Text.AlignHCenter
                 text: app.numero || " "
                 elide: Text.ElideLeft
-                color: tel.pal.testo; font.family: tel.fontPunti; font.pixelSize: app.numero.length > 13 ? 30 : 40; font.weight: Font.Black; font.letterSpacing: -1
+                color: tel.pal.testo; font.family: Tema.font; font.pixelSize: app.numero.length > 13 ? 30 : 38; font.weight: Font.Medium; font.letterSpacing: 0
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -154,7 +154,7 @@ Rectangle {
                     Column {
                         anchors.centerIn: parent
                         Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData[0]; color: tasto.pressed ? tel.pal.suPieno : tel.pal.testo; font.family: Tema.font; font.pixelSize: 32; font.weight: Font.Medium }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData[1]; color: tasto.pressed ? tel.pal.suPieno : tel.pal.testo2; font.family: tel.fontMono; font.pixelSize: 9; font.letterSpacing: 1.2 }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData[1]; color: tasto.pressed ? tel.pal.suPieno : tel.pal.testo2; font.family: Tema.font; font.pixelSize: 9; font.letterSpacing: 1.2 }
                     }
                     MouseArea {
                         id: tasto
@@ -205,7 +205,7 @@ Rectangle {
                     Column {
                         anchors.centerIn: parent; spacing: 3
                         Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: parent.parent.modelData.i; lato: 24 }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData.t; color: tel.pal.testo; font.family: tel.fontMono; font.pixelSize: tel.px(10); font.capitalization: Font.AllUppercase; font.letterSpacing: 0.5 }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData.t; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(11); font.weight: Font.Medium }
                     }
                     MouseArea { anchors.fill: parent; onClicked: app.scheda = parent.modelData.s }
                 }

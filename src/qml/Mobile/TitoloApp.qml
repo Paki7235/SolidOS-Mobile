@@ -1,5 +1,4 @@
-// Titolo delle app, a puntini e maiuscolo, sempre nello stesso posto (come «MESSAGGI»).
-// A destra si possono mettere i tasti dell'app (figli di questo elemento).
+// Titolo grande delle app, sempre nello stesso posto; a destra i tasti dell'app (figli)
 import QtQuick
 import SolidUI
 
@@ -13,8 +12,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         width: parent.width - fila.width - 12
         elide: Text.ElideRight
-        text: ti.testo.toUpperCase()
-        font.pixelSize: 36
+        text: ti.testo
     }
     Row { id: fila; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; spacing: 8 }
 }
