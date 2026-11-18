@@ -172,6 +172,7 @@ Window {
         else if (a.schermata === "contatti") appInterna = "contatti"
         else if (a.schermata === "dove") appInterna = "dove"
         else if (["calcolatrice", "note", "file", "foto", "musica", "fotocamera", "store", "vicina"].indexOf(a.schermata) >= 0) appInterna = a.schermata
+        else if (a.schermata === "store-app" || a.schermata === "store-raccolta") appInterna = "store"
         else if (a.schermata === "condividi") condividi(ponte.chiama0("foto").slice(0, 2).map(function (f) { return f.percorso }))
         else if (a.schermata === "impostazioni") appInterna = "impostazioni"
         else if (["wifi", "bluetooth", "rete", "suoni", "schermo", "batteria", "info", "solidid", "sicurezza"].indexOf(a.schermata) >= 0) { appInterna = "impostazioni"; impostazioniApp.apri(a.schermata) }
@@ -181,7 +182,7 @@ Window {
     }
     // --foto=PERCORSO: salva una foto della schermata ed esce (prova automatica)
     Timer {
-        interval: 2500
+        interval: (ponte.chiama0("avvio").schermata || "").indexOf("store") === 0 ? 12000 : 2500   // lo Store aspetta il catalogo
         running: ponte.chiama0("avvio").foto !== undefined
         onTriggered: tel.contentItem.grabToImage(function (r) { r.saveToFile(ponte.chiama0("avvio").foto); Qt.quit() })
     }

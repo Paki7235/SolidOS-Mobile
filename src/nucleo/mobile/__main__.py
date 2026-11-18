@@ -846,6 +846,47 @@ class BackendMobile(Backend):
     def storeCerca(self, testo: str) -> list:
         return strumenti.store_cerca(testo)
 
+    # ── Store: raccolte, scheda dell'app e recensioni (come SolidOS App sul PC) ──
+    def storeRaccolte(self) -> list:
+        from .. import catalogo
+
+        installate = strumenti._installate_flatpak()
+        r = catalogo.raccolte(catalogo.RACCOLTE_TELEFONO)
+        for x in r:
+            for a in x["app"]:
+                a["installata"] = a["id"] in installate
+        return r
+
+    def storeScheda(self, ident: str) -> dict:
+        from .. import catalogo
+
+        d = catalogo.dettagli(ident)
+        if d.get("ok"):
+            d["installata"] = ident in strumenti._installate_flatpak()
+            d["raccolte"] = catalogo.raccolte_di(ident, catalogo.RACCOLTE_TELEFONO)
+        return d
+
+    def storeRecensioni(self, ident: str) -> dict:
+        from .. import recensioni
+
+        return {"riepilogo": recensioni.riepilogo(ident), "elenco": recensioni.elenco(ident),
+                "account": recensioni.collegato()}
+
+    def storeScriviRecensione(self, ident: str, voto: int, titolo: str, testo: str) -> dict:
+        from .. import recensioni
+
+        return recensioni.scrivi(ident, voto, titolo, testo)
+
+    def storeCancellaRecensione(self, ident: str) -> dict:
+        from .. import recensioni
+
+        return recensioni.cancella(ident)
+
+    def storeUtile(self, recensione: str) -> dict:
+        from .. import recensioni
+
+        return recensioni.utile(recensione)
+
     def storeInstalla(self, ident: str) -> dict:
         r = strumenti.store_installa(ident)
         self._app = None
