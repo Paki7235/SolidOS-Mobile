@@ -52,8 +52,22 @@ def esiste(programma: str) -> bool:
     return shutil.which(programma) is not None
 
 
+def _senza_permessi_ereditati(comando: list[str]) -> list[str]:
+    """Le app non devono ereditare permessi speciali della sessione (es. CAP_WAKE_ALARM sui
+    telefoni postmarketOS): con quelli il recinto di Flatpak (bwrap) si rifiuta di partire."""
+    try:
+        stato = Path("/proc/self/status").read_text()
+    except OSError:
+        return comando
+    ereditati = [r.split()[1] for r in stato.splitlines() if r.startswith(("CapAmb:", "CapInh:"))]
+    if any(int(x, 16) for x in ereditati) and shutil.which("setpriv"):
+        return ["setpriv", "--inh-caps=-all", "--ambient-caps=-all", "--", *comando]
+    return comando
+
+
 def avvia(comando: list[str]) -> None:
     """Avvia un programma staccato dal processo corrente."""
+    comando = _senza_permessi_ereditati(comando)
     ambiente = {k: v for k, v in os.environ.items() if k != "QT_WAYLAND_SHELL_INTEGRATION"}
     try:
         subprocess.Popen(comando, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -190,7 +204,7 @@ def avvia_desktop(desktop: str, file: list[str] | None = None) -> bool:
         cartella_lavoro = voce.get("Path", "").strip()
         if cartella_lavoro and Path(cartella_lavoro).is_dir():
             ambiente = {k: v for k, v in os.environ.items() if k != "QT_WAYLAND_SHELL_INTEGRATION"}
-            subprocess.Popen(argomenti, cwd=cartella_lavoro, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            subprocess.Popen(_senza_permessi_ereditati(argomenti), cwd=cartella_lavoro, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                              stdin=subprocess.DEVNULL, start_new_session=True, env=ambiente)
         else:
             avvia(argomenti)

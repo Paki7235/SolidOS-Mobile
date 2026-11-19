@@ -19,6 +19,7 @@ Rectangle {
     property bool cercando: false
     property var inCorso: ({})                // id → true durante installazione/rimozione
     property var avanzamento: ({})            // id → percentuale dello scaricamento
+    property bool soloTelefono: true          // Cerca: solo le app adatte al telefono
     property var account: ({ collegato: false, elenco: [], automatiche: true })   // «Le mie app» del Solid ID
     readonly property var altrove: account.elenco.filter(function (x) { return !x.installata && !app.installata({ id: x.app }) })
                                                   .map(function (x) { return { id: x.app, nome: x.nome, icona: x.icona || "", descrizione: x.dispositivo === "pc" ? I18n.t("Presa sul PC") : I18n.t("Presa su un altro telefono") } })
@@ -64,7 +65,7 @@ Rectangle {
     }
     Timer { id: provaScarica; interval: 10200; onTriggered: app.azione(app.aperta) }
     Timer { id: provaRaccolta; interval: 6000; onTriggered: if (app.raccolte.length) app.raccolta = app.raccolte[2] }
-    Timer { id: ritardo; interval: 500; onTriggered: if (app.cerca) { app.cercando = true; ponte.avvia("storeCerca", [app.cerca], "store-cerca") } else app.risultati = [] }
+    Timer { id: ritardo; interval: 500; onTriggered: if (app.cerca) { app.cercando = true; ponte.avvia("storeCerca", [app.cerca, app.soloTelefono], "store-cerca") } else app.risultati = [] }
     Connections {
         target: ponte
         function onEvento(nome, d) {
@@ -88,7 +89,7 @@ Rectangle {
                 tel.avviso(r.messaggio)
                 app.aggiorna()
                 if (app.aperta) app.aperta = Object.assign({}, app.aperta, { installata: !app.aperta.installata })
-                if (app.cerca) ponte.avvia("storeCerca", [app.cerca], "store-cerca")
+                if (app.cerca) ponte.avvia("storeCerca", [app.cerca, app.soloTelefono], "store-cerca")
                 tel.ricaricaApp()
             }
         }
@@ -142,11 +143,12 @@ Rectangle {
             id: et
             anchors.centerIn: parent
             text: ta.percento >= 0 ? (ta.percento >= 100 ? I18n.t("Installo…") : ta.percento + "%")
-                  : app.inCorso[ta.a.id] ? "…" : (ta.presente ? I18n.t("Rimuovi") : (ta.etichetta || I18n.t("Installa")))
+                  : app.inCorso[ta.a.id] ? "…" : (ta.presente ? I18n.t("Apri") : (ta.etichetta || I18n.t("Installa")))
             color: ta.percento >= 0 ? (ta.percento > 45 ? "#FFFFFF" : tel.pal.testo) : (ta.grigio || ta.presente ? tel.accento : "#FFFFFF")
             font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Bold
         }
-        MouseArea { anchors.fill: parent; anchors.margins: -6; enabled: app.disponibile && !app.inCorso[ta.a.id]; onClicked: app.azione(ta.a) }
+        MouseArea { anchors.fill: parent; anchors.margins: -6; enabled: app.disponibile && !app.inCorso[ta.a.id]
+                    onClicked: ta.presente ? tel.apri({ id: ta.a.id, nome: ta.a.nome }) : app.azione(ta.a) }
     }
     // Riga di un'app in un elenco
     component RigaApp: Item {
@@ -158,7 +160,16 @@ Rectangle {
         Column {
             x: 74; anchors.verticalCenter: parent.verticalCenter; width: ra.width - 74 - 116; spacing: 1
             Text { width: parent.width; elide: Text.ElideRight; text: ra.a.nome || ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
-            Text { width: parent.width; elide: Text.ElideRight; text: ra.a.descrizione || ""; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
+            Row {
+                width: parent.width; spacing: 6
+                Rectangle {
+                    visible: ra.a.telefono === false
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: etPc.implicitWidth + 12; height: 18; radius: 9; color: Qt.rgba(0.96, 0.62, 0.04, 0.18)
+                    Text { id: etPc; anchors.centerIn: parent; text: I18n.t("Per computer"); color: "#F59E0B"; font.family: Tema.font; font.pixelSize: tel.px(10.5); font.weight: Font.Bold }
+                }
+                Text { width: parent.width - (ra.a.telefono === false ? 90 : 0); elide: Text.ElideRight; text: ra.a.descrizione || ""; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
+            }
         }
         Tasto { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; a: ra.a; grigio: true }
         Rectangle { visible: !ra.ultima; anchors.bottom: parent.bottom; x: 74; width: ra.width - 74; height: 1; color: tel.pal.bordo }
@@ -228,10 +239,29 @@ Rectangle {
                     IconaStore { x: 10; anchors.verticalCenter: parent.verticalCenter; a: app.appDellaSettimana || ({}); lato: 46 }
                     Text { x: 68; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 68 - 100; elide: Text.ElideRight; text: app.appDellaSettimana ? app.appDellaSettimana.nome : ""; color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.Bold }
                     Rectangle {
+                        id: tastoSettimana
+                        readonly property var a: app.appDellaSettimana || ({})
+                        readonly property int percento: app.avanzamento[a.id] !== undefined ? app.avanzamento[a.id] : -1
+                        readonly property bool presente: app.installata(app.appDellaSettimana)
                         anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter
-                        width: 84; height: 30; radius: 15; color: "#FFFFFF"
-                        Text { anchors.centerIn: parent; text: app.installata(app.appDellaSettimana) ? I18n.t("Installata") : I18n.t("Installa"); color: "#2F5FD0"; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Bold }
-                        MouseArea { anchors.fill: parent; onClicked: if (!app.installata(app.appDellaSettimana)) app.azione(app.appDellaSettimana) }
+                        width: 96; height: 30; radius: 15; clip: true
+                        color: percento >= 0 ? "#59FFFFFF" : "#FFFFFF"
+                        // durante lo scaricamento il pulsante si riempie
+                        Rectangle {
+                            visible: tastoSettimana.percento >= 0
+                            width: Math.max(tastoSettimana.height, tastoSettimana.width * tastoSettimana.percento / 100); height: parent.height; radius: parent.radius
+                            color: "#FFFFFF"
+                            Behavior on width { NumberAnimation { duration: 250 } }
+                        }
+                        Text {
+                            anchors.centerIn: parent; color: "#2F5FD0"; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Bold
+                            text: tastoSettimana.percento >= 0 ? (tastoSettimana.percento >= 100 ? I18n.t("Installo…") : tastoSettimana.percento + "%")
+                                  : app.inCorso[tastoSettimana.a.id] ? "…" : (tastoSettimana.presente ? I18n.t("Apri") : I18n.t("Installa"))
+                        }
+                        MouseArea {
+                            anchors.fill: parent; enabled: !app.inCorso[tastoSettimana.a.id]
+                            onClicked: tastoSettimana.presente ? tel.apri(app.mie.find(function (x) { return x.id === tastoSettimana.a.id }) || tastoSettimana.a) : app.azione(app.appDellaSettimana)
+                        }
                     }
                 }
             }
@@ -261,6 +291,18 @@ Rectangle {
                 width: parent.width
                 suggerimento: I18n.t("App, giochi e strumenti")
                 onTextChanged: { app.cerca = text.trim(); ritardo.restart() }
+            }
+            // Solo le app fatte per il telefono (si adattano allo schermo piccolo e al tocco)
+            Item {
+                visible: app.scheda === "cerca"
+                width: parent.width; height: 34
+                Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.t("Solo app per il telefono"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(14) }
+                Rectangle {
+                    anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+                    width: 46; height: 28; radius: 14; color: app.soloTelefono ? tel.accento : tel.pal.superficie2
+                    Rectangle { width: 22; height: 22; radius: 11; y: 3; x: app.soloTelefono ? 21 : 3; color: "#FFFFFF" }
+                    MouseArea { anchors.fill: parent; anchors.margins: -6; onClicked: { app.soloTelefono = !app.soloTelefono; ritardo.restart() } }
+                }
             }
             Text {
                 visible: app.scheda === "cerca" && app.cerca !== "" && !app.cercando && app.risultati.length === 0
@@ -480,7 +522,24 @@ Rectangle {
                         Text { width: parent.width; wrapMode: Text.Wrap; text: paginaScheda.s.nome || ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(24); font.weight: Font.Bold }
                         Text { width: parent.width; wrapMode: Text.Wrap; maximumLineCount: 2; elide: Text.ElideRight; text: paginaScheda.s.descrizioneBreve || ""; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
                         Item { width: 1; height: 4 }
-                        Tasto { a: paginaScheda.s }
+                        // Adatta al telefono? (lo dice Flathub)
+                        Text {
+                            visible: paginaScheda.s.telefono === true || paginaScheda.s.telefono === false
+                            width: parent.width; wrapMode: Text.Wrap
+                            text: paginaScheda.s.telefono ? "✓ " + I18n.t("Fatta per il telefono") : I18n.t("Pensata per il computer: sul telefono può essere scomoda")
+                            color: paginaScheda.s.telefono ? tel.pal.successo : "#F59E0B"
+                            font.family: Tema.font; font.pixelSize: tel.px(12); font.weight: Font.DemiBold
+                        }
+                        Row {
+                            spacing: 14
+                            Tasto { a: paginaScheda.s }
+                            Text {
+                                visible: app.installata(paginaScheda.s) && !app.inCorso[paginaScheda.s.id]
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: I18n.t("Rimuovi"); color: tel.rosso; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.DemiBold
+                                MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: app.azione(paginaScheda.s) }
+                            }
+                        }
                     }
                 }
                 // In breve

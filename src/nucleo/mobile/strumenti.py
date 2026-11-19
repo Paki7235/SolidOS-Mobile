@@ -856,15 +856,16 @@ def musica() -> list:
 
 
 # ── Store (Flathub, installazione per l'utente: niente password) ────────────
+# Consigliate per il telefono: tutte segnate da Flathub come adatte al telefono
 CONSIGLIATE = [
-    ("org.mozilla.firefox", "Firefox", "Navigare sul web"),
+    ("org.gnome.Epiphany", "Web", "Navigare sul web"),
     ("org.gnome.Maps", "Mappe", "Mappe e indicazioni"),
     ("org.gnome.Weather", "Meteo", "Previsioni del tempo"),
     ("org.gnome.Podcasts", "Podcast", "Ascolta i podcast"),
-    ("io.github.alainm23.planify", "Planify", "Promemoria e attività"),
+    ("io.github.mrvladus.List", "Errands", "Promemoria e attività"),
     ("org.gnome.Fractal", "Fractal", "Chat Matrix"),
-    ("org.telegram.desktop", "Telegram", "Messaggi"),
-    ("org.kde.kasts", "Kasts", "Podcast per il telefono"),
+    ("dev.geopjr.Tuba", "Tuba", "Mastodon e social"),
+    ("io.bassi.Amberol", "Amberol", "Musica"),
 ]
 _RIMOTO = "https://dl.flathub.org/repo/flathub.flatpakrepo"
 
@@ -892,16 +893,20 @@ def store_consigliate() -> dict:
                     for i, n, d in CONSIGLIATE]}
 
 
-def store_cerca(testo: str) -> list:
+def store_cerca(testo: str, solo_telefono: bool = True) -> list:
+    """Cerca su Flathub. Sul telefono di solito solo le app adatte al telefono (Flathub le segna
+    «mobile friendly»: si adattano allo schermo piccolo e al tocco); le altre, se si chiedono,
+    portano l'etichetta «Per computer»."""
     testo = testo.strip()
     if not testo:
         return []
     installate = _installate_flatpak()
     if DEMO:
         return [a for a in store_consigliate()["app"] if testo.lower() in (a["nome"] + a["descrizione"]).lower()]
+    filtri = [{"filterType": "isMobileFriendly", "value": "true"}] if solo_telefono else []
     try:
         richiesta = urllib.request.Request(
-            "https://flathub.org/api/v2/search", data=json.dumps({"query": testo}).encode(),
+            "https://flathub.org/api/v2/search", data=json.dumps({"query": testo, "filters": filtri}).encode(),
             headers={"Content-Type": "application/json", "User-Agent": f"{branding.nome()}-Mobile/{branding.get('OS_VERSION', '0')}"})
         with urllib.request.urlopen(richiesta, timeout=15) as r:
             dati = json.load(r)
@@ -913,8 +918,22 @@ def store_cerca(testo: str) -> list:
         if not ident or "aarch64" not in (h.get("arches") or ["aarch64"]):
             continue
         risultati.append({"id": ident, "nome": h.get("name", ident), "descrizione": h.get("summary", ""),
-                          "icona": h.get("icon") or _icona_flathub(ident), "installata": ident in installate})
+                          "icona": h.get("icon") or _icona_flathub(ident), "installata": ident in installate,
+                          "telefono": bool(h.get("isMobileFriendly"))})
     return risultati
+
+
+def adatta_al_telefono(ident: str) -> bool | None:
+    """Flathub dice se l'app è adatta al telefono? (None se non si sa, es. senza rete)."""
+    try:
+        richiesta = urllib.request.Request(
+            "https://flathub.org/api/v2/search", data=json.dumps({"query": ident}).encode(),
+            headers={"Content-Type": "application/json", "User-Agent": f"{branding.nome()}-Mobile/{branding.get('OS_VERSION', '0')}"})
+        with urllib.request.urlopen(richiesta, timeout=10) as r:
+            hit = next((h for h in json.load(r).get("hits", []) if h.get("app_id") == ident), None)
+    except (OSError, ValueError):
+        return None
+    return bool(hit.get("isMobileFriendly")) if hit else None
 
 
 def store_installa(ident: str, avanzamento=None) -> dict:

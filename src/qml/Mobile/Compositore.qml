@@ -93,8 +93,12 @@ Item {
             required property int index
             shellSurface: modelData.superficie
             autoCreatePopupItems: true
+            // L'app prende la sua misura; se è più larga dello schermo (app pensate per il computer)
+            // si rimpicciolisce finché entra
+            readonly property real riduzione: Math.min(1, comp.width / Math.max(1, width), (comp.height - comp.alto - comp.basso) / Math.max(1, height))
             x: 0; y: comp.alto
-            width: comp.width; height: comp.height - comp.alto - comp.basso
+            scale: riduzione
+            transformOrigin: Item.TopLeft
             visible: comp.inPrimoPiano && comp.attiva === index && !comp.vistaApp
             onSurfaceDestroyed: comp.togli(modelData.superficie)
         }
@@ -140,8 +144,7 @@ Item {
                     ShellSurfaceItem {
                         shellSurface: scheda.modelData.superficie
                         inputEventsEnabled: false
-                        width: comp.width; height: comp.height - comp.alto - comp.basso
-                        scale: cornice.width / comp.width
+                        scale: Math.min(cornice.width / Math.max(1, width), cornice.height / Math.max(1, height))
                         transformOrigin: Item.TopLeft
                     }
                 }

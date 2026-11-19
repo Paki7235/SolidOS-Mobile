@@ -1253,8 +1253,8 @@ class BackendMobile(Backend):
     def storeConsigliate(self) -> dict:
         return strumenti.store_consigliate()
 
-    def storeCerca(self, testo: str) -> list:
-        return strumenti.store_cerca(testo)
+    def storeCerca(self, testo: str, solo_telefono: bool = True) -> list:
+        return strumenti.store_cerca(testo, bool(solo_telefono))
 
     # ── Store: raccolte, scheda dell'app e recensioni (come SolidOS App sul PC) ──
     def storeRaccolte(self) -> list:
@@ -1273,6 +1273,7 @@ class BackendMobile(Backend):
         d = catalogo.dettagli(ident)
         if d.get("ok"):
             d["installata"] = ident in strumenti._installate_flatpak()
+            d["telefono"] = strumenti.adatta_al_telefono(ident)
             d["raccolte"] = catalogo.raccolte_di(ident, catalogo.RACCOLTE_TELEFONO)
         return d
 
