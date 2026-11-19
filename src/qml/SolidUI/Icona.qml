@@ -16,7 +16,9 @@ Image {
     // Sul telefono le icone seguono il tema chiaro o scuro dell'interfaccia
     // «tema» forza le icone: "scuro" = icone chiare (su colori pieni), "chiaro" = icone scure
     property string tema: ""
-    readonly property string temaIcone: tema !== "" ? tema
+    // «colore»: l'icona a linea in un colore preciso (es. tel.accento)
+    property color colore: "transparent"
+    readonly property string temaIcone: colore.a > 0 ? "colore-" + colore.toString().slice(-6) : tema !== "" ? tema
         : (typeof tel !== "undefined" && tel.chiaro !== undefined ? (tel.chiaro ? "chiaro" : "scuro") : "")
     source: nome ? "image://icona/" + nome + (temaIcone ? "?tema=" + temaIcone : "") : ""
     fillMode: Image.PreserveAspectFit

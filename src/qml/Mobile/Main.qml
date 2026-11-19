@@ -148,6 +148,10 @@ Window {
     // Passaggi tra app: file da mandare con Vicina, brano da suonare, testo negli appunti
     property var daCondividere: []
     property string branoDaSuonare: ""
+    // Widget Musica: cosa suona (lo aggiorna Musica) e i comandi dal widget
+    property var musica: ({ titolo: "", artista: "", suona: false })
+    signal comandoMusica(string c)
+    property bool modificaHome: false           // Home in modifica: icone che tremano, «−», «+» e «Fine»
     function condividi(percorsi) { daCondividere = percorsi; chiudiTutto(); appInterna = "vicina" }
     function copia(testo) { appunti.text = testo; appunti.selectAll(); appunti.copy() }
     function ricaricaApp() { home.app = ponte.chiama0("home"); home.dock = ponte.chiama0("dock") }
@@ -178,6 +182,13 @@ Window {
         else if (a.schermata === "condividi") condividi(ponte.chiama0("foto").slice(0, 2).map(function (f) { return f.percorso }))
         else if (a.schermata === "impostazioni") appInterna = "impostazioni"
         else if (["wifi", "bluetooth", "rete", "suoni", "schermo", "batteria", "info", "solidid", "sicurezza"].indexOf(a.schermata) >= 0) { appInterna = "impostazioni"; impostazioniApp.apri(a.schermata) }
+        else if (a.schermata === "home-widget") { imp = Object.assign({}, imp, { widget: [{ tipo: "meteo", misura: "piccolo" }, { tipo: "oggi", misura: "piccolo" }, { tipo: "musica", misura: "medio" }] }) }
+        else if (a.schermata === "home-modifica") { imp = Object.assign({}, imp, { widget: [{ tipo: "meteo", misura: "piccolo" }, { tipo: "oggi", misura: "piccolo" }] }); modificaHome = true }
+        else if (a.schermata === "home-galleria") { modificaHome = true; galleriaWidget.apri() }
+        else if (a.schermata === "home-misura") { modificaHome = true; galleriaWidget.apri(); galleriaWidget.scelto = "batterie" }
+        else if (a.schermata === "home-scure" || a.schermata === "home-tinta") { imp = Object.assign({}, imp, { stile_icone: a.schermata.slice(5) }) }
+        else if (a.schermata.indexOf("file-") === 0) appInterna = "file"
+        else if (a.schermata.indexOf("calc-") === 0) appInterna = "calcolatrice"
         else if (a.schermata === "tastiera" || a.schermata === "tastierino") { appInterna = "contatti"; contattiApp.nuovo() }
         else if (a.schermata === "mia-scheda") { appInterna = "contatti"; contattiApp.aggiorna(); contattiApp.apri(contattiApp.mia) }
         else if (a.schermata === "modifica-contatto") { appInterna = "contatti"; var cm = ponte.chiama0("contatti"); if (cm.length) { contattiApp.apri(cm[1] || cm[0]); contattiApp.modifica = true } }
@@ -436,6 +447,27 @@ Window {
 
     // Le app prese con lo stesso Solid ID sul PC: si scaricano da sole un minuto dopo l'avvio
     Timer { interval: 60000; running: true; onTriggered: if (tel.imp.app_automatiche !== false) ponte.avvia("storeScaricaMie", [], "store-scarica-mie") }
+
+    // ── Widget: galleria e scelta della città del meteo ─────────────────
+    GalleriaWidget { id: galleriaWidget; z: 85 }
+    Popup {
+        id: sceltaCitta
+        anchors.centerIn: parent
+        width: parent.width - 40; modal: true; padding: 18
+        background: Rectangle { radius: 20; color: tel.pal.superficie }
+        onOpened: campoCitta.text = tel.imp.citta_meteo || ""
+        Column {
+            width: parent.width; spacing: 12
+            Text { text: I18n.t("Città del meteo"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(17); font.weight: Font.Bold }
+            Text { width: parent.width; wrapMode: Text.Wrap; text: I18n.t("Lascia vuoto per usare la posizione del telefono."); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
+            CampoTesto { id: campoCitta; width: parent.width; placeholderText: I18n.t("es. Napoli") }
+            Row {
+                spacing: 10; anchors.right: parent.right
+                Pulsante { text: I18n.t("Annulla"); onClicked: sceltaCitta.close() }
+                Pulsante { text: I18n.t("Fatto"); principale: true; onClicked: { tel.imposta("citta_meteo", campoCitta.text.trim()); sceltaCitta.close(); tel.imp = ponte.chiama0("impostazioni") } }
+            }
+        }
+    }
 
     // ── Tastiera sullo schermo ─────────────────────────────────────────
     Tastiera { id: tastiera; z: 95 }

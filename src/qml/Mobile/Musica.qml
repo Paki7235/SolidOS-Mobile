@@ -31,6 +31,16 @@ Rectangle {
     function tempo(ms) { var s = Math.floor(ms / 1000); return Math.floor(s / 60) + ":" + ("0" + s % 60).slice(-2) }
     onVisibleChanged: if (visible) aggiorna()
     Component.onCompleted: { aggiorna(); if (tel.branoDaSuonare) { suonaFile(tel.branoDaSuonare); tel.branoDaSuonare = "" } }
+    // Per il widget Musica della Home: cosa suona e i comandi dal widget
+    Binding { target: tel; property: "musica"; value: ({ titolo: app.brano ? app.brano.titolo : "", artista: app.brano ? (app.brano.artista || "") : "", suona: app.suona }) }
+    Connections {
+        target: tel
+        function onComandoMusica(c) {
+            if (c === "play") app.playPausa()
+            else if (c === "avanti") app.suonaIndice(app.attuale + 1)
+            else if (c === "indietro") app.suonaIndice(Math.max(0, app.attuale - 1))
+        }
+    }
     Connections { target: tel; function onBranoDaSuonareChanged() { if (tel.branoDaSuonare) { app.suonaFile(tel.branoDaSuonare); tel.branoDaSuonare = "" } } }
 
     // Il lettore nasce solo al primo Play: senza scheda audio non blocca l'interfaccia

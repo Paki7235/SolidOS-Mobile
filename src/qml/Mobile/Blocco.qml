@@ -68,6 +68,35 @@ Item {
             Icona { anchors.verticalCenter: parent.verticalCenter; nome: "weather-clear-night-symbolic"; lato: 14; tema: tel.chiaro ? "chiaro" : "scuro" }
             Text { text: I18n.t("Non disturbare"); color: tel.chiaro ? "#1D1D1F" : "#FFFFFF"; opacity: 0.85; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Medium }
         }
+        // Widget della schermata di blocco (scelti dalla galleria dei widget)
+        Row {
+            id: widgetBlocco
+            anchors.horizontalCenter: parent.horizontalCenter
+            topPadding: 8; spacing: 8
+            visible: (tel.imp.widget_blocco || []).length > 0
+            property var meteo: ({})
+            Component.onCompleted: if ((tel.imp.widget_blocco || []).indexOf("meteo") >= 0) ponte.avvia("meteo", [], "blocco-meteo")
+            Connections { target: ponte; function onCompletato(id, r) { if (id === "blocco-meteo") widgetBlocco.meteo = r } }
+            Repeater {
+                model: tel.imp.widget_blocco || []
+                Vetro {
+                    id: wb
+                    required property string modelData
+                    readonly property string testo: modelData === "meteo" ? (widgetBlocco.meteo.ok ? widgetBlocco.meteo.gradi + "° " + (widgetBlocco.meteo.citta || "") : "—")
+                                                  : modelData === "batterie" ? ((tel.stato && tel.stato.batteria ? tel.stato.batteria.livello : 100) + "%")
+                                                  : modelData === "musica" ? (tel.musica.titolo || I18n.t("Musica"))
+                                                  : ((tel.elencoNotifiche || []).length ? (tel.elencoNotifiche[0].titolo || "") : I18n.t("Nessun impegno"))
+                    width: Math.min(150, rigaWb.implicitWidth + 24); height: 34; radius: 17
+                    Row {
+                        id: rigaWb
+                        anchors.centerIn: parent; spacing: 6
+                        Icona { anchors.verticalCenter: parent.verticalCenter; lato: 15; tema: tel.chiaro ? "chiaro" : "scuro"
+                                nome: ({ meteo: "linea-" + (widgetBlocco.meteo.icona || "sole"), batterie: "linea-batteria", musica: "linea-musica", oggi: "linea-calendario" })[wb.modelData] }
+                        Text { anchors.verticalCenter: parent.verticalCenter; width: Math.min(implicitWidth, 110); elide: Text.ElideRight; text: wb.testo; color: tel.chiaro ? "#1D1D1F" : "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+                    }
+                }
+            }
+        }
     }
 
     Column {

@@ -195,6 +195,8 @@ def _provider_icone():
                 from PyQt6.QtGui import QColor, QPainter
 
                 colore = QColor("#000000") if "tema=chiaro" in opzioni else QColor("#FFFFFF")
+                if "tema=colore-" in opzioni:   # un colore preciso: «?tema=colore-4c7dff»
+                    colore = QColor("#" + opzioni.split("tema=colore-", 1)[1][:6])
                 tinta = QPixmap(pixmap.size())
                 tinta.setDevicePixelRatio(pixmap.devicePixelRatio())
                 tinta.fill(QColor(0, 0, 0, 0))

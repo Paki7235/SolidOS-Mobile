@@ -1,92 +1,361 @@
-// Calcolatrice: tasti grandi, risultato mentre scrivi; il calcolo lo fa il backend
-// in modo sicuro (niente eval). Tocca il risultato per riusarlo.
+// Calcolatrice (come nell'immagine approvata): tasti a cuscino, operazione sopra il risultato,
+// ⌫ per togliere una cifra. In alto: Cronologia, e i modi Base, Scientifica e Converti
+// (valute con i cambi della BCE, lunghezza, peso, volume, velocità, area, temperatura).
+// Il calcolo lo fa il nucleo in modo sicuro (niente eval).
 import QtQuick
+import QtQuick.Controls
 import SolidUI
 
 Rectangle {
     id: app
     color: tel.pal.sfondo
+    property string modo: "base"          // base | scientifica | converti
     property string espressione: ""
-    property string risultato: ""
+    property string risultato: ""         // anteprima mentre scrivi
+    property string fatta: ""             // operazione appena calcolata (dopo «=»)
     property bool errore: false
+    property bool radianti: false
+    property bool mostraStoria: false
+    property var storia: []
+    // Converti
+    property string categoria: "valuta"
+    property var unita: []
+    property string da: "EUR"
+    property string a: "USD"
+    property var conversione: ({ valore: "", nota: "" })
+    readonly property var categorie: [{ k: "valuta", t: I18n.t("Valuta") }, { k: "lunghezza", t: I18n.t("Lunghezza") }, { k: "peso", t: I18n.t("Peso") },
+                                      { k: "temperatura", t: I18n.t("Temperatura") }, { k: "volume", t: I18n.t("Volume") }, { k: "velocita", t: I18n.t("Velocità") }, { k: "area", t: I18n.t("Area") }]
+    readonly property var predefinite: ({ valuta: ["EUR", "USD"], lunghezza: ["km", "mi"], peso: ["kg", "lb"], temperatura: ["°C", "°F"], volume: ["l", "gal"], velocita: ["km/h", "mph"], area: ["m²", "ft²"] })
 
     function aggiorna() {
+        if (modo === "converti") { converti(); return }
         if (!espressione) { risultato = ""; errore = false; return }
-        var r = ponte.chiama("calcola", [espressione])
+        var r = ponte.chiama("calcola", [espressione, radianti])
         errore = !r.ok
         risultato = r.ok ? r.valore : (/[+−×÷^(]$/.test(espressione) ? "" : r.valore)
     }
+    // Spazi intorno agli operatori, solo per leggere meglio
+    function bello(x) { return x.replace(/([+×÷])/g, " $1 ").replace(/(\S)−/g, "$1 − ") }
+    function converti() { conversione = ponte.chiama("calcConverti", [categoria, da, a, espressione || "0"]) }
+    function scegliCategoria(k) {
+        categoria = k
+        unita = ponte.chiama("calcUnita", [k])
+        da = predefinite[k][0]; a = predefinite[k][1]
+        converti()
+    }
+    // «±» cambia il segno dell'ultimo numero
+    function cambiaSegno() {
+        var m = espressione.match(/(−?)([0-9.,]+)$/)
+        if (!m) { espressione += "−"; return }
+        var inizio = espressione.length - m[0].length
+        espressione = espressione.slice(0, inizio) + (m[1] ? m[2] : "−" + m[2])
+    }
     function tasto(t) {
-        if (t === "C") { espressione = ""; aggiorna(); return }
+        // dopo «=» un numero nuovo ricomincia, un operatore continua dal risultato
+        if (fatta && "+−×÷%".indexOf(t) < 0 && ["=", "⌫", "±", "x²", "xʸ", "x!"].indexOf(t) < 0) espressione = ""
+        if (t !== "=") fatta = ""
+        if (t === "AC") { espressione = ""; aggiorna(); return }
         if (t === "⌫") { espressione = espressione.slice(0, -1); aggiorna(); return }
-        if (t === "=") { if (risultato && !errore) { espressione = risultato.replace(/\./g, ""); risultato = "" } return }
+        if (t === "±") { cambiaSegno(); aggiorna(); return }
+        if (t === "=") {
+            if (modo === "converti" || !espressione || fatta) return
+            var r = ponte.chiama("calcola", [espressione, radianti])
+            if (!r.ok) { errore = true; risultato = r.valore; return }
+            ponte.chiama("calcAggiungi", [espressione, r.valore])
+            fatta = espressione
+            espressione = r.valore.replace(/\./g, "")
+            risultato = ""; errore = false
+            return
+        }
         if (t === "()") {
             var aperte = (espressione.match(/\(/g) || []).length - (espressione.match(/\)/g) || []).length
-            t = (aperte > 0 && /[0-9)%π]$/.test(espressione)) ? ")" : "("
+            t = (aperte > 0 && /[0-9)%π!e]$/.test(espressione)) ? ")" : "("
         }
-        if (t === "√") t = "√("
+        var funzioni = { "√": "√(", "sin": "sin(", "cos": "cos(", "tan": "tan(", "ln": "ln(", "log": "log(", "x²": "^2", "xʸ": "^", "x!": "!", "1/x": "1÷(" }
+        if (funzioni[t] !== undefined) t = funzioni[t]
         espressione += t
         aggiorna()
     }
-
-    Text {
-        anchors.right: parent.right; anchors.rightMargin: 24
-        anchors.bottom: tastiera.top; anchors.bottomMargin: 92
-        width: parent.width - 48; horizontalAlignment: Text.AlignRight
-        text: app.espressione || "0"
-        color: tel.pal.testo; elide: Text.ElideLeft
-        font.family: Tema.font; font.pixelSize: app.espressione.length > 12 ? 44 : 72; font.weight: Font.Light; font.letterSpacing: -1
-    }
-    Text {
-        anchors.right: parent.right; anchors.rightMargin: 24
-        anchors.bottom: tastiera.top; anchors.bottomMargin: 46
-        text: app.risultato ? (app.errore ? app.risultato : "= " + app.risultato) : ""
-        color: app.errore ? tel.rosso : tel.pal.testo2
-        font.family: Tema.font; font.pixelSize: 24
-        MouseArea { anchors.fill: parent; onClicked: app.tasto("=") }
+    onModoChanged: { if (modo === "converti" && unita.length === 0) scegliCategoria(categoria); else aggiorna() }
+    onVisibleChanged: if (visible) storia = ponte.chiama0("calcStoria")
+    Component.onCompleted: {
+        // Foto della prova automatica
+        var s = ponte.chiama0("avvio").schermata
+        if (s === "calcolatrice") { espressione = "1.250×12%"; tasto("=") }
+        else if (s === "calc-scientifica") { modo = "scientifica"; espressione = "√(2)×sin(45)"; tasto("=") }
+        else if (s === "calc-cronologia") { ponte.chiama("calcAggiungi", ["24×7", "168"]); ponte.chiama("calcAggiungi", ["89,90−15%", "76,415"]); ponte.chiama("calcAggiungi", ["1.250×12%", "150"]); storia = ponte.chiama0("calcStoria"); mostraStoria = true }
+        else if (s === "calc-converti") { espressione = "150"; modo = "converti" }
     }
 
-    Grid {
-        id: tastiera
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom; anchors.bottomMargin: 40
-        columns: 4; rowSpacing: 12; columnSpacing: 12
-        readonly property real lato: Math.min(80, (app.width - 32 - 36) / 4)
+    // ── In alto: Cronologia e modo ───────────────────────────────────────
+    Icona {
+        x: 20; y: 58; nome: "linea-cronologia"; lato: 24; colore: tel.accento
+        MouseArea { anchors.fill: parent; anchors.margins: -12; onClicked: { app.storia = ponte.chiama0("calcStoria"); app.mostraStoria = true } }
+    }
+    Row {
+        anchors.right: parent.right; anchors.rightMargin: 20; y: 60
         Repeater {
-            model: ["C", "()", "%", "÷", "7", "8", "9", "×", "4", "5", "6", "−", "1", "2", "3", "+", "√", "0", ",", "="]
-            Rectangle {
-                required property string modelData
-                readonly property bool operatore: ["÷", "×", "−", "+", "="].indexOf(modelData) >= 0
-                readonly property bool funzione: ["C", "()", "%", "√"].indexOf(modelData) >= 0
-                width: tastiera.lato; height: tastiera.lato; radius: width / 2
-                // «=» rosso pieno, operatori bianchi pieni, funzioni a contorno, cifre grigie
-                color: modelData === "=" ? tel.accento
-                       : operatore ? tel.pal.pieno
-                       : funzione ? tel.pal.superficie
-                       : tel.pal.superficie2
+            model: [{ k: "base", t: I18n.t("Base") }, { k: "scientifica", t: I18n.t("Scientifica") }, { k: "converti", t: I18n.t("Converti") }]
+            Text {
+                required property var modelData
+                required property int index
+                text: (index ? " · " : "") + modelData.t
+                color: app.modo === modelData.k ? tel.accento : tel.pal.testo2
+                font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold
+                MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: app.modo = parent.modelData.k }
+            }
+        }
+    }
 
-                Text {
-                    anchors.centerIn: parent; text: parent.modelData === "()" ? "( )" : parent.modelData
-                    color: parent.modelData === "=" ? "#ffffff" : (parent.operatore ? tel.pal.suPieno : tel.pal.testo)
-                    font.family: Tema.font; font.pixelSize: parent.funzione ? 24 : 30; font.weight: parent.operatore ? Font.DemiBold : Font.Normal
+    // ── Operazione e risultato ───────────────────────────────────────────
+    Column {
+        visible: app.modo !== "converti"
+        anchors.right: parent.right; anchors.rightMargin: 26
+        anchors.bottom: app.modo === "scientifica" ? scientifica.top : tastiera.top
+        anchors.bottomMargin: app.modo === "scientifica" ? 18 : 34
+        width: parent.width - 52
+        spacing: 2
+        Text {
+            width: parent.width; horizontalAlignment: Text.AlignRight; elide: Text.ElideLeft
+            text: app.fatta ? app.bello(app.fatta) : (app.risultato ? (app.errore ? app.risultato : "= " + app.risultato) : "")
+            color: app.errore && !app.fatta ? tel.rosso : tel.pal.testo2
+            font.family: Tema.font; font.pixelSize: tel.px(22)
+            MouseArea { anchors.fill: parent; onClicked: if (!app.fatta) app.tasto("=") }
+        }
+        Text {
+            id: grande
+            width: parent.width; horizontalAlignment: Text.AlignRight; elide: Text.ElideLeft
+            // il risultato si mostra con i punti delle migliaia
+            readonly property string mostra: app.fatta ? app.espressione.replace(/^(−?\d+)/, function (m) { return m.replace(/\B(?=(\d{3})+(?!\d))/g, ".") }) : (app.bello(app.espressione) || "0")
+            text: mostra
+            color: tel.pal.testo
+            font.family: Tema.font; font.weight: Font.Light; font.letterSpacing: -2
+            font.pixelSize: (app.modo === "scientifica" ? 64 : 86) * (mostra.length > 8 ? Math.max(0.45, 8 / mostra.length) : 1)
+            MouseArea { anchors.fill: parent; onPressAndHold: { tel.copia(grande.text); tel.avviso(I18n.t("Copiato")) } }
+        }
+    }
+
+    // ── Converti ───────────────────────────────────────────────────────
+    Column {
+        visible: app.modo === "converti"
+        x: 16; y: 104; width: parent.width - 32; spacing: 12
+        Flickable {
+            width: parent.width; height: 30; contentWidth: chip.width; clip: true
+            flickableDirection: Flickable.HorizontalFlick; boundsBehavior: Flickable.StopAtBounds
+            Row {
+                id: chip
+                spacing: 8
+                Repeater {
+                    model: app.categorie
+                    Rectangle {
+                        required property var modelData
+                        height: 30; width: etc.implicitWidth + 26; radius: 15
+                        color: app.categoria === modelData.k ? tel.accento : tel.pal.superficie2
+                        Text { id: etc; anchors.centerIn: parent; text: parent.modelData.t; color: app.categoria === parent.modelData.k ? "#FFFFFF" : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+                        MouseArea { anchors.fill: parent; onClicked: app.scegliCategoria(parent.modelData.k) }
+                    }
                 }
+            }
+        }
+        Rectangle {
+            width: parent.width; height: 150; radius: 14; color: tel.pal.superficie
+            Repeater {
+                model: 2
+                Item {
+                    id: rigaC
+                    required property int index
+                    readonly property string codice: index === 0 ? app.da : app.a
+                    y: index * 75; width: parent.width; height: 75
+                    Rectangle { visible: rigaC.index > 0; x: 16; width: parent.width - 16; height: 1; color: tel.pal.bordo }
+                    Column {
+                        x: 16; anchors.verticalCenter: parent.verticalCenter
+                        Row {
+                            spacing: 6
+                            Text { id: cod; text: rigaC.codice; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.Bold }
+                            Text { anchors.baseline: cod.baseline; text: "▾"; color: tel.accento; font.pixelSize: 12 }
+                        }
+                        Text {
+                            readonly property string nome: (app.unita.find(function (u) { return u.id === rigaC.codice }) || { nome: "" }).nome
+                            visible: nome !== "" && nome !== rigaC.codice; text: nome
+                            color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12)
+                        }
+                    }
+                    MouseArea { width: 150; height: parent.height; onClicked: { sceltaUnita.lato = rigaC.index; sceltaUnita.open() } }
+                    Text {
+                        anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width - 190; horizontalAlignment: Text.AlignRight; elide: Text.ElideLeft
+                        text: rigaC.index === 0 ? (app.espressione || "0") : (app.conversione.valore || "—")
+                        color: rigaC.index === 0 ? tel.pal.testo : tel.pal.testo2
+                        font.family: Tema.font; font.weight: Font.Light; font.pixelSize: rigaC.index === 0 ? 40 : 34
+                    }
+                }
+            }
+            // Scambia le due unità
+            Rectangle {
+                x: 150; anchors.verticalCenter: parent.verticalCenter
+                width: 32; height: 32; radius: 16; color: tel.pal.superficie2; border.width: 1; border.color: tel.pal.bordo
+                Text { anchors.centerIn: parent; text: "⇅"; color: tel.accento; font.pixelSize: 17 }
+                MouseArea { anchors.fill: parent; anchors.margins: -6; onClicked: { var t = app.da; app.da = app.a; app.a = t; app.converti() } }
+            }
+        }
+        Text {
+            width: parent.width; wrapMode: Text.Wrap; visible: text !== ""
+            text: app.conversione.nota ? app.conversione.nota + ". " + I18n.t("Senza rete usa l'ultimo scaricato.") : ""
+            color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12.5)
+        }
+    }
+    Popup {
+        id: sceltaUnita
+        property int lato: 0
+        anchors.centerIn: parent
+        width: parent.width - 40; height: Math.min(parent.height - 160, elencoU.contentHeight + 24); modal: true; padding: 12
+        background: Rectangle { radius: 20; color: tel.pal.superficie }
+        ListView {
+            id: elencoU
+            anchors.fill: parent; clip: true
+            model: app.unita
+            delegate: Item {
+                required property var modelData
+                width: elencoU.width; height: 46
+                Text { x: 8; anchors.verticalCenter: parent.verticalCenter; text: parent.modelData.id; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.Bold }
+                Text { x: 76; anchors.verticalCenter: parent.verticalCenter; text: parent.modelData.nome !== parent.modelData.id ? parent.modelData.nome : ""; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(14) }
+                Text { anchors.right: parent.right; anchors.rightMargin: 8; anchors.verticalCenter: parent.verticalCenter; visible: (sceltaUnita.lato === 0 ? app.da : app.a) === parent.modelData.id; text: "✓"; color: tel.accento; font.pixelSize: 16 }
+                MouseArea { anchors.fill: parent; onClicked: { if (sceltaUnita.lato === 0) app.da = parent.modelData.id; else app.a = parent.modelData.id; sceltaUnita.close(); app.converti() } }
+            }
+        }
+    }
+
+    // ── Funzioni scientifiche ──────────────────────────────────────────
+    Grid {
+        id: scientifica
+        visible: app.modo === "scientifica"
+        x: 16; anchors.bottom: tastiera.top; anchors.bottomMargin: 14
+        columns: 5; spacing: 8
+        Repeater {
+            model: ["(", ")", "x²", "xʸ", "√", "sin", "cos", "tan", "ln", "log", "π", "e", "x!", "1/x", "Rad"]
+            Rectangle {
+                id: fs
+                required property string modelData
+                readonly property bool rad: modelData === "Rad"
+                width: (app.width - 32 - 32) / 5; height: 42; radius: 14
+                color: rad && app.radianti ? Qt.rgba(tel.accento.r, tel.accento.g, tel.accento.b, 0.22) : (tel.chiaro ? "#E4E4EA" : "#2A2B31")
+                Text { anchors.centerIn: parent; text: fs.modelData; color: fs.rad && app.radianti ? tel.accento : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.Medium }
                 MouseArea {
-                    id: premuto
+                    id: ps
                     anchors.fill: parent
-                    onClicked: app.tasto(parent.modelData)
-                    onPressAndHold: if (parent.modelData === "C") app.tasto("C")
+                    onClicked: { if (fs.rad) { app.radianti = !app.radianti; app.aggiorna() } else app.tasto(fs.modelData) }
                 }
-                scale: premuto.pressed ? 0.94 : 1
+                scale: ps.pressed ? 0.94 : 1
                 Behavior on scale { NumberAnimation { duration: 80 } }
             }
         }
     }
-    // Cancella l'ultima cifra
-    Text {
-        anchors.left: parent.left; anchors.leftMargin: 28
-        anchors.bottom: tastiera.top; anchors.bottomMargin: 10
-        visible: app.espressione !== ""
-        text: "⌫"; color: tel.pal.testo2; font.pixelSize: 26
-        MouseArea { anchors.fill: parent; anchors.margins: -12; onClicked: app.tasto("⌫"); onPressAndHold: app.tasto("C") }
+
+    // ── Tasti ──────────────────────────────────────────────────────────
+    Gradient { id: sfumatura; GradientStop { position: 0; color: Qt.lighter(tel.accento, 1.2) } GradientStop { position: 1; color: tel.accento } }
+    Grid {
+        id: tastiera
+        x: 16; anchors.bottom: parent.bottom; anchors.bottomMargin: 34
+        columns: 4; spacing: 12
+        readonly property real largo: (app.width - 32 - 36) / 4
+        readonly property real alto: app.modo === "base" ? Math.min(76, largo) : 66
+        Repeater {
+            model: ["AC", "⌫", "%", "÷", "7", "8", "9", "×", "4", "5", "6", "−", "1", "2", "3", "+", "±", "0", ",", "="]
+            Rectangle {
+                id: k
+                required property string modelData
+                readonly property bool operatore: ["÷", "×", "−", "+", "="].indexOf(modelData) >= 0
+                readonly property bool funzione: ["AC", "⌫", "%"].indexOf(modelData) >= 0
+                width: tastiera.largo; height: tastiera.alto; radius: 22
+                color: funzione ? (tel.chiaro ? "#C9CAD1" : "#4A4B53") : (operatore ? tel.accento : tel.pal.superficie2)
+                gradient: operatore ? sfumatura : null
+                border.width: operatore ? 1 : 0; border.color: "#30FFFFFF"
+                Text {
+                    visible: k.modelData !== "⌫"
+                    anchors.centerIn: parent
+                    text: k.modelData === "AC" && app.espressione && !app.fatta ? "C" : k.modelData
+                    color: k.operatore || (k.funzione && !tel.chiaro) ? "#FFFFFF" : tel.pal.testo
+                    font.family: Tema.font; font.pixelSize: k.funzione ? 25 : 31; font.weight: k.funzione ? Font.Medium : Font.Normal
+                }
+                Icona { visible: k.modelData === "⌫"; anchors.centerIn: parent; nome: "linea-tasto-cancella"; lato: 26; tema: tel.chiaro ? "chiaro" : "scuro" }
+                MouseArea {
+                    id: pk
+                    anchors.fill: parent
+                    onClicked: app.tasto(k.modelData)
+                    onPressAndHold: if (k.modelData === "⌫") app.tasto("AC")
+                }
+                scale: pk.pressed ? 0.95 : 1
+                opacity: pk.pressed ? 0.85 : 1
+                Behavior on scale { NumberAnimation { duration: 80 } }
+            }
+        }
+    }
+
+    // ── Cronologia ─────────────────────────────────────────────────────
+    Rectangle {
+        anchors.fill: parent; color: "#80000000"
+        opacity: app.mostraStoria ? 1 : 0; visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: tel.tNormale } }
+        MouseArea { anchors.fill: parent; onClicked: app.mostraStoria = false }
+    }
+    Rectangle {
+        width: parent.width; height: parent.height - 70
+        y: app.mostraStoria ? 70 : parent.height
+        visible: y < parent.height
+        Behavior on y { Movimento { apre: app.mostraStoria } }
+        radius: 26; color: tel.pal.superficie
+        MouseArea { anchors.fill: parent }
+        Rectangle { anchors.horizontalCenter: parent.horizontalCenter; y: 10; width: 40; height: 5; radius: 3; color: tel.pal.bordo }
+        Text { x: 18; y: 32; text: I18n.t("Cronologia"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(22); font.weight: Font.Bold }
+        Text {
+            anchors.right: parent.right; anchors.rightMargin: 18; y: 37
+            visible: app.storia.length > 0
+            text: I18n.t("Cancella"); color: tel.rosso; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.Medium
+            MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: { ponte.chiama0("calcCancellaStoria"); app.storia = [] } }
+        }
+        Text {
+            visible: app.storia.length === 0
+            x: 18; y: 90; width: parent.width - 36; wrapMode: Text.Wrap
+            text: I18n.t("Qui trovi i calcoli fatti con «=».")
+            color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(14)
+        }
+        Flickable {
+            x: 18; y: 74; width: parent.width - 36; height: parent.height - 74 - 30
+            contentHeight: colStoria.height + 20; clip: true
+            Column {
+                id: colStoria
+                width: parent.width; spacing: 8
+                Repeater {
+                    model: app.storia
+                    Column {
+                        id: gruppoS
+                        required property var modelData
+                        width: colStoria.width; spacing: 8
+                        Text { topPadding: 12; text: gruppoS.modelData.giorno.toUpperCase(); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Bold; font.letterSpacing: 0.4 }
+                        Rectangle {
+                            width: parent.width; height: colC.height; radius: 14; color: tel.pal.superficie2
+                            Column {
+                                id: colC
+                                width: parent.width
+                                Repeater {
+                                    model: gruppoS.modelData.calcoli
+                                    Item {
+                                        id: calcolo
+                                        required property var modelData
+                                        required property int index
+                                        width: colC.width; height: 46
+                                        Rectangle { visible: calcolo.index > 0; x: 14; width: parent.width - 14; height: 1; color: tel.pal.bordo }
+                                        Text { x: 14; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 140; elide: Text.ElideRight; text: app.bello(calcolo.modelData.espressione); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(15) }
+                                        Text { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; text: calcolo.modelData.risultato; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(18); font.weight: Font.DemiBold }
+                                        MouseArea { anchors.fill: parent; onClicked: { app.fatta = ""; app.espressione += calcolo.modelData.risultato.replace(/\./g, ""); app.aggiorna(); app.mostraStoria = false } }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                Text { visible: app.storia.length > 0; width: parent.width; wrapMode: Text.Wrap; topPadding: 8; text: I18n.t("Tocca un risultato per riusarlo. Tieni premuto il risultato in alto per copiarlo."); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
+            }
+        }
     }
 }

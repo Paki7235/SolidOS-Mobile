@@ -12,6 +12,7 @@ import json
 import math
 import mimetypes
 import operator
+import re
 import os
 import shutil
 import subprocess
@@ -40,8 +41,21 @@ def _uri(p: Path) -> str:
 # ── Calcolatrice ─────────────────────────────────────────────────────────────
 _OPERATORI = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul, ast.Div: operator.truediv,
               ast.Pow: operator.pow, ast.Mod: operator.mod, ast.USub: operator.neg, ast.UAdd: operator.pos}
-_FUNZIONI = {"sqrt": math.sqrt, "sin": lambda x: math.sin(math.radians(x)), "cos": lambda x: math.cos(math.radians(x)),
-             "tan": lambda x: math.tan(math.radians(x)), "log": math.log10, "ln": math.log, "abs": abs}
+_ANGOLO = {"radianti": False}   # Scientifica: «Rad» acceso = angoli in radianti
+
+
+def _trig(f):
+    return lambda x: f(x if _ANGOLO["radianti"] else math.radians(x))
+
+
+def _fattoriale(x):
+    if x < 0 or x > 170 or x != int(x):
+        raise ValueError
+    return math.factorial(int(x))
+
+
+_FUNZIONI = {"sqrt": math.sqrt, "sin": _trig(math.sin), "cos": _trig(math.cos), "tan": _trig(math.tan),
+             "log": math.log10, "ln": math.log, "abs": abs, "fact": _fattoriale}
 _COSTANTI = {"pi": math.pi, "e": math.e}
 
 
@@ -65,28 +79,161 @@ def _valuta(nodo):
 
 
 def formatta_numero(valore) -> str:
-    if isinstance(valore, float) and valore.is_integer() and abs(valore) < 1e15:
-        valore = int(valore)
+    if isinstance(valore, float) and abs(valore - round(valore)) < 1e-12 and abs(valore) < 1e15:
+        valore = int(round(valore))
     if isinstance(valore, int):
         return f"{valore:,}".replace(",", ".")
     testo = f"{valore:.10g}"
     if "e" in testo:
         return testo.replace(".", ",")
     intero, _, decimali = testo.partition(".")
-    return f"{int(intero):,}".replace(",", ".") + ("," + decimali if decimali else "")
+    segno = "-" if intero.startswith("-") else ""
+    return segno + f"{abs(int(intero)):,}".replace(",", ".") + ("," + decimali if decimali else "")
 
 
-def calcola(espressione: str) -> dict:
+def _fattoriali(testo: str) -> str:
+    """«5!» e «(2+3)!» → fact(5), fact((2+3))."""
+    while "!" in testo:
+        i = testo.index("!")
+        j = i - 1
+        if j >= 0 and testo[j] == ")":
+            livello = 0
+            while j >= 0:
+                livello += testo[j] == ")"
+                livello -= testo[j] == "("
+                if livello == 0:
+                    break
+                j -= 1
+        else:
+            while j >= 0 and (testo[j].isdigit() or testo[j] == "."):
+                j -= 1
+            j += 1
+        if j < 0 or j >= i:
+            raise ValueError
+        testo = testo[:j] + "fact(" + testo[j:i] + ")" + testo[i + 1:]
+    return testo
+
+
+def calcola(espressione: str, radianti: bool = False) -> dict:
     testo = (espressione.replace("×", "*").replace("÷", "/").replace("−", "-").replace("^", "**")
              .replace("π", "pi").replace("√", "sqrt").replace(".", "").replace(",", "."))
+    # «89,90 − 15%» toglie il 15% di 89,90 (come le calcolatrici); «1250 × 12%» moltiplica per 0,12
+    m = re.fullmatch(r"(.+?)([+-])(\d+(?:\.\d+)?)%", testo)
+    if m:
+        testo = f"({m.group(1)}){m.group(2)}({m.group(1)})*{m.group(3)}/100"
+    testo = re.sub(r"(\d+(?:\.\d+)?)%", r"(\1/100)", testo)
     if testo.endswith("%"):
         testo = f"({testo[:-1]})/100"
+    _ANGOLO["radianti"] = bool(radianti)
     try:
+        testo = _fattoriali(testo)
         return {"ok": True, "valore": formatta_numero(_valuta(ast.parse(testo, mode="eval")))}
     except ZeroDivisionError:
         return {"ok": False, "valore": T("Impossibile dividere per zero")}
     except (ValueError, SyntaxError, TypeError, OverflowError):
         return {"ok": False, "valore": T("Errore")}
+
+
+def _file_storia() -> Path:
+    return config_utente("calcolatrice.json")
+
+
+def storia_calcoli() -> list:
+    """Gli ultimi calcoli, raggruppati per giorno: [{giorno, calcoli: [{espressione, risultato}]}]."""
+    gruppi, oggi = [], time.strftime("%Y-%m-%d")
+    ieri = time.strftime("%Y-%m-%d", time.localtime(time.time() - 86400))
+    for c in leggi_json(_file_storia(), []):
+        g = time.strftime("%Y-%m-%d", time.localtime(c.get("quando", 0)))
+        nome = T("Oggi") if g == oggi else (T("Ieri") if g == ieri else time.strftime("%d/%m/%Y", time.localtime(c.get("quando", 0))))
+        if not gruppi or gruppi[-1]["giorno"] != nome:
+            gruppi.append({"giorno": nome, "calcoli": []})
+        gruppi[-1]["calcoli"].append({"espressione": c.get("espressione", ""), "risultato": c.get("risultato", "")})
+    return gruppi
+
+
+def aggiungi_calcolo(espressione: str, risultato: str) -> None:
+    elenco = leggi_json(_file_storia(), [])
+    elenco.insert(0, {"espressione": espressione, "risultato": risultato, "quando": time.time()})
+    scrivi_json(_file_storia(), elenco[:200])
+
+
+def cancella_storia() -> None:
+    scrivi_json(_file_storia(), [])
+
+
+# ── Converti: valute (cambi della BCE) e misure ─────────────────────────────
+UNITA = {
+    "lunghezza": {"mm": 0.001, "cm": 0.01, "m": 1, "km": 1000, "in": 0.0254, "ft": 0.3048, "yd": 0.9144, "mi": 1609.344},
+    "peso": {"mg": 0.000001, "g": 0.001, "kg": 1, "t": 1000, "oz": 0.028349523125, "lb": 0.45359237},
+    "volume": {"ml": 0.001, "cl": 0.01, "l": 1, "m³": 1000, "gal": 3.785411784, "tazza": 0.2365882365},
+    "velocita": {"km/h": 1, "m/s": 3.6, "mph": 1.609344, "nodi": 1.852},
+    "area": {"m²": 1, "km²": 1e6, "ha": 10000, "ft²": 0.09290304, "acri": 4046.8564224},
+    "temperatura": {"°C": None, "°F": None, "K": None},
+}
+NOMI_VALUTE = {"EUR": "Euro", "USD": "Dollaro USA", "GBP": "Sterlina", "CHF": "Franco svizzero", "JPY": "Yen",
+               "CNY": "Yuan", "CAD": "Dollaro canadese", "AUD": "Dollaro australiano", "SEK": "Corona svedese",
+               "NOK": "Corona norvegese", "DKK": "Corona danese", "PLN": "Zloty", "CZK": "Corona ceca",
+               "HUF": "Fiorino", "RON": "Leu", "TRY": "Lira turca", "BRL": "Real", "INR": "Rupia indiana",
+               "MXN": "Peso messicano", "KRW": "Won"}
+
+
+def _cambi() -> dict:
+    """Cambi dell'euro della Banca Centrale Europea (aggiornati ogni giorno lavorativo).
+    Si tengono in memoria: senza rete si usano gli ultimi scaricati."""
+    cache = Path.home() / ".cache" / "solidos" / "cambi.json"
+    dati = leggi_json(cache, {})
+    if DEMO and not dati:
+        dati = {"data": time.strftime("%Y-%m-%d"), "scaricati": time.time(),
+                "cambi": {"USD": 1.083, "GBP": 0.856, "CHF": 0.951, "JPY": 162.4, "CNY": 7.82}}
+    if time.time() - dati.get("scaricati", 0) > 6 * 3600 and not DEMO:
+        try:
+            with urllib.request.urlopen("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml", timeout=8) as r:
+                xml = r.read().decode()
+            cambi = {m.group(1): float(m.group(2)) for m in re.finditer(r"currency='(\w+)' rate='([\d.]+)'", xml)}
+            giorno = re.search(r"time='([\d-]+)'", xml)
+            if cambi:
+                dati = {"data": giorno.group(1) if giorno else "", "scaricati": time.time(), "cambi": cambi}
+                cache.parent.mkdir(parents=True, exist_ok=True)
+                scrivi_json(cache, dati)
+        except (OSError, ValueError):
+            pass
+    return dati
+
+
+def unita_conversione(categoria: str) -> list:
+    if categoria == "valuta":
+        c = _cambi().get("cambi", {})
+        codici = ["EUR"] + [k for k in NOMI_VALUTE if k in c] + sorted(k for k in c if k not in NOMI_VALUTE)
+        return [{"id": k, "nome": NOMI_VALUTE.get(k, k)} for k in codici]
+    return [{"id": k, "nome": k} for k in UNITA.get(categoria, {})]
+
+
+def converti(categoria: str, da: str, a: str, espressione: str) -> dict:
+    v = calcola(espressione or "0")
+    if not v["ok"]:
+        return {"ok": False, "valore": "", "nota": ""}
+    numero = float(v["valore"].replace(".", "").replace(",", "."))
+    nota = ""
+    if categoria == "valuta":
+        dati = _cambi()
+        c = {"EUR": 1.0, **dati.get("cambi", {})}
+        if da not in c or a not in c:
+            return {"ok": False, "valore": "", "nota": T("Cambi non disponibili: collegati a Internet una volta")}
+        risultato = numero / c[da] * c[a]
+        if dati.get("data"):
+            g = dati["data"].split("-")
+            nota = T("Cambio della Banca Centrale Europea del {d}", d=f"{g[2]}/{g[1]}/{g[0]}" if len(g) == 3 else dati["data"])
+    elif categoria == "temperatura":
+        c = {"°C": numero, "°F": (numero - 32) * 5 / 9, "K": numero - 273.15}[da]
+        risultato = {"°C": c, "°F": c * 9 / 5 + 32, "K": c + 273.15}[a]
+    else:
+        u = UNITA.get(categoria, {})
+        if da not in u or a not in u:
+            return {"ok": False, "valore": "", "nota": ""}
+        risultato = numero * u[da] / u[a]
+    if categoria == "valuta":
+        risultato = round(risultato, 2)
+    return {"ok": True, "valore": formatta_numero(risultato), "nota": nota}
 
 
 # ── Note (stessa cartella delle Note del PC; qui testo semplice) ────────────
@@ -220,30 +367,24 @@ def luoghi() -> list:
     return risultato
 
 
-def elenco_file(percorso: str, nascosti: bool = False) -> dict:
+def elenco_file(percorso: str, nascosti: bool = False, ordine: str = "nome") -> dict:
     p = Path(percorso or Path.home()).expanduser()
     if not p.is_dir():
         p = Path.home()
-    voci = []
     try:
         figli = list(p.iterdir())
     except OSError:
         figli = []
-    for f in figli:
-        if f.name.startswith(".") and not nascosti:
-            continue
-        try:
-            st = f.stat()
-        except OSError:
-            continue
-        tipo = _tipo(f)
-        voci.append({"nome": f.name, "percorso": str(f), "tipo": tipo, "icona": ICONE_TIPO[tipo],
-                     "uri": _uri(f) if tipo == "immagine" else "",
-                     "info": (T("{n} elementi", n=sum(1 for _ in f.iterdir())) if tipo == "cartella" and os.access(f, os.R_OK)
-                              else _dimensione(st.st_size)) + " · " + time.strftime("%d/%m/%y", time.localtime(st.st_mtime))})
-    voci.sort(key=lambda v: (v["tipo"] != "cartella", v["nome"].lower()))
+    tag = _tag_file()
+    voci = [v for v in (_voce(f, tag) for f in figli if nascosti or not f.name.startswith(".")) if v]
+    if ordine == "data":
+        voci.sort(key=lambda v: -v["mtime"])
+    elif ordine == "dimensione":
+        voci.sort(key=lambda v: -v["byte"])
+    else:
+        voci.sort(key=lambda v: (v["tipo"] != "cartella", v["nome"].lower()))
     casa = Path.home()
-    titolo = T("Telefono") if p == casa else p.name
+    titolo = T("Su questo telefono") if p == casa else (T("Cestino") if p == _cestino() / "files" else p.name)
     return {"percorso": str(p), "titolo": titolo, "su": str(p.parent) if p != Path("/") and p != casa else "", "voci": voci}
 
 
@@ -310,6 +451,276 @@ def leggi_testo(percorso: str) -> str:
             return f.read(200_000)
     except OSError:
         return ""
+
+
+# ── Meteo (Open-Meteo: gratuito, senza account né chiave) ──────────────────
+_CODICI_METEO = {0: ("Sereno", "sole"), 1: ("Poco nuvoloso", "sole"), 2: ("Parzialmente nuvoloso", "nuvola"), 3: ("Nuvoloso", "nuvola"),
+                 45: ("Nebbia", "nuvola"), 48: ("Nebbia", "nuvola"), 51: ("Pioviggine", "pioggia"), 53: ("Pioviggine", "pioggia"),
+                 55: ("Pioviggine", "pioggia"), 61: ("Pioggia", "pioggia"), 63: ("Pioggia", "pioggia"), 65: ("Pioggia forte", "pioggia"),
+                 71: ("Neve", "neve"), 73: ("Neve", "neve"), 75: ("Neve forte", "neve"), 80: ("Rovesci", "pioggia"),
+                 81: ("Rovesci", "pioggia"), 82: ("Rovesci forti", "pioggia"), 95: ("Temporale", "temporale"),
+                 96: ("Temporale", "temporale"), 99: ("Temporale", "temporale")}
+
+
+def _json_url(url: str, timeout: float = 8):
+    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "SolidOS-Meteo"}), timeout=timeout) as r:
+        return json.loads(r.read().decode())
+
+
+def meteo(citta: str = "") -> dict:
+    """Tempo di adesso e delle prossime ore. Città scelta in Impostazioni o posizione del telefono."""
+    if DEMO:
+        return {"ok": True, "citta": citta or "Napoli", "gradi": 18, "max": 21, "min": 12, "descrizione": "Soleggiato", "icona": "sole",
+                "ore": [{"ora": h, "gradi": g, "icona": i} for h, g, i in (("Ora", 18, "sole"), ("15", 19, "sole"), ("16", 19, "nuvola"), ("17", 17, "nuvola"), ("18", 15, "nuvola"))]}
+    cache = Path.home() / ".cache" / "solidos" / "meteo.json"
+    dati = leggi_json(cache, {})
+    if dati.get("citta_chiesta") == citta and time.time() - dati.get("quando", 0) < 1800:
+        return dati["meteo"]
+    try:
+        if citta:
+            g = _json_url("https://geocoding-api.open-meteo.com/v1/search?count=1&language=it&name=" + urllib.parse.quote(citta))
+            luogo = (g.get("results") or [None])[0]
+            if not luogo:
+                return {"ok": False, "messaggio": T("Città non trovata")}
+            lat, lon, nome = luogo["latitude"], luogo["longitude"], luogo["name"]
+        else:
+            try:
+                from ..solidid import posizione
+
+                p = posizione.trova() or {}
+            except Exception:  # noqa: BLE001
+                p = {}
+            if not p.get("lat"):
+                return {"ok": False, "messaggio": T("Tocca per scegliere la città")}
+            lat, lon, nome = p["lat"], p["lon"], p.get("luogo") or T("Qui")
+        m = _json_url(f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,weather_code"
+                      "&hourly=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&forecast_days=2&timezone=auto")
+    except (OSError, ValueError, KeyError):
+        return dati.get("meteo") or {"ok": False, "messaggio": T("Meteo non disponibile senza rete")}
+    codice = m["current"]["weather_code"]
+    descrizione, icona = _CODICI_METEO.get(codice, ("", "nuvola"))
+    adesso = m["current"]["time"][:13]
+    ore = []
+    tempi = m["hourly"]["time"]
+    inizio = next((i for i, t in enumerate(tempi) if t[:13] >= adesso), 0)
+    for i in range(inizio, min(inizio + 5, len(tempi))):
+        ore.append({"ora": T("Ora") if i == inizio else tempi[i][11:13], "gradi": round(m["hourly"]["temperature_2m"][i]),
+                    "icona": _CODICI_METEO.get(m["hourly"]["weather_code"][i], ("", "nuvola"))[1]})
+    risultato = {"ok": True, "citta": nome, "gradi": round(m["current"]["temperature_2m"]), "descrizione": T(descrizione), "icona": icona,
+                 "max": round(m["daily"]["temperature_2m_max"][0]), "min": round(m["daily"]["temperature_2m_min"][0]), "ore": ore}
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    scrivi_json(cache, {"citta_chiesta": citta, "quando": time.time(), "meteo": risultato})
+    return risultato
+
+
+# ── File (come l'app File dell'iPhone): Sfoglia, Recenti, Condivisi, tag ─────
+TAG = [{"id": "rosso", "nome": "Importante", "colore": "#E5484D"}, {"id": "blu", "nome": "Lavoro", "colore": "#4C7DFF"},
+       {"id": "verde", "nome": "Famiglia", "colore": "#30A46C"}, {"id": "giallo", "nome": "Da fare", "colore": "#F59E0B"}]
+_CARTELLE_UTENTE = (("DOCUMENTS", "Documenti"), ("DOWNLOAD", "Scaricati"), ("PICTURES", "Immagini"), ("MUSIC", "Musica"),
+                    ("VIDEOS", "Video"), ("DESKTOP", "Scrivania"))
+_MESI = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"]
+
+
+def _quando(t: float) -> str:
+    lt, oggi = time.localtime(t), time.localtime()
+    if lt[:3] == oggi[:3]:
+        return time.strftime("%H:%M", lt)
+    return f"{lt.tm_mday} {_MESI[lt.tm_mon - 1]}" + (f" {lt.tm_year}" if lt.tm_year != oggi.tm_year else "")
+
+
+def _tag_file() -> dict:
+    return leggi_json(config_utente("file-tag.json"), {})
+
+
+def _voce(f: Path, tag: dict | None = None) -> dict | None:
+    try:
+        st = f.stat()
+    except OSError:
+        return None
+    tipo = _tipo(f)
+    tag = _tag_file() if tag is None else tag
+    if tipo == "cartella":
+        try:
+            info = T("{n} elementi", n=sum(1 for x in f.iterdir() if not x.name.startswith(".")))
+        except OSError:
+            info = ""
+    else:
+        info = _dimensione(st.st_size)
+    return {"nome": f.name, "percorso": str(f), "tipo": tipo, "icona": ICONE_TIPO[tipo], "est": f.suffix.lower().lstrip("."),
+            "uri": _uri(f) if tipo == "immagine" else "", "quando": _quando(st.st_mtime), "mtime": st.st_mtime,
+            "byte": st.st_size if tipo != "cartella" else 0, "info": info, "tag": tag.get(str(f), [])}
+
+
+def _demo_file_ricchi() -> None:
+    casa = Path.home()
+    _demo_file()
+    doc = casa / "Documenti"
+    for nome, giorni in (("Contratto affitto.pdf", 7), ("Preventivo.docx", 9), ("Bilancio 2026.xlsx", 10),
+                         ("Presentazione.pptx", 18)):
+        f = doc / nome
+        if not f.exists():
+            f.write_bytes(b"0" * (2000 + len(nome) * 4000))
+            os.utime(f, (time.time() - giorni * 86400, time.time() - giorni * 86400))
+    for cartella in ("Ricevute", "Musica"):
+        (doc / cartella).mkdir(exist_ok=True)
+    (doc / "Ricevute" / "scontrino.txt").write_text("Spesa 23,40 €\n")
+    scrivi_json(config_utente("file-tag.json"), {str(doc / "Contratto affitto.pdf"): ["rosso"], str(doc / "Preventivo.docx"): ["blu"]})
+
+
+def file_sfoglia() -> dict:
+    """Posizioni (telefono, microSD, server di casa, Nextcloud, PC), preferiti e tag."""
+    if DEMO:
+        _demo_file_ricchi()
+    casa = Path.home()
+    try:
+        libero = shutil.disk_usage(casa).free
+        spazio = T("{n} liberi", n=_dimensione(libero).replace(",0 ", " "))
+    except OSError:
+        spazio = ""
+    posizioni = [{"id": "telefono", "nome": T("Su questo telefono"), "info": spazio, "colore": "#4C7DFF", "icona": "linea-smartphone",
+                  "percorso": str(casa)}]
+    for m in [m for m in Path("/media").glob("*/*") if m.is_dir()] + [m for m in Path("/run/media").glob("*/*") if m.is_dir()]:
+        posizioni.append({"id": "sd", "nome": m.name, "info": T("Scheda di memoria"), "colore": "#71717A", "icona": "linea-chiavetta", "percorso": str(m)})
+    from . import fotoaccount
+
+    for a in fotoaccount.servizi():
+        if a["id"] in ("casa", "nextcloud") and a["stato"] == "collegato":
+            acc = a.get("account", {})
+            posizioni.append({"id": a["id"], "nome": a["nome"], "remoto": a["id"], "colore": a["colore"],
+                              "icona": "linea-casa" if a["id"] == "casa" else "linea-nuvola",
+                              "info": (acc.get("indirizzo") or "").replace("http://", "").replace("https://", "")})
+    if DEMO and not any(p["id"] == "casa" for p in posizioni):
+        posizioni.append({"id": "casa", "nome": T("Server di casa"), "remoto": "casa", "colore": "#30A46C", "icona": "linea-casa", "info": "NAS · 192.168.1.40"})
+    for d in vicina_stato().get("dispositivi", []):
+        if d.get("tipo") == "computer":
+            posizioni.append({"id": "pc", "nome": d.get("nome", T("PC")), "info": T("Vicina · acceso"), "colore": "#8B5CF6",
+                              "icona": "linea-portatile", "vicina": d.get("id", "")})
+    posizioni.append({"id": "cestino", "nome": T("Cestino"), "info": "", "colore": "#71717A", "icona": "user-trash-symbolic",
+                      "percorso": str(_cestino() / "files")})
+    preferiti = []
+    for tipo, nome, icona in (("DOCUMENTS", "Documenti", "linea-documento"), ("DOWNLOAD", "Scaricati", "linea-scarica"), ("PICTURES", "Immagini", "linea-foto"),
+                              ("MUSIC", "Musica", "linea-musica"), ("VIDEOS", "Video", "linea-video")):
+        p = cartella_utente(tipo, nome)
+        if p.is_dir():
+            preferiti.append({"nome": T(nome), "percorso": str(p), "icona": icona})
+    conti = {}
+    for etichette in _tag_file().values():
+        for t in etichette:
+            conti[t] = conti.get(t, 0) + 1
+    return {"posizioni": posizioni, "preferiti": preferiti, "tag": [dict(t, nome=T(t["nome"]), n=conti.get(t["id"], 0)) for t in TAG]}
+
+
+def _tutti_i_file(limite: int = 4000):
+    """I file delle cartelle dell'utente (fino a 4 livelli), senza nascosti."""
+    visti = 0
+    for tipo, nome in _CARTELLE_UTENTE:
+        radice = cartella_utente(tipo, nome)
+        if not radice.is_dir():
+            continue
+        for cartella, sotto, file in os.walk(radice):
+            sotto[:] = [d for d in sotto if not d.startswith(".")]
+            if len(Path(cartella).relative_to(radice).parts) > 4:
+                sotto[:] = []
+            for f in file:
+                if not f.startswith("."):
+                    yield Path(cartella) / f
+                    visti += 1
+                    if visti >= limite:
+                        return
+
+
+def file_recenti(filtro: str = "") -> list:
+    """I file modificati di recente (Tutti, Documenti, Immagini, Scaricati)."""
+    if DEMO:
+        _demo_file_ricchi()
+    tag = _tag_file()
+    scaricati = cartella_utente("DOWNLOAD", "Scaricati")
+    voci = []
+    for f in _tutti_i_file():
+        t = _tipo(f)
+        if filtro == "immagini" and t != "immagine":
+            continue
+        if filtro == "documenti" and t not in ("pdf", "testo", "file"):
+            continue
+        if filtro == "scaricati" and scaricati not in f.parents:
+            continue
+        v = _voce(f, tag)
+        if v:
+            voci.append(v)
+    voci.sort(key=lambda v: -v["mtime"])
+    return voci[:60]
+
+
+def file_condivisi() -> list:
+    """I file ricevuti con Vicina (dal PC o da altri telefoni)."""
+    cartella = Path(vicina_stato().get("cartella") or cartella_utente("DOWNLOAD", "Scaricati"))
+    if not cartella.is_dir():
+        return []
+    tag = _tag_file()
+    voci = [v for v in (_voce(f, tag) for f in cartella.iterdir() if not f.name.startswith(".")) if v]
+    voci.sort(key=lambda v: -v["mtime"])
+    return voci
+
+
+def file_cerca(testo: str) -> list:
+    testo = testo.strip().lower()
+    if len(testo) < 2:
+        return []
+    tag = _tag_file()
+    return [v for v in (_voce(f, tag) for f in _tutti_i_file() if testo in f.name.lower()) if v][:80]
+
+
+def file_con_tag(ident: str) -> list:
+    tag = _tag_file()
+    return [v for v in (_voce(Path(p), tag) for p, t in tag.items() if ident in t and Path(p).exists()) if v]
+
+
+def file_imposta_tag(percorso: str, ident: str, si: bool) -> None:
+    tag = _tag_file()
+    etichette = [t for t in tag.get(percorso, []) if t != ident] + ([ident] if si else [])
+    if etichette:
+        tag[percorso] = etichette
+    else:
+        tag.pop(percorso, None)
+    scrivi_json(config_utente("file-tag.json"), tag)
+
+
+def file_duplica(percorso: str) -> dict:
+    p = Path(percorso)
+    n, nuovo = 1, p
+    while nuovo.exists():
+        n += 1
+        nuovo = p.with_name(f"{p.stem} ({n}){p.suffix}")
+    try:
+        shutil.copytree(p, nuovo) if p.is_dir() else shutil.copy2(p, nuovo)
+        return {"ok": True, "messaggio": T("Duplicato")}
+    except OSError as e:
+        return {"ok": False, "messaggio": str(e)}
+
+
+def file_comprimi(percorso: str) -> dict:
+    p = Path(percorso)
+    dest = p.with_suffix(".zip") if p.is_file() else p.parent / (p.name + ".zip")
+    n = 1
+    while dest.exists():
+        n += 1
+        dest = dest.with_name(f"{p.stem} ({n}).zip")
+    try:
+        shutil.make_archive(str(dest.with_suffix("")), "zip", root_dir=p.parent, base_dir=p.name)
+        return {"ok": True, "messaggio": T("Creato {n}", n=dest.name)}
+    except OSError as e:
+        return {"ok": False, "messaggio": str(e)}
+
+
+def file_sposta(percorso: str, cartella: str) -> dict:
+    p, dest = Path(percorso), Path(cartella) / Path(percorso).name
+    if dest.exists():
+        return {"ok": False, "messaggio": T("Lì c'è già un file con questo nome")}
+    try:
+        shutil.move(str(p), str(dest))
+        return {"ok": True, "messaggio": T("Spostato in {c}", c=Path(cartella).name)}
+    except OSError as e:
+        return {"ok": False, "messaggio": str(e)}
 
 
 # ── Foto ─────────────────────────────────────────────────────────────────────

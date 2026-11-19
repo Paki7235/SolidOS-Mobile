@@ -1,5 +1,7 @@
-// Home: due widget di vetro (Oggi e Batterie con gli anelli), la griglia delle app (senza
-// ripetere quelle del Dock), la ricerca e il Dock di vetro. Scorrendo a sinistra si arriva
+// Home: i widget scelti (Calendario, Batterie, Meteo, Musica, Foto, Note, Orologio in tre
+// misure), la griglia delle app (senza ripetere quelle del Dock), la ricerca e il Dock di vetro.
+// Tieni premuto per modificarla: le icone tremano, si spostano trascinandole, «−» le toglie,
+// «+» aggiunge un widget. Scorrendo a sinistra si arriva
 // alla Libreria app. Le righe di app sono quante ne entrano: mai sovrapposizioni.
 import QtQuick
 import QtQuick.Controls
@@ -24,6 +26,22 @@ Item {
     readonly property int batteria: tel.stato && tel.stato.batteria ? tel.stato.batteria.livello : 100
     readonly property int notifiche: tel.elencoNotifiche ? tel.elencoNotifiche.length : 0
     // Un'app ha novità se c'è una sua notifica (puntino rosso sull'icona)
+    // Sposta un'app della Home (ordine salvato) o la toglie (resta nella Libreria)
+    function sposta(da, a) {
+        var ids = appGriglia.map(function (x) { return x.id })
+        var x = ids.splice(da, 1)[0]
+        ids.splice(a, 0, x)
+        tel.imposta("ordine_home", ids)
+        app = ponte.chiama0("home")
+    }
+    function togli(i) {
+        var a = appGriglia[i]
+        if (!a) return
+        tel.imposta("nascoste_home", (tel.imp.nascoste_home || []).concat([a.id]))
+        app = ponte.chiama0("home")
+        tel.avviso(a.nome + ": " + I18n.t("tolta dalla Home, la trovi nella Libreria"))
+    }
+    Connections { target: tel; function onAppInternaChanged() { if (tel.appInterna) tel.modificaHome = false } }
     function haNovita(a) { return (tel.elencoNotifiche || []).some(function (n) { return n.icona === a.icona }) }
 
     SwipeView {
@@ -35,67 +53,39 @@ Item {
         Item {
             id: paginaHome
 
-            // Widget
-            Row {
+            // Widget (Personalizzabili: tieni premuto per modificare la Home, «+» per aggiungerne)
+            Flow {
                 id: cima
-                x: tel.margine; y: 16
+                x: tel.margine; y: tel.modificaHome ? 60 : 16
+                Behavior on y { NumberAnimation { duration: tel.tNormale; easing.type: Easing.OutQuint } }
+                width: home.width - 2 * tel.margine
                 spacing: 14
                 readonly property real lato: (home.width - 2 * tel.margine - 14) / 2
                 readonly property real alto: Math.min(160, Math.max(140, home.height * 0.185))
-
-                // Oggi: giorno della settimana, numero del giorno e notifiche
-                Vetro {
-                    width: cima.lato; height: cima.alto; radius: 24
-                    Column {
-                        x: 16; y: 14; width: parent.width - 32
-                        spacing: 0
-                        Text { text: tel.adesso.toLocaleDateString(Qt.locale("it_IT"), "dddd").toUpperCase(); color: tel.accento; font.family: Tema.font; font.pixelSize: tel.px(12); font.weight: Font.Bold; font.letterSpacing: 0.4 }
-                        Text { text: Qt.formatDate(tel.adesso, "d"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 54; font.weight: Font.DemiBold; font.letterSpacing: -2 }
-                    }
-                    Column {
-                        x: 16; anchors.bottom: parent.bottom; anchors.bottomMargin: 14; width: parent.width - 32
-                        Text { width: parent.width; elide: Text.ElideRight; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold
-                               text: home.notifiche > 0 ? (tel.elencoNotifiche[0].titolo || "") : tel.adesso.toLocaleDateString(Qt.locale("it_IT"), "MMMM yyyy") }
-                        Text { width: parent.width; elide: Text.ElideRight; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12); font.weight: Font.Medium
-                               text: home.notifiche > 1 ? "+" + (home.notifiche - 1) + " " + I18n.t("notifiche") : (home.notifiche === 1 ? (tel.elencoNotifiche[0].app || "") : I18n.t("Nessuna notifica")) }
-                    }
-                    MouseArea { anchors.fill: parent; onClicked: tel.notifiche = true }
-                }
-                // Batterie: questo telefono e il PC collegato con il Solid ID, ad anello
-                Vetro {
-                    width: cima.lato; height: cima.alto; radius: 24
-                    Text { x: 16; y: 14; text: I18n.t("Batterie"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
-                    Row {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.bottom: parent.bottom; anchors.bottomMargin: 14
-                        spacing: 14
-                        Repeater {
-                            model: [{ i: "phone", l: home.batteria }].concat(home.dispositivi.slice(0, 1).map(function (d) { return { i: "computer-laptop", l: d.batteria } }))
-                            Column {
-                                required property var modelData
-                                spacing: 4
-                                Item {
-                                    width: 56; height: 56
-                                    Canvas {
-                                        anchors.fill: parent
-                                        property real l: parent.parent.modelData.l
-                                        property color c: l <= 20 ? tel.rosso : tel.pal.successo
-                                        property color f: tel.pal.traccia
-                                        onLChanged: requestPaint()
-                                        onFChanged: requestPaint()
-                                        onPaint: {
-                                            var g = getContext("2d"); g.reset(); g.lineWidth = 5; g.lineCap = "round"
-                                            g.strokeStyle = f; g.beginPath(); g.arc(28, 28, 24, 0, 2 * Math.PI); g.stroke()
-                                            g.strokeStyle = c; g.beginPath(); g.arc(28, 28, 24, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * l / 100); g.stroke()
-                                        }
-                                    }
-                                    Icona { anchors.centerIn: parent; nome: parent.parent.modelData.i; lato: 20 }
-                                }
-                                Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.modelData.l + "%"; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+                Repeater {
+                    model: tel.imp.widget || []
+                    Item {
+                        id: posto
+                        required property var modelData
+                        required property int index
+                        width: wid.width; height: wid.height
+                        Widget { id: wid; tipo: posto.modelData.tipo; misura: posto.modelData.misura; cella: cima.lato; alto: cima.alto }
+                        // In modifica: tocca per cambiare misura, «−» per toglierlo
+                        MouseArea {
+                            anchors.fill: parent; enabled: tel.modificaHome
+                            onClicked: {
+                                var l = tel.imp.widget.slice(), m = ["piccolo", "medio", "grande"]
+                                l[posto.index] = { tipo: posto.modelData.tipo, misura: m[(m.indexOf(posto.modelData.misura) + 1) % 3] }
+                                tel.imposta("widget", l)
                             }
                         }
+                        Rectangle {
+                            visible: tel.modificaHome
+                            x: -6; y: -6; width: 24; height: 24; radius: 12; color: "#E6505058"; border.width: 1; border.color: "#33FFFFFF"
+                            Text { anchors.centerIn: parent; anchors.verticalCenterOffset: -1; text: "−"; color: "#FFFFFF"; font.pixelSize: 18; font.bold: true }
+                            MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: { var l = tel.imp.widget.slice(); l.splice(posto.index, 1); tel.imposta("widget", l) } }
+                        }
                     }
-                    MouseArea { anchors.fill: parent; onClicked: { tel.apri({ "id": "interno:impostazioni" }); impostazioniApp.apri("batteria") } }
                 }
             }
 
@@ -107,16 +97,64 @@ Item {
                 columns: 4
                 readonly property real spazio: ricerca.y - 16 - (cima.y + cima.height + 26)
                 readonly property int righe: Math.max(1, Math.min(4, Math.floor(spazio / home.altezzaCella)))
+                readonly property int visibili: Math.min(home.appGriglia.length, righe * 4)
                 Repeater {
                     model: home.appGriglia.slice(0, griglia.righe * 4)
                     Item {
                         required property var modelData
                         required property int index
                         width: home.cella; height: home.altezzaCella
-                        IconaApp { anchors.horizontalCenter: parent.horizontalCenter; app: parent.modelData; nuovo: home.haNovita(parent.modelData); ritardo: 40 + parent.index * 30 }
+                        opacity: trascina.da === index ? 0.25 : 1
+                        IconaApp { anchors.horizontalCenter: parent.horizontalCenter; app: parent.modelData; nuovo: home.haNovita(parent.modelData); ritardo: 40 + parent.index * 30; inHome: true }
                     }
                 }
             }
+            // Home in modifica: trascina un'icona per spostarla, «−» per toglierla dalla Home
+            MouseArea {
+                id: trascina
+                anchors.fill: griglia; z: 5
+                enabled: tel.modificaHome
+                property int da: -1
+                property point dito
+                function indice(x, y) {
+                    var c = Math.max(0, Math.min(3, Math.floor(x / home.cella))), r = Math.max(0, Math.floor(y / home.altezzaCella))
+                    return Math.max(0, Math.min(griglia.visibili - 1, r * 4 + c))
+                }
+                onPressed: function (m) {
+                    var i = indice(m.x, m.y)
+                    var cx = (i % 4) * home.cella + (home.cella - tel.latoIcona) / 2, cy = Math.floor(i / 4) * home.altezzaCella
+                    if (m.x - cx < 24 && m.x - cx > -12 && m.y - cy < 24) { home.togli(i); da = -1; return }   // «−»
+                    da = i; dito = Qt.point(m.x, m.y)
+                }
+                onPositionChanged: function (m) { dito = Qt.point(m.x, m.y) }
+                onReleased: function (m) { if (da >= 0) { var a = indice(m.x, m.y); if (a !== da) home.sposta(da, a) } da = -1 }
+                onCanceled: da = -1
+                IconaApp {
+                    visible: trascina.da >= 0 && trascina.pressed
+                    x: trascina.dito.x - width / 2; y: trascina.dito.y - tel.latoIcona / 2
+                    scale: 1.12; opacity: 0.95; enabled: false
+                    app: trascina.da >= 0 ? home.appGriglia[trascina.da] : ({})
+                }
+            }
+
+            // In modifica: «+» (aggiungi un widget) e «Fine»
+            Item {
+                visible: tel.modificaHome
+                x: tel.margine; y: 10; width: home.width - 2 * tel.margine; height: 34
+                Vetro {
+                    width: 34; height: 34; radius: 17
+                    Icona { anchors.centerIn: parent; nome: "linea-piu"; lato: 20 }
+                    MouseArea { anchors.fill: parent; anchors.margins: -6; onClicked: galleriaWidget.apri() }
+                }
+                Vetro {
+                    anchors.right: parent.right
+                    width: fine.implicitWidth + 32; height: 34; radius: 17
+                    Text { id: fine; anchors.centerIn: parent; text: I18n.t("Fine"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.DemiBold }
+                    MouseArea { anchors.fill: parent; anchors.margins: -6; onClicked: tel.modificaHome = false }
+                }
+            }
+            // Tieni premuto lo sfondo per modificare la Home
+            MouseArea { anchors.fill: parent; z: -1; onPressAndHold: tel.modificaHome = true; onClicked: tel.modificaHome = false }
 
             // Ricerca (porta alla Libreria)
             Vetro {
@@ -126,10 +164,10 @@ Item {
                 width: cerca.implicitWidth + 48; height: 32; radius: 16
                 Row {
                     anchors.centerIn: parent; spacing: 7
-                    Icona { nome: "system-search-symbolic"; lato: 14; anchors.verticalCenter: parent.verticalCenter }
-                    Text { id: cerca; anchors.verticalCenter: parent.verticalCenter; text: I18n.t("Cerca"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+                    Icona { visible: !tel.modificaHome; nome: "system-search-symbolic"; lato: 14; anchors.verticalCenter: parent.verticalCenter }
+                    Text { id: cerca; anchors.verticalCenter: parent.verticalCenter; text: tel.modificaHome ? I18n.t("Tieni premuto e trascina per spostare") : I18n.t("Cerca"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
                 }
-                MouseArea { anchors.fill: parent; anchors.margins: -6; onClicked: pagine.currentIndex = 1 }
+                MouseArea { anchors.fill: parent; anchors.margins: -6; enabled: !tel.modificaHome; onClicked: pagine.currentIndex = 1 }
             }
 
             // Dock di vetro

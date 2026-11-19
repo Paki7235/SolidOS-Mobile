@@ -77,6 +77,12 @@ G = {
     "nuvola": '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
     "tasto-cancella": '<path d="M10 5a2 2 0 0 0-1.34.52l-6.33 5.74a1 1 0 0 0 0 1.48l6.33 5.74A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/><path d="m12 9 6 6M18 9l-6 6"/>',
     "tasto-maiuscole": '<path d="M9 18v-6H5l7-7 7 7h-4v6H9z"/>',
+    "cronologia": '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5M12 7v5l4 2"/>',
+    "elenco": '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+    "tag": '<path d="M12.59 2.59A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.41l8.7 8.7a2.43 2.43 0 0 0 3.42 0l6.58-6.58a2.43 2.43 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5"/>',
+    "pioggia": '<path d="M4 14.9A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.24"/><path d="M16 14v6M8 14v6M12 16v6"/>',
+    "neve": '<path d="M4 14.9A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.24"/><path d="M8 15h.01M8 19h.01M12 17h.01M12 21h.01M16 15h.01M16 19h.01"/>',
+    "temporale": '<path d="M6 16.33A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 1.5 8.74"/><path d="m13 12-3 5h4l-3 5"/>',
     "rotazione": '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
 }
 
@@ -109,7 +115,7 @@ NOMI = {
     "media-skip-forward-symbolic": "avanti", "media-skip-backward-symbolic": "indietro",
 }
 APP = ["telefono", "messaggi", "contatti", "fotocamera", "foto", "musica", "note", "file", "dove",
-       "calcolatrice", "store", "vicina", "impostazioni", "esporta", "nuvola", "tasto-cancella", "tasto-maiuscole"]
+       "calcolatrice", "store", "vicina", "impostazioni", "esporta", "nuvola", "tasto-cancella", "tasto-maiuscole", "cronologia", "smartphone", "chiavetta", "casa", "portatile", "documento", "scarica", "video", "griglia", "elenco", "tag", "piu", "cerca", "condividi", "matita", "cestino", "info", "orologio", "sole", "luna", "pioggia", "neve", "temporale", "play", "pausa", "avanti", "indietro", "calendario", "batteria"]
 
 
 def svg(disegno: str) -> str:

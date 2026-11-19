@@ -12,8 +12,17 @@ Item {
     property bool pieno: false        // (non più usato: resta per compatibilità)
     property bool suSfondo: true      // nome sopra lo sfondo (Home) o dentro un pannello
     property bool nuovo: false        // puntino rosso: c'è qualcosa di nuovo
+    property bool inHome: false       // sulla Home: tenuta premuta = modifica la Home
+    readonly property bool trema: inHome && tel.modificaHome
     readonly property string nomeIcona: app.icona || "application-x-executable"
     readonly property bool propria: nomeIcona.indexOf("nucleo-") === 0
+    property string stileForzato: ""      // anteprime in Personalizza
+    readonly property string stile: stileForzato || tel.imp.stile_icone || "colori"
+    readonly property bool altroStile: propria && stile !== "colori"
+    // Colore del simbolo nello stile «Scure» (lo stesso della tessera a colori)
+    readonly property var colori: ({ telefono: "#4ADE80", messaggi: "#60A5FA", contatti: "#FCD34D", fotocamera: "#D4D4D8", foto: "#FDBA74",
+                                     musica: "#FB7185", note: "#FDE68A", file: "#7DD3FC", dove: "#5EEAD4", store: "#C4B5FD",
+                                     vicina: "#67E8F9", calcolatrice: "#FB923C", impostazioni: "#D4D4D8" })
     transform: Translate { id: spinta }
     // Quando si entra nella Home le icone salgono di poco e appaiono una dopo l'altra, senza rimbalzi
     Connections { target: tel; function onEntrataChanged() { if (tel.movimento) entrata.restart() } }
@@ -35,11 +44,35 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         width: ic.lato; height: ic.lato
         // Pressione: 94%, risposta immediata
-        scale: area.pressed ? 0.94 : 1
+        scale: area.pressed && !ic.trema ? 0.94 : 1
+        // Home in modifica: le icone tremano un poco
+        SequentialAnimation on rotation {
+            running: ic.trema && tel.movimento; loops: Animation.Infinite
+            NumberAnimation { to: 2; duration: 120 + (ic.ritardo % 40) }
+            NumberAnimation { to: -2; duration: 240 }
+            NumberAnimation { to: 0; duration: 120 }
+            onRunningChanged: if (!running) tessera.rotation = 0
+        }
         opacity: area.pressed ? 0.85 : 1
         Behavior on scale { NumberAnimation { duration: tel.tVeloce; easing.type: Easing.OutQuad } }
         Behavior on opacity { NumberAnimation { duration: tel.tVeloce } }
-        Icona { anchors.fill: parent; nome: ic.nomeIcona; lato: ic.lato }
+        Icona { anchors.fill: parent; visible: !ic.altroStile; nome: ic.nomeIcona; lato: ic.lato }
+        // Stili «Scure» e «Tinta» (Personalizza › Icone): tessera scura o del colore del tema,
+        // con il simbolo a linea colorato o bianco
+        Rectangle {
+            visible: ic.altroStile
+            anchors.fill: parent; anchors.margins: ic.lato * 0.03; radius: width * 0.24
+            gradient: Gradient {
+                GradientStop { position: 0; color: ic.stile === "scure" ? "#2A2B31" : Qt.rgba(tel.accento.r, tel.accento.g, tel.accento.b, 0.62) }
+                GradientStop { position: 1; color: ic.stile === "scure" ? "#141418" : Qt.rgba(tel.accento.r * 0.55, tel.accento.g * 0.55, tel.accento.b * 0.55, 0.62) }
+            }
+            border.width: 1; border.color: "#24FFFFFF"
+            Icona {
+                anchors.centerIn: parent; lato: ic.lato * 0.5
+                nome: "linea-" + ic.nomeIcona.slice(7)
+                colore: ic.stile === "scure" ? (ic.colori[ic.nomeIcona.slice(7)] || "#FFFFFF") : "#FFFFFF"
+            }
+        }
         Rectangle {
             visible: ic.nuovo
             anchors.right: parent.right; anchors.top: parent.top; anchors.rightMargin: -4; anchors.topMargin: -4
@@ -59,5 +92,21 @@ Item {
         style: ic.suSfondo && !tel.chiaro ? Text.Raised : Text.Normal; styleColor: "#55000000"
         font.family: Tema.font; font.pixelSize: tel.px(12); font.weight: Font.Medium
     }
-    MouseArea { id: area; anchors.fill: parent; onClicked: tel.apri(ic.app) }
+    // «−»: toglie l'app dalla Home (resta nella Libreria)
+    Rectangle {
+        visible: ic.trema && ic.conNome
+        x: tessera.x - 6; y: -6; z: 3
+        width: 22; height: 22; radius: 11; color: "#E6505058"; border.width: 1; border.color: "#33FFFFFF"
+        Text { anchors.centerIn: parent; anchors.verticalCenterOffset: -1; text: "−"; color: "#FFFFFF"; font.pixelSize: 17; font.bold: true }
+    }
+    MouseArea {
+        id: area; anchors.fill: parent
+        onClicked: if (!ic.trema) tel.apri(ic.app)
+        onPressAndHold: {
+            if (ic.inHome) { tel.modificaHome = true; return }
+            // Dalla Libreria: un'app tolta dalla Home ci torna
+            var n = (tel.imp.nascoste_home || [])
+            if (n.indexOf(ic.app.id) >= 0) { tel.imposta("nascoste_home", n.filter(function (x) { return x !== ic.app.id })); tel.avviso(I18n.t("Aggiunta alla Home")); home.app = ponte.chiama0("home") }
+        }
+    }
 }

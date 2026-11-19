@@ -115,6 +115,36 @@ Rectangle {
                     Scelta { required property string modelData; required property int index; testo: modelData; attiva: (tel.imp.icone === undefined ? 1 : tel.imp.icone) === index; onScelta: tel.imposta("icone", index) }
                 }
             }
+            // Stile delle icone: Colori, Scure, Tinta (colore del tema)
+            Sezione {
+                titolo: I18n.t("Stile delle icone")
+                Repeater {
+                    model: [{ k: "colori", t: I18n.t("Colori") }, { k: "scure", t: I18n.t("Scure") }, { k: "tinta", t: I18n.t("Tinta") }]
+                    Rectangle {
+                        id: prova
+                        required property var modelData
+                        readonly property bool attiva: (tel.imp.stile_icone || "colori") === modelData.k
+                        width: (elenco.width - 32 - 16) / 3; height: 132; radius: 16; clip: true
+                        color: "transparent"
+                        border.width: attiva ? 3 : 0; border.color: tel.accento
+                        Image {
+                            anchors.fill: parent; anchors.margins: prova.attiva ? 3 : 0
+                            source: ponte.chiama("sfondo", [tel.nomeSfondo, tel.chiaro]); fillMode: Image.PreserveAspectCrop
+                            sourceSize.height: 260
+                        }
+                        Grid {
+                            anchors.centerIn: parent; anchors.verticalCenterOffset: -8
+                            columns: 2; spacing: 8
+                            Repeater {
+                                model: ["telefono", "messaggi", "foto", "note"]
+                                IconaApp { required property string modelData; app: ({ icona: "nucleo-" + modelData, nome: "" }); conNome: false; lato: 34; stileForzato: prova.modelData.k; width: 34; enabled: false }
+                            }
+                        }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; anchors.bottomMargin: 8; text: prova.modelData.t; color: "#FFFFFF"; style: Text.Raised; styleColor: "#66000000"; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+                        MouseArea { anchors.fill: parent; onClicked: tel.imposta("stile_icone", prova.modelData.k) }
+                    }
+                }
+            }
             Sezione {
                 titolo: I18n.t("Navigazione")
                 Scelta { testo: I18n.t("Gesti"); attiva: tel.imp.navigazione !== "tasti"; onScelta: tel.imposta("navigazione", "gesti") }

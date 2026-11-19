@@ -236,6 +236,61 @@ def scopri_server(secondi: float = 2.5) -> list:
     return list(trovati.values())
 
 
+def _account(servizio: str) -> dict | None:
+    return next((a for a in leggi_json(_file(), []) if a.get("servizio") == servizio), None)
+
+
+def sfoglia(servizio: str, cartella: str = "") -> dict:
+    """App File: il contenuto di una cartella del server di casa o di Nextcloud."""
+    if _demo() and not _account(servizio):
+        voci = [{"nome": n, "relativo": n, "tipo": "cartella", "info": i} for n, i in (("Foto", "1.204 elementi"), ("Documenti", "86 elementi"), ("Film", "12 elementi"))]
+        return {"ok": True, "titolo": SERVIZI.get(servizio, {}).get("nome", servizio), "cartella": "", "voci": voci}
+    a = _account(servizio)
+    if not a:
+        return {"ok": False, "messaggio": T("Account non collegato"), "voci": []}
+    base = _base(a)
+    corpo = (b'<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:getlastmodified/>'
+             b'<d:getcontentlength/><d:resourcetype/></d:prop></d:propfind>')
+    pezzo = cartella.strip("/")
+    url = base.rstrip("/") + ("/" + urllib.parse.quote(pezzo) if pezzo else "") + "/"
+    try:
+        with _richiesta_dav(url, a["utente"], a["password"], "PROPFIND", corpo, {"Depth": "1", "Content-Type": "application/xml"}) as r:
+            albero = ET.fromstring(r.read())
+    except (OSError, ET.ParseError):
+        return {"ok": False, "messaggio": T("Server non raggiungibile"), "voci": []}
+    ns = {"d": "DAV:"}
+    base_percorso = urllib.parse.unquote(urllib.parse.urlparse(base).path).rstrip("/")
+    voci = []
+    for risp in albero.findall("d:response", ns):
+        percorso = urllib.parse.unquote(urllib.parse.urlparse(risp.findtext("d:href", "", ns)).path)
+        relativo = percorso[len(base_percorso):].strip("/") if percorso.startswith(base_percorso) else percorso.strip("/")
+        if relativo == pezzo or not relativo:
+            continue
+        dir_ = risp.find(".//d:resourcetype/d:collection", ns) is not None
+        byte = int(risp.findtext(".//d:getcontentlength", "0", ns) or 0)
+        voci.append({"nome": relativo.split("/")[-1], "relativo": relativo, "tipo": "cartella" if dir_ else "file",
+                     "info": "" if dir_ else f"{byte / 1048576:.1f} MB".replace(".", ",")})
+    voci.sort(key=lambda v: (v["tipo"] != "cartella", v["nome"].lower()))
+    return {"ok": True, "titolo": pezzo.split("/")[-1] if pezzo else SERVIZI[servizio]["nome"], "cartella": pezzo, "voci": voci}
+
+
+def scarica(servizio: str, relativo: str) -> dict:
+    """Scarica un file del server nella cartella Scaricati e ne dà il percorso."""
+    a = _account(servizio)
+    if not a:
+        return {"ok": False, "messaggio": T("Account non collegato")}
+    from ..sistema import cartella_utente
+
+    dest = cartella_utente("DOWNLOAD", "Scaricati") / Path(relativo).name
+    try:
+        with _richiesta_dav(_base(a).rstrip("/") + "/" + urllib.parse.quote(relativo), a["utente"], a["password"], timeout=300) as r:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(r.read())
+    except OSError:
+        return {"ok": False, "messaggio": T("Download non riuscito")}
+    return {"ok": True, "percorso": str(dest), "messaggio": T("Salvato in Scaricati")}
+
+
 def scollega(servizio: str) -> dict:
     with _blocco:
         scrivi_json(_file(), [a for a in leggi_json(_file(), []) if a.get("servizio") != servizio])

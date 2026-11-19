@@ -19,6 +19,13 @@ from ..sistema import config_utente, leggi_json, scrivi_json
 
 PREDEFINITE = {
     "tastiera": True,
+    # Widget della Home (in ordine): tipo oggi|batterie|meteo|calendario|musica|foto|note|orologio, misura piccolo|medio|grande
+    "widget": [{"tipo": "oggi", "misura": "piccolo"}, {"tipo": "batterie", "misura": "piccolo"}],
+    "ordine_home": [],          # ordine delle app della Home scelto spostandole (vuoto = quello di SolidOS)
+    "nascoste_home": [],        # app tolte dalla Home (restano nella Libreria)
+    "citta_meteo": "",          # vuota = la posizione del telefono
+    "widget_blocco": [],        # widget sotto l'orologio della schermata di blocco (meteo, batterie, oggi, musica)
+    "stile_icone": "colori",    # colori | scure | tinta
     "app_automatiche": True,    # Store: scarica da sola le app prese con lo stesso Solid ID sul PC           # tastiera sullo schermo quando si tocca un campo di testo
     "riduci_movimento": False,   # Accessibilità: animazioni istantanee
     "tema": "scuro",          # scuro | chiaro
@@ -323,16 +330,64 @@ class BackendMobile(Backend):
             or next((a for a in tutte if a["id"].endswith(breve)), None)
 
     def home(self) -> list:
-        """Le app della Home: quelle di SolidOS più usate, nell'ordine del design."""
+        """Le app della Home: l'ordine scelto spostandole, oppure quello di SolidOS; senza quelle tolte."""
+        conf = self.impostazioni()
+        nascoste = set(conf.get("nascoste_home") or [])
+        risultato = []
+        for ident in conf.get("ordine_home") or []:
+            a = next((x for x in self.app() if x["id"] == ident), None)
+            if a and a["id"] not in nascoste and a not in risultato:
+                risultato.append(a)
         ordine = ["fotocamera", "foto", "contatti", "note", "file", "dove", "musica", "store", "vicina", "calcolatrice", "impostazioni"]
-        risultato = [a for a in (self._per_id(x) for x in ordine) if a]
-        dock = set(self.impostazioni()["dock"])
+        for a in (self._per_id(x) for x in ordine):
+            if a and a["id"] not in nascoste and a not in risultato:
+                risultato.append(a)
+        dock = set(conf["dock"])
         for a in self.app():
             if len(risultato) >= 16:
                 break
-            if a not in risultato and not any(a is self._per_id(d) for d in dock):
+            if a not in risultato and a["id"] not in nascoste and not any(a is self._per_id(d) for d in dock):
                 risultato.append(a)
         return risultato
+
+    # ── Widget ───────────────────────────────────────────────────────────
+    def meteo(self) -> dict:
+        return strumenti.meteo(self.impostazioni().get("citta_meteo", ""))
+
+    def orologi(self) -> list:
+        """Ora nelle città del widget Orologio."""
+        from datetime import datetime, timedelta, timezone
+
+        citta = [("Londra", "Europe/London", 0), ("New York", "America/New_York", -5), ("Tokyo", "Asia/Tokyo", 9)]
+        risultato = []
+        for nome, zona, riserva in citta:
+            try:
+                from zoneinfo import ZoneInfo
+
+                ora = datetime.now(ZoneInfo(zona))
+            except Exception:  # noqa: BLE001 — senza tzdata: fuso fisso
+                ora = datetime.now(timezone.utc) + timedelta(hours=riserva)
+            risultato.append({"citta": T(nome), "ora": ora.strftime("%H:%M")})
+        return risultato
+
+    def notaRecente(self) -> dict:
+        n = strumenti.note()
+        return n[0] if n else {}
+
+    def fotoRicordo(self) -> dict:
+        """Una foto per il widget Foto: una dello stesso giorno degli anni passati, o una a caso."""
+        import random
+
+        elenco = strumenti.foto()
+        if not elenco:
+            return {}
+        oggi = time.strftime("%m-%d")
+        vecchie = [f for f in elenco if time.strftime("%m-%d", time.localtime(f["quando"])) == oggi
+                   and time.localtime(f["quando"]).tm_year < time.localtime().tm_year]
+        f = dict(random.choice(vecchie or elenco))
+        anni = time.localtime().tm_year - time.localtime(f["quando"]).tm_year
+        f["titolo"] = (T("Un anno fa") if anni == 1 else T("{n} anni fa", n=anni)) if vecchie else T("Dalle tue foto")
+        return f
 
     def dock(self) -> list:
         return [a for a in (self._per_id(x) for x in self.impostazioni()["dock"]) if a]
@@ -822,8 +877,23 @@ class BackendMobile(Backend):
         self._dove().indicazioni(lat, lon)
 
     # ── App di base (strumenti.py) ───────────────────────────────────────
-    def calcola(self, espressione: str) -> dict:
-        return strumenti.calcola(espressione)
+    def calcola(self, espressione: str, radianti: bool = False) -> dict:
+        return strumenti.calcola(espressione, radianti)
+
+    def calcStoria(self) -> list:
+        return strumenti.storia_calcoli()
+
+    def calcAggiungi(self, espressione: str, risultato: str) -> None:
+        strumenti.aggiungi_calcolo(espressione, risultato)
+
+    def calcCancellaStoria(self) -> None:
+        strumenti.cancella_storia()
+
+    def calcUnita(self, categoria: str) -> list:
+        return strumenti.unita_conversione(categoria)
+
+    def calcConverti(self, categoria: str, da: str, a: str, espressione: str) -> dict:
+        return strumenti.converti(categoria, da, a, espressione)
 
     def note(self, cerca: str = "") -> list:
         return strumenti.note(cerca)
@@ -843,8 +913,45 @@ class BackendMobile(Backend):
     def luoghiFile(self) -> list:
         return strumenti.luoghi()
 
-    def elencoFile(self, percorso: str, nascosti: bool = False) -> dict:
-        return strumenti.elenco_file(percorso, nascosti)
+    def elencoFile(self, percorso: str, nascosti: bool = False, ordine: str = "nome") -> dict:
+        return strumenti.elenco_file(percorso, nascosti, ordine)
+
+    def fileSfoglia(self) -> dict:
+        return strumenti.file_sfoglia()
+
+    def fileRecenti(self, filtro: str = "") -> list:
+        return strumenti.file_recenti(filtro)
+
+    def fileCondivisi(self) -> list:
+        return strumenti.file_condivisi()
+
+    def fileCerca(self, testo: str) -> list:
+        return strumenti.file_cerca(testo)
+
+    def fileConTag(self, ident: str) -> list:
+        return strumenti.file_con_tag(ident)
+
+    def fileTag(self, percorso: str, ident: str, si: bool) -> None:
+        strumenti.file_imposta_tag(percorso, ident, si)
+
+    def fileDuplica(self, percorso: str) -> dict:
+        return strumenti.file_duplica(percorso)
+
+    def fileComprimi(self, percorso: str) -> dict:
+        return strumenti.file_comprimi(percorso)
+
+    def fileSposta(self, percorso: str, cartella: str) -> dict:
+        return strumenti.file_sposta(percorso, cartella)
+
+    def fileRemoto(self, servizio: str, cartella: str = "") -> dict:
+        from . import fotoaccount
+
+        return fotoaccount.sfoglia(servizio, cartella)
+
+    def fileScaricaRemoto(self, servizio: str, relativo: str) -> dict:
+        from . import fotoaccount
+
+        return fotoaccount.scarica(servizio, relativo)
 
     def nuovaCartella(self, dove: str, nome: str) -> dict:
         return strumenti.nuova_cartella(dove, nome)
