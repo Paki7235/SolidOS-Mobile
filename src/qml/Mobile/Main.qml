@@ -147,6 +147,8 @@ Window {
         return g
     }
     function apri(app) {
+        // App dello Store già aperta: torna in primo piano
+        if (compositore.item && app.id.indexOf("interno:") !== 0 && compositore.item.attivaApp(app.id)) return
         var r = ponte.chiama("avvia", [app.id])
         if (r.interna) { chiudiTutto(); appInterna = r.interna }
         else if (!r.ok) avviso(r.messaggio)
@@ -317,6 +319,13 @@ Window {
         onActiveChanged: if (active) usata = true
         asynchronous: false
     }
+    // ── App dello Store: si aprono dentro SolidOS (compositore Wayland) ──
+    Loader {
+        id: compositore
+        anchors.fill: parent; z: 30
+        source: "Compositore.qml"
+        onStatusChanged: if (status === Loader.Error) ponte.chiama("compositorePronto", [""])   // senza: come prima
+    }
     PaginaApp { nome: "calcolatrice"; source: "Calcolatrice.qml" }
     PaginaApp { nome: "note"; source: "Note.qml" }
     PaginaApp { nome: "file"; source: "FileApp.qml" }
@@ -437,16 +446,21 @@ Window {
             xAxis.enabled: false
             property real ultimaY: 0
             onTranslationChanged: if (active) ultimaY = translation.y
-            onActiveChanged: if (active) ultimaY = 0; else if (ultimaY < -30) { tel.chiudiTutto(); tel.appInterna = ""; home.pagina = 0 }
+            // su: Home; su lungo: le app aperte
+            onActiveChanged: {
+                if (active) { ultimaY = 0; return }
+                if (ultimaY < -220 && compositore.item) { tel.chiudiTutto(); tel.appInterna = ""; compositore.item.vistaApp = true; return }
+                if (ultimaY < -30) { tel.chiudiTutto(); tel.appInterna = ""; home.pagina = 0; if (compositore.item) compositore.item.nascondi() }
+            }
         }
         Row {
             visible: tel.imp.navigazione === "tasti"
             anchors.centerIn: parent
             spacing: 80
             Repeater {
-                model: [{ i: "go-previous-symbolic", f: function () { if (tel.notifiche || tel.controllo || tel.personalizza) tel.chiudiTutto(); else if (tel.appInterna) tel.appInterna = ""; else home.pagina = 0 } },
-                        { i: "go-home-symbolic", f: function () { tel.chiudiTutto(); tel.appInterna = ""; home.pagina = 0 } },
-                        { i: "view-app-grid-symbolic", f: function () { tel.chiudiTutto(); home.pagina = 1 } }]
+                model: [{ i: "go-previous-symbolic", f: function () { if (tel.notifiche || tel.controllo || tel.personalizza) tel.chiudiTutto(); else if (tel.appInterna) tel.appInterna = ""; else if (compositore.item && compositore.item.inPrimoPiano) compositore.item.nascondi(); else home.pagina = 0 } },
+                        { i: "go-home-symbolic", f: function () { tel.chiudiTutto(); tel.appInterna = ""; home.pagina = 0; if (compositore.item) compositore.item.nascondi() } },
+                        { i: "view-app-grid-symbolic", f: function () { tel.chiudiTutto(); if (compositore.item) compositore.item.vistaApp = !compositore.item.vistaApp; else home.pagina = 1 } }]
                 Item {
                     required property var modelData
                     width: 40; height: 40

@@ -406,6 +406,73 @@ class BackendMobile(Backend):
             cartelle.append({"id": "altre", "nome": T("Altre"), "app": altre})
         return cartelle
 
+    # ── Compositore: le app dello Store si aprono dentro SolidOS ─────────
+    def compositorePronto(self, socket: str) -> None:
+        """L'interfaccia fa da compositore Wayland: le app che avvia si collegano a lei."""
+        if not socket:
+            return
+        os.environ["WAYLAND_DISPLAY"] = socket
+        os.environ["GDK_BACKEND"] = "wayland"
+        os.environ["QT_QPA_PLATFORM"] = "wayland"
+        os.environ["SDL_VIDEODRIVER"] = "wayland"
+        os.environ["MOZ_ENABLE_WAYLAND"] = "1"
+        if os.environ.get("QT_QUICK_BACKEND") == "software":     # niente scheda video: disegno a software
+            os.environ["GSK_RENDERER"] = "cairo"
+            os.environ["LIBGL_ALWAYS_SOFTWARE"] = "1"
+        # la grandezza la decide il compositore (fattore di scala dell'uscita), non Qt nelle app
+        for k in ("QT_SCALE_FACTOR", "QT_QUICK_BACKEND", "QT_QPA_GENERIC_PLUGINS", "QT_QPA_FB_HIDECURSOR"):
+            os.environ.pop(k, None)
+        self._compositore = socket
+
+    # ── Widget dalle app: la musica che suona in qualsiasi app (MPRIS) ───
+    def _mpris(self):
+        import dbus
+
+        bus = dbus.SessionBus()
+        nomi = [n for n in bus.list_names() if str(n).startswith("org.mpris.MediaPlayer2.")]
+        return bus, nomi
+
+    def mpris(self) -> dict:
+        try:
+            import dbus
+
+            bus, nomi = self._mpris()
+            for nome in nomi:
+                o = bus.get_object(nome, "/org/mpris/MediaPlayer2")
+                prop = dbus.Interface(o, "org.freedesktop.DBus.Properties")
+                meta = prop.Get("org.mpris.MediaPlayer2.Player", "Metadata")
+                stato = str(prop.Get("org.mpris.MediaPlayer2.Player", "PlaybackStatus"))
+                artisti = meta.get("xesam:artist", [])
+                try:
+                    app = str(prop.Get("org.mpris.MediaPlayer2", "Identity"))
+                except Exception:  # noqa: BLE001
+                    app = str(nome).rsplit(".", 1)[-1]
+                return {"titolo": str(meta.get("xesam:title", "")), "artista": ", ".join(str(a) for a in artisti),
+                        "suona": stato == "Playing", "app": app, "copertina": str(meta.get("mpris:artUrl", "")), "nome": str(nome)}
+        except Exception:  # noqa: BLE001 — niente bus o nessun lettore
+            pass
+        return {}
+
+    def mprisComando(self, comando: str) -> None:
+        metodi = {"play": "PlayPause", "avanti": "Next", "indietro": "Previous"}
+        if comando not in metodi:
+            return
+        try:
+            import dbus
+
+            bus, nomi = self._mpris()
+            if nomi:
+                o = bus.get_object(nomi[0], "/org/mpris/MediaPlayer2")
+                getattr(dbus.Interface(o, "org.mpris.MediaPlayer2.Player"), metodi[comando])()
+        except Exception:  # noqa: BLE001
+            pass
+
+    def scalaSchermo(self) -> float:
+        try:
+            return float(os.environ.get("SOLIDOS_SCALA_SCHERMO") or os.environ.get("QT_SCALE_FACTOR") or 1)
+        except ValueError:
+            return 1.0
+
     def avvia(self, ident: str) -> dict:
         if ident.startswith("interno:"):
             return {"ok": True, "interna": ident.split(":", 1)[1]}

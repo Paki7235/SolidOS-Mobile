@@ -17,9 +17,10 @@ Item {
         { tipo: "oggi", nome: I18n.t("Calendario"), info: I18n.t("Oggi e prossimi impegni"), icona: "linea-calendario", colore: "#E5484D" },
         { tipo: "batterie", nome: I18n.t("Batterie"), info: I18n.t("Telefono, PC e cuffie collegati"), icona: "linea-batteria", colore: "#30A46C" },
         { tipo: "foto", nome: I18n.t("Foto"), info: I18n.t("Ricordi e preferite"), icona: "linea-foto", colore: "#DB2777" },
-        { tipo: "musica", nome: I18n.t("Musica"), info: I18n.t("Il brano che stai ascoltando"), icona: "linea-musica", colore: "#E11D48" },
+        { tipo: "musica", nome: I18n.t("Musica"), info: I18n.t("Il brano che stai ascoltando, anche nelle app dello Store"), icona: "linea-musica", colore: "#E11D48" },
         { tipo: "orologio", nome: I18n.t("Orologio"), info: I18n.t("Città del mondo"), icona: "linea-orologio", colore: "#3F3F46" },
-        { tipo: "note", nome: I18n.t("Note"), info: I18n.t("L'ultima nota"), icona: "linea-note", colore: "#F59E0B" }]
+        { tipo: "note", nome: I18n.t("Note"), info: I18n.t("L'ultima nota"), icona: "linea-note", colore: "#F59E0B" },
+        { tipo: "app", nome: I18n.t("App"), info: I18n.t("Le app dello Store a portata di dito"), icona: "linea-griglia", colore: "#8B5CF6" }]
     readonly property var filtrati: tutti.filter(function (x) { return !cerca || x.nome.toLowerCase().indexOf(cerca.toLowerCase()) >= 0 })
     readonly property var infoScelto: tutti.find(function (x) { return x.tipo === scelto }) || ({ nome: "", info: "" })
 

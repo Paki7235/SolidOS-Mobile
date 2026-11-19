@@ -15,13 +15,17 @@ Item {
     height: misura === "grande" ? alto * 2 + 14 : alto
     readonly property bool largo: misura !== "piccolo"
     readonly property var nomi: ({ oggi: I18n.t("Calendario"), batterie: I18n.t("Batterie"), meteo: I18n.t("Meteo"), musica: I18n.t("Musica"),
-                                   foto: I18n.t("Foto"), note: I18n.t("Note"), orologio: I18n.t("Orologio") })
+                                   foto: I18n.t("Foto"), note: I18n.t("Note"), orologio: I18n.t("Orologio"), app: I18n.t("App") })
     // Dati (si aggiornano ogni pochi minuti)
     property var meteo: ({})
     property var nota: ({})
     property var ricordo: ({})
     property var orologi: []
     property var dispositivi: []
+    property var esterna: ({})          // musica di un'app dello Store (MPRIS)
+    readonly property var brano: tel.musica.titolo ? tel.musica : esterna
+    Timer { interval: 3000; repeat: true; running: w.visible && w.tipo === "musica" && !w.anteprima && !tel.musica.titolo; triggeredOnStart: true
+            onTriggered: ponte.avvia("mpris", [], "w-mpris-" + w) }
     function aggiorna() {
         if (tipo === "meteo") ponte.avvia("meteo", [], "w-meteo-" + w)
         else if (tipo === "note") nota = ponte.chiama0("notaRecente")
@@ -37,6 +41,7 @@ Item {
         function onCompletato(id, r) {
             if (id === "w-meteo-" + w) w.meteo = r
             else if (id === "w-disp-" + w) w.dispositivi = r
+            else if (id === "w-mpris-" + w) w.esterna = r || {}
         }
     }
     readonly property int batteria: tel.stato && tel.stato.batteria ? tel.stato.batteria.livello : 100
@@ -172,17 +177,18 @@ Item {
             y: w.misura === "grande" ? copertina.height + 24 : (w.largo ? 0 : 16)
             anchors.verticalCenter: w.misura === "medio" ? parent.verticalCenter : undefined
             width: parent.width - x - 16; spacing: 2
-            Text { width: parent.width; elide: Text.ElideRight; text: tel.musica.titolo || I18n.t("Musica"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
-            Text { width: parent.width; elide: Text.ElideRight; text: tel.musica.titolo ? (tel.musica.artista || I18n.t("In riproduzione")) : I18n.t("Tocca per scegliere un brano"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12); wrapMode: Text.Wrap; maximumLineCount: 2 }
+            Text { width: parent.width; elide: Text.ElideRight; text: w.brano.titolo || I18n.t("Musica"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
+            Text { width: parent.width; elide: Text.ElideRight; text: w.brano.titolo ? (w.brano.artista || w.brano.app || I18n.t("In riproduzione")) : I18n.t("Tocca per scegliere un brano"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12); wrapMode: Text.Wrap; maximumLineCount: 2 }
             Item { width: 1; height: 8 }
             Row {
                 spacing: 22
                 Repeater {
-                    model: [{ i: "linea-indietro", c: "indietro" }, { i: tel.musica.suona ? "linea-pausa" : "linea-play", c: "play" }, { i: "linea-avanti", c: "avanti" }]
+                    model: [{ i: "linea-indietro", c: "indietro" }, { i: w.brano.suona ? "linea-pausa" : "linea-play", c: "play" }, { i: "linea-avanti", c: "avanti" }]
                     Icona {
                         required property var modelData
                         nome: modelData.i; lato: 22
-                        MouseArea { anchors.fill: parent; anchors.margins: -10; enabled: !w.anteprima && !tel.modificaHome && tel.musica.titolo !== ""; onClicked: tel.comandoMusica(parent.modelData.c) }
+                        MouseArea { anchors.fill: parent; anchors.margins: -10; enabled: !w.anteprima && !tel.modificaHome && !!w.brano.titolo
+                                     onClicked: tel.musica.titolo ? tel.comandoMusica(parent.modelData.c) : ponte.chiama("mprisComando", [parent.modelData.c]) }
                     }
                 }
             }
@@ -220,6 +226,21 @@ Item {
             Text { width: parent.width; wrapMode: Text.Wrap; maximumLineCount: w.misura === "grande" ? 12 : 4; elide: Text.ElideRight; text: w.nota.anteprima || ""; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12.5) }
         }
         MouseArea { anchors.fill: parent; enabled: !w.anteprima && !tel.modificaHome; onPressAndHold: tel.modificaHome = true; onClicked: tel.appInterna = "note" }
+    }
+
+    // ── App: le app dello Store (e le altre) a portata di dito ────────────
+    Vetro {
+        visible: w.tipo === "app"
+        anchors.fill: parent; radius: 24
+        readonly property var scelte: { var t = ponte.chiama0("app"); var est = t.filter(function (a) { return a.id.indexOf("interno:") !== 0 }); return (est.length ? est : t).slice(0, w.misura === "piccolo" ? 4 : (w.misura === "medio" ? 8 : 16)) }
+        Grid {
+            anchors.centerIn: parent
+            columns: w.misura === "piccolo" ? 2 : 4; spacing: w.misura === "piccolo" ? 10 : 14
+            Repeater {
+                model: parent.parent.scelte
+                IconaApp { required property var modelData; app: modelData; conNome: false; lato: w.misura === "piccolo" ? 48 : 52; width: lato; enabled: !w.anteprima && !tel.modificaHome }
+            }
+        }
     }
 
     // ── Orologio ─────────────────────────────────────────────────────────
