@@ -574,7 +574,7 @@ class BackendMobile(Backend):
         if telefonia.DEMO:
             return {"utente": "0812345678", "dominio": "sip.messagenet.it", "server": "", "nome": "Pasquale", "attivo": True,
                     "haPassword": True, "disponibile": True, "registrato": True, "errore": ""}
-        return {**voip.account(), **voip.baresip().stato()}
+        return {**voip.account(), **voip.linea().stato()}
 
     def voipSalva(self, utente: str, password: str, dominio: str, server: str = "", nome: str = "", attivo: bool = True) -> dict:
         from . import voip
@@ -585,8 +585,8 @@ class BackendMobile(Backend):
         """All'avvio dell'interfaccia: si collega all'account SIP (se attivo)."""
         from . import voip, telefonia
 
-        if not telefonia.DEMO and not voip.baresip().proc:
-            voip.baresip().avvia()
+        if not telefonia.DEMO and not voip.linea().attiva:
+            voip.linea().avvia()
 
     def chiamata(self) -> dict:
         return self._chiamate().stato()

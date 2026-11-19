@@ -88,7 +88,7 @@ def stato_modem() -> dict:
     if not m:
         from . import voip
 
-        v = voip.baresip()
+        v = voip.linea()
         if v.registrato:
             return {"presente": False, "sim": False, "operatore": T("Internet"), "segnale": 0, "numero": "", "tecnologia": "VoIP",
                     "internet": True, "messaggio": ""}
@@ -353,7 +353,7 @@ class Chiamate:
     def _voip(self):
         from . import voip
 
-        return voip.baresip()
+        return voip.linea()
 
     def stato(self) -> dict:
         if not self.percorso and not DEMO:
@@ -462,6 +462,8 @@ class Chiamate:
 
     def imposta_muto(self, si: bool) -> None:
         self.muto = bool(si)
+        if self.via == "internet":
+            self._voip().muto(si)
         if not DEMO and shutil.which("wpctl"):
             subprocess.run(["wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "1" if si else "0"], capture_output=True)
 

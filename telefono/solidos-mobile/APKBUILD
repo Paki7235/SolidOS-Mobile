@@ -12,7 +12,7 @@ depends="
 	cage qt6-qtwayland callaudiod pipewire wireplumber
 	py3-dbus py3-gobject3 py3-aiohttp dbus
 	papirus-icon-theme font-inter font-noto
-	networkmanager networkmanager-cli networkmanager-wifi modemmanager baresip
+	networkmanager networkmanager-cli networkmanager-wifi modemmanager pipewire-tools alsa-utils
 	bluez brightnessctl iw wpa_supplicant tzdata
 	"
 install="$pkgname.post-install"
