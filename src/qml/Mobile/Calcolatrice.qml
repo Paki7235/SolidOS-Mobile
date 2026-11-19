@@ -1,5 +1,5 @@
-// Calcolatrice (come nell'immagine approvata): tasti a cuscino, operazione sopra il risultato,
-// ⌫ per togliere una cifra. In alto: Cronologia, e i modi Base, Scientifica e Converti
+// Calcolatrice in stile Vetro (proposta B approvata): sullo sfondo del telefono, risultato in una
+// scheda di vetro, tasti di vetro, operatori azzurri e «=» pieno. ⌫ toglie una cifra. In alto: Cronologia, e i modi Base, Scientifica e Converti
 // (valute con i cambi della BCE, lunghezza, peso, volume, velocità, area, temperatura).
 // Il calcolo lo fa il nucleo in modo sicuro (niente eval).
 import QtQuick
@@ -8,7 +8,16 @@ import SolidUI
 
 Rectangle {
     id: app
-    color: tel.pal.sfondo
+    color: "#0B0E18"
+    // Vetro: colori dei tasti sopra lo sfondo
+    readonly property color vetroCifra: Qt.rgba(1, 1, 1, tel.chiaro ? 0.45 : 0.10)
+    readonly property color vetroFunzione: Qt.rgba(1, 1, 1, tel.chiaro ? 0.70 : 0.22)
+    readonly property color vetroOperatore: Qt.rgba(0.47, 0.59, 1, tel.chiaro ? 0.55 : 0.35)
+    readonly property color bordoVetro: Qt.rgba(1, 1, 1, tel.chiaro ? 0.55 : 0.13)
+    readonly property color testo: tel.chiaro ? "#1D1D1F" : "#FFFFFF"
+    readonly property color testo2: tel.chiaro ? "#4A4A55" : "#B8BCCB"
+    Sfondo { anchors.fill: parent }
+    Rectangle { anchors.fill: parent; color: tel.chiaro ? "#33FFFFFF" : "#59060816" }
     property string modo: "base"          // base | scientifica | converti
     property string espressione: ""
     property string risultato: ""         // anteprima mentre scrivi
@@ -87,39 +96,56 @@ Rectangle {
         else if (s === "calc-converti") { espressione = "150"; modo = "converti" }
     }
 
-    // ── In alto: Cronologia e modo ───────────────────────────────────────
-    Icona {
-        x: 20; y: 58; nome: "linea-cronologia"; lato: 24; colore: tel.accento
-        MouseArea { anchors.fill: parent; anchors.margins: -12; onClicked: { app.storia = ponte.chiama0("calcStoria"); app.mostraStoria = true } }
+    // ── In alto: Cronologia (tondo di vetro) e i modi in una pillola ─────
+    Rectangle {
+        x: 20; y: 54; width: 40; height: 40; radius: 20
+        color: app.vetroCifra; border.width: 1; border.color: app.bordoVetro
+        Icona { anchors.centerIn: parent; nome: "linea-cronologia"; lato: 20; colore: app.testo }
+        MouseArea { anchors.fill: parent; anchors.margins: -6; onClicked: { app.storia = ponte.chiama0("calcStoria"); app.mostraStoria = true } }
     }
-    Row {
-        anchors.right: parent.right; anchors.rightMargin: 20; y: 60
-        Repeater {
-            model: [{ k: "base", t: I18n.t("Base") }, { k: "scientifica", t: I18n.t("Scientifica") }, { k: "converti", t: I18n.t("Converti") }]
-            Text {
-                required property var modelData
-                required property int index
-                text: (index ? " · " : "") + modelData.t
-                color: app.modo === modelData.k ? tel.accento : tel.pal.testo2
-                font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold
-                MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: app.modo = parent.modelData.k }
+    Rectangle {
+        anchors.right: parent.right; anchors.rightMargin: 20; y: 56
+        width: rigaModi.width + 6; height: 36; radius: 18
+        color: app.vetroCifra; border.width: 1; border.color: app.bordoVetro
+        Row {
+            id: rigaModi
+            x: 3; anchors.verticalCenter: parent.verticalCenter; spacing: 2
+            Repeater {
+                model: [{ k: "base", t: I18n.t("Base") }, { k: "scientifica", t: I18n.t("Scientifica") }, { k: "converti", t: I18n.t("Converti") }]
+                Rectangle {
+                    required property var modelData
+                    readonly property bool scelto: app.modo === modelData.k
+                    width: etModo.implicitWidth + 24; height: 30; radius: 15
+                    color: scelto ? (tel.chiaro ? "#1D1D1F" : "#F2FFFFFF") : "transparent"
+                    Behavior on color { ColorAnimation { duration: tel.tVeloce } }
+                    Text { id: etModo; anchors.centerIn: parent; text: parent.modelData.t; color: parent.scelto ? (tel.chiaro ? "#FFFFFF" : "#1D1D1F") : app.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+                    MouseArea { anchors.fill: parent; onClicked: app.modo = parent.modelData.k }
+                }
             }
         }
     }
 
     // ── Operazione e risultato ───────────────────────────────────────────
+    Rectangle {
+        id: schedaRisultato
+        visible: app.modo !== "converti"
+        x: 16; width: parent.width - 32
+        y: 112
+        height: (app.modo === "scientifica" ? scientifica.y : tastiera.y) - y - 18
+        radius: 28
+        color: app.vetroCifra; border.width: 1; border.color: app.bordoVetro
+    }
     Column {
         visible: app.modo !== "converti"
-        anchors.right: parent.right; anchors.rightMargin: 26
-        anchors.bottom: app.modo === "scientifica" ? scientifica.top : tastiera.top
-        anchors.bottomMargin: app.modo === "scientifica" ? 18 : 34
-        width: parent.width - 52
+        anchors.right: schedaRisultato.right; anchors.rightMargin: 22
+        anchors.bottom: schedaRisultato.bottom; anchors.bottomMargin: 16
+        width: schedaRisultato.width - 44
         spacing: 2
         Text {
             width: parent.width; horizontalAlignment: Text.AlignRight; elide: Text.ElideLeft
             text: app.fatta ? app.bello(app.fatta) : (app.risultato ? (app.errore ? app.risultato : "= " + app.risultato) : "")
-            color: app.errore && !app.fatta ? tel.rosso : tel.pal.testo2
-            font.family: Tema.font; font.pixelSize: tel.px(22)
+            color: app.errore && !app.fatta ? tel.rosso : app.testo2
+            font.family: Tema.font; font.pixelSize: tel.px(20)
             MouseArea { anchors.fill: parent; onClicked: if (!app.fatta) app.tasto("=") }
         }
         Text {
@@ -128,9 +154,9 @@ Rectangle {
             // il risultato si mostra con i punti delle migliaia
             readonly property string mostra: app.fatta ? app.espressione.replace(/^(−?\d+)/, function (m) { return m.replace(/\B(?=(\d{3})+(?!\d))/g, ".") }) : (app.bello(app.espressione) || "0")
             text: mostra
-            color: tel.pal.testo
-            font.family: Tema.font; font.weight: Font.Light; font.letterSpacing: -2
-            font.pixelSize: (app.modo === "scientifica" ? 64 : 86) * (mostra.length > 8 ? Math.max(0.45, 8 / mostra.length) : 1)
+            color: app.testo
+            font.family: Tema.font; font.weight: Font.Light; font.letterSpacing: -3
+            font.pixelSize: Math.min(app.modo === "scientifica" ? 64 : 82, schedaRisultato.height - 50) * (mostra.length > 8 ? Math.max(0.45, 8 / mostra.length) : 1)
             MouseArea { anchors.fill: parent; onPressAndHold: { tel.copia(grande.text); tel.avviso(I18n.t("Copiato")) } }
         }
     }
@@ -150,15 +176,16 @@ Rectangle {
                     Rectangle {
                         required property var modelData
                         height: 30; width: etc.implicitWidth + 26; radius: 15
-                        color: app.categoria === modelData.k ? tel.accento : tel.pal.superficie2
-                        Text { id: etc; anchors.centerIn: parent; text: parent.modelData.t; color: app.categoria === parent.modelData.k ? "#FFFFFF" : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+                        color: app.categoria === modelData.k ? (tel.chiaro ? "#1D1D1F" : "#F2FFFFFF") : app.vetroCifra
+                        border.width: 1; border.color: app.bordoVetro
+                        Text { id: etc; anchors.centerIn: parent; text: parent.modelData.t; color: app.categoria === parent.modelData.k ? (tel.chiaro ? "#FFFFFF" : "#1D1D1F") : app.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
                         MouseArea { anchors.fill: parent; onClicked: app.scegliCategoria(parent.modelData.k) }
                     }
                 }
             }
         }
         Rectangle {
-            width: parent.width; height: 150; radius: 14; color: tel.pal.superficie
+            width: parent.width; height: 150; radius: 28; color: app.vetroCifra; border.width: 1; border.color: app.bordoVetro
             Repeater {
                 model: 2
                 Item {
@@ -166,18 +193,18 @@ Rectangle {
                     required property int index
                     readonly property string codice: index === 0 ? app.da : app.a
                     y: index * 75; width: parent.width; height: 75
-                    Rectangle { visible: rigaC.index > 0; x: 16; width: parent.width - 16; height: 1; color: tel.pal.bordo }
+                    Rectangle { visible: rigaC.index > 0; x: 16; width: parent.width - 16; height: 1; color: app.bordoVetro }
                     Column {
                         x: 16; anchors.verticalCenter: parent.verticalCenter
                         Row {
                             spacing: 6
-                            Text { id: cod; text: rigaC.codice; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.Bold }
+                            Text { id: cod; text: rigaC.codice; color: app.testo; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.Bold }
                             Text { anchors.baseline: cod.baseline; text: "▾"; color: tel.accento; font.pixelSize: 12 }
                         }
                         Text {
                             readonly property string nome: (app.unita.find(function (u) { return u.id === rigaC.codice }) || { nome: "" }).nome
                             visible: nome !== "" && nome !== rigaC.codice; text: nome
-                            color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12)
+                            color: app.testo2; font.family: Tema.font; font.pixelSize: tel.px(12)
                         }
                     }
                     MouseArea { width: 150; height: parent.height; onClicked: { sceltaUnita.lato = rigaC.index; sceltaUnita.open() } }
@@ -185,7 +212,7 @@ Rectangle {
                         anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter
                         width: parent.width - 190; horizontalAlignment: Text.AlignRight; elide: Text.ElideLeft
                         text: rigaC.index === 0 ? (app.espressione || "0") : (app.conversione.valore || "—")
-                        color: rigaC.index === 0 ? tel.pal.testo : tel.pal.testo2
+                        color: rigaC.index === 0 ? app.testo : app.testo2
                         font.family: Tema.font; font.weight: Font.Light; font.pixelSize: rigaC.index === 0 ? 40 : 34
                     }
                 }
@@ -193,7 +220,7 @@ Rectangle {
             // Scambia le due unità
             Rectangle {
                 x: 150; anchors.verticalCenter: parent.verticalCenter
-                width: 32; height: 32; radius: 16; color: tel.pal.superficie2; border.width: 1; border.color: tel.pal.bordo
+                width: 32; height: 32; radius: 16; color: app.vetroFunzione; border.width: 1; border.color: app.bordoVetro
                 Text { anchors.centerIn: parent; text: "⇅"; color: tel.accento; font.pixelSize: 17 }
                 MouseArea { anchors.fill: parent; anchors.margins: -6; onClicked: { var t = app.da; app.da = app.a; app.a = t; app.converti() } }
             }
@@ -201,7 +228,7 @@ Rectangle {
         Text {
             width: parent.width; wrapMode: Text.Wrap; visible: text !== ""
             text: app.conversione.nota ? app.conversione.nota + ". " + I18n.t("Senza rete usa l'ultimo scaricato.") : ""
-            color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12.5)
+            color: app.testo2; font.family: Tema.font; font.pixelSize: tel.px(12.5)
         }
     }
     Popup {
@@ -238,8 +265,9 @@ Rectangle {
                 required property string modelData
                 readonly property bool rad: modelData === "Rad"
                 width: (app.width - 32 - 32) / 5; height: 42; radius: 14
-                color: rad && app.radianti ? Qt.rgba(tel.accento.r, tel.accento.g, tel.accento.b, 0.22) : (tel.chiaro ? "#E4E4EA" : "#2A2B31")
-                Text { anchors.centerIn: parent; text: fs.modelData; color: fs.rad && app.radianti ? tel.accento : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.Medium }
+                color: rad && app.radianti ? app.vetroOperatore : app.vetroCifra
+                border.width: 1; border.color: app.bordoVetro
+                Text { anchors.centerIn: parent; text: fs.modelData; color: app.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.Medium }
                 MouseArea {
                     id: ps
                     anchors.fill: parent
@@ -252,13 +280,13 @@ Rectangle {
     }
 
     // ── Tasti ──────────────────────────────────────────────────────────
-    Gradient { id: sfumatura; GradientStop { position: 0; color: Qt.lighter(tel.accento, 1.2) } GradientStop { position: 1; color: tel.accento } }
+    Gradient { id: sfumatura; GradientStop { position: 0; color: Qt.lighter(tel.accento, 1.3) } GradientStop { position: 1; color: tel.accento } }
     Grid {
         id: tastiera
         x: 16; anchors.bottom: parent.bottom; anchors.bottomMargin: 34
-        columns: 4; spacing: 12
-        readonly property real largo: (app.width - 32 - 36) / 4
-        readonly property real alto: app.modo === "base" ? Math.min(76, largo) : 66
+        columns: 4; spacing: 11
+        readonly property real largo: (app.width - 32 - 33) / 4
+        readonly property real alto: app.modo === "base" ? Math.min(74, largo) : 64
         Repeater {
             model: ["AC", "⌫", "%", "÷", "7", "8", "9", "×", "4", "5", "6", "−", "1", "2", "3", "+", "±", "0", ",", "="]
             Rectangle {
@@ -266,18 +294,21 @@ Rectangle {
                 required property string modelData
                 readonly property bool operatore: ["÷", "×", "−", "+", "="].indexOf(modelData) >= 0
                 readonly property bool funzione: ["AC", "⌫", "%"].indexOf(modelData) >= 0
-                width: tastiera.largo; height: tastiera.alto; radius: 22
-                color: funzione ? (tel.chiaro ? "#C9CAD1" : "#4A4B53") : (operatore ? tel.accento : tel.pal.superficie2)
-                gradient: operatore ? sfumatura : null
-                border.width: operatore ? 1 : 0; border.color: "#30FFFFFF"
+                width: tastiera.largo; height: tastiera.alto; radius: 24
+                color: k.modelData === "=" ? tel.accento : (operatore ? app.vetroOperatore : (funzione ? app.vetroFunzione : app.vetroCifra))
+                gradient: k.modelData === "=" ? sfumatura : null
+                border.width: 1; border.color: operatore ? Qt.rgba(1, 1, 1, 0.25) : app.bordoVetro
+                // luce in alto, come il vetro
+                Rectangle { anchors.fill: parent; anchors.margins: 1; radius: parent.radius - 1; color: "transparent"
+                            gradient: Gradient { GradientStop { position: 0; color: Qt.rgba(1, 1, 1, 0.10) } GradientStop { position: 0.35; color: "transparent" } } }
                 Text {
                     visible: k.modelData !== "⌫"
                     anchors.centerIn: parent
                     text: k.modelData === "AC" && app.espressione && !app.fatta ? "C" : k.modelData
-                    color: k.operatore || (k.funzione && !tel.chiaro) ? "#FFFFFF" : tel.pal.testo
-                    font.family: Tema.font; font.pixelSize: k.funzione ? 25 : 31; font.weight: k.funzione ? Font.Medium : Font.Normal
+                    color: k.modelData === "=" ? "#FFFFFF" : app.testo
+                    font.family: Tema.font; font.pixelSize: k.funzione ? 25 : 32; font.weight: k.funzione ? Font.Medium : Font.Normal
                 }
-                Icona { visible: k.modelData === "⌫"; anchors.centerIn: parent; nome: "linea-tasto-cancella"; lato: 26; tema: tel.chiaro ? "chiaro" : "scuro" }
+                Icona { visible: k.modelData === "⌫"; anchors.centerIn: parent; nome: "linea-tasto-cancella"; lato: 26; colore: app.testo }
                 MouseArea {
                     id: pk
                     anchors.fill: parent
