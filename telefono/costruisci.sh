@@ -32,6 +32,27 @@ echo "== $NOME ($DEVICE): pmbootstrap e pmaports"
 [ -d "$HOME/pmbootstrap" ] || git -c advice.detachedHead=false clone -q --depth 1 --branch 3.12.1 https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git "$HOME/pmbootstrap"
 [ -d "$APORTS" ] || git clone -q https://gitlab.postmarketos.org/postmarketOS/pmaports.git "$APORTS"
 
+# apk-tools 3.0.10 (arrivato in Alpine edge il 18/11/2026) non riesce più a installare systemd
+# nelle cartelle unite di postmarketOS («failed to commit usr/bin/udevadm»). Finché non è
+# sistemato si usa apk.static 3.0.9 di Alpine v3.24 (stessa firma di Alpine, verificata da
+# pmbootstrap). Per tornare all'ultima versione: APK_STATIC= (vuoto) nell'ambiente.
+APK_STATIC="${APK_STATIC-3.0.9-r0@v3.24}"
+if [ -n "$APK_STATIC" ]; then
+	python3 - "$HOME/pmbootstrap/pmb/helpers/apk_static.py" "${APK_STATIC%@*}" "${APK_STATIC#*@}" <<'PY'
+import sys
+from pathlib import Path
+f, versione, cartella = Path(sys.argv[1]), sys.argv[2], sys.argv[3]
+s = f.read_text()
+if "SOLIDOS_APK_STATIC" not in s:
+    s = s.replace('    mirrordir = channel_cfg["mirrordir_alpine"]\n',
+                  f'    mirrordir = "{cartella}"  # SOLIDOS_APK_STATIC\n', 1)
+    s = s.replace("    version = index_data.version\n", f'    version = "{versione}"  # SOLIDOS_APK_STATIC\n', 1)
+    assert s.count("SOLIDOS_APK_STATIC") == 2, "pmbootstrap è cambiato: aggiorna questa correzione"
+    f.write_text(s)
+print(f"apk.static fissato a {versione} ({cartella})")
+PY
+fi
+
 mkdir -p "$HOME/.config"
 cat > "$HOME/.config/pmbootstrap_v3.cfg" <<CFG
 [pmbootstrap]
