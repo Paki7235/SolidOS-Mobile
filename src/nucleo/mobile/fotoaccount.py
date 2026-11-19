@@ -13,6 +13,9 @@ Servizi:
   branding.env (FOTO_ONEDRIVE_ID, FOTO_DROPBOX_ID, FOTO_GOOGLE_ID) restano «da attivare».
   Google, dal 31/03/2025, lascia solo SCEGLIERE foto e album con il suo selettore: niente
   sincronizzazione di tutta la libreria.
+- Server di casa: un NAS (Synology, QNAP…), un router con disco o un computer di casa che
+  condivide le foto in WebDAV. Il PC SolidOS (e il Mac) lo fanno con
+  «python3 -m nucleo.fotoserver»: il telefono lo trova da solo sulla stessa rete Wi-Fi.
 - Amazon Foto: nessun accesso ufficiale per le app esterne.
 """
 
@@ -36,6 +39,7 @@ from ..sistema import config_utente, leggi_json, scrivi_json
 ESTENSIONI = (".jpg", ".jpeg", ".png", ".webp", ".heic", ".gif")
 SERVIZI = {
     "nextcloud": {"nome": "Nextcloud", "colore": "#0082C9", "lettera": "N", "descrizione": T("Il tuo cloud personale")},
+    "casa": {"nome": "Server di casa", "colore": "#30A46C", "lettera": "C", "descrizione": T("NAS o computer di casa")},
     "onedrive": {"nome": "OneDrive", "colore": "#0078D4", "lettera": "O", "descrizione": T("Cartella Immagini"), "chiave": "FOTO_ONEDRIVE_ID"},
     "dropbox": {"nome": "Dropbox", "colore": "#0061FE", "lettera": "D", "descrizione": T("Cartella Foto"), "chiave": "FOTO_DROPBOX_ID"},
     "google": {"nome": "Google Foto", "colore": "#4285F4", "lettera": "G", "descrizione": T("Scegli foto e album"), "chiave": "FOTO_GOOGLE_ID"},
@@ -78,7 +82,7 @@ def servizi() -> list:
             stato = "collegato"
         elif chiave == "amazon":
             stato = "impossibile"
-        elif chiave == "nextcloud" or branding.get(s.get("chiave", ""), ""):
+        elif chiave in ("nextcloud", "casa") or branding.get(s.get("chiave", ""), ""):
             stato = "collegabile"
         else:
             stato = "da_attivare"
@@ -101,11 +105,24 @@ def _base_nextcloud(indirizzo: str, utente: str) -> str:
     return f"{indirizzo}/remote.php/dav/files/{urllib.parse.quote(utente)}"
 
 
+def _base_casa(indirizzo: str) -> str:
+    indirizzo = indirizzo.strip().rstrip("/")
+    if not indirizzo.startswith(("https://", "http://")):
+        indirizzo = "http://" + indirizzo   # in casa di solito senza certificato
+    return indirizzo
+
+
+def _base(a: dict) -> str:
+    return _base_casa(a["indirizzo"]) if a.get("servizio") == "casa" else _base_nextcloud(a["indirizzo"], a["utente"])
+
+
 def _elenca(base: str, cartella: str, utente: str, password: str, profondita: int = 3) -> list:
     """File di immagine nella cartella (e sottocartelle, fino a «profondita» livelli)."""
     corpo = (b'<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:getlastmodified/>'
              b'<d:getcontentlength/><d:resourcetype/></d:prop></d:propfind>')
-    url = base + "/" + urllib.parse.quote(cartella.strip("/")) + "/"
+    pezzo = cartella.strip("/")
+    url = base.rstrip("/") + ("/" + urllib.parse.quote(pezzo) if pezzo else "") + "/"
+    base_percorso = urllib.parse.unquote(urllib.parse.urlparse(base).path).rstrip("/")
     with _richiesta_dav(url, utente, password, "PROPFIND", corpo, {"Depth": "1", "Content-Type": "application/xml"}) as r:
         albero = ET.fromstring(r.read())
     ns = {"d": "DAV:"}
@@ -116,7 +133,8 @@ def _elenca(base: str, cartella: str, utente: str, password: str, profondita: in
         if href.rstrip("/") == urllib.parse.unquote(radice).rstrip("/"):
             continue
         cartella_figlia = risp.find(".//d:resourcetype/d:collection", ns) is not None
-        relativo = href.split("/remote.php/dav/files/", 1)[-1].split("/", 1)[-1]
+        percorso = urllib.parse.unquote(urllib.parse.urlparse(href).path)
+        relativo = percorso[len(base_percorso):].strip("/") if percorso.startswith(base_percorso) else percorso.strip("/")
         if cartella_figlia:
             if profondita > 0:
                 trovati += _elenca(base, relativo, utente, password, profondita - 1)
@@ -156,6 +174,66 @@ def collega_nextcloud(indirizzo: str, utente: str, password: str, cartella: str 
             pass
     threading.Thread(target=sincronizza, daemon=True).start()
     return {"ok": True, "messaggio": T("Nextcloud collegato: le foto arrivano tra poco")}
+
+
+def collega_server(indirizzo: str, utente: str = "", password: str = "", cartella: str = "") -> dict:
+    """Server di casa (WebDAV): NAS, router con disco o «python3 -m nucleo.fotoserver» sul PC."""
+    if not indirizzo.strip():
+        return {"ok": False, "messaggio": T("Scrivi l'indirizzo del server, es. 192.168.1.10:8765")}
+    base = _base_casa(indirizzo)
+    try:
+        _elenca(base, cartella, utente.strip(), password.strip(), profondita=0)
+    except urllib.error.HTTPError as e:
+        if e.code in (401, 403):
+            return {"ok": False, "messaggio": T("Il server chiede utente e password")}
+        return {"ok": False, "messaggio": T("Il server ha risposto con un errore") + f" ({e.code})"}
+    except (OSError, ET.ParseError):
+        return {"ok": False, "messaggio": T("Server non raggiungibile: controlla l'indirizzo e la rete Wi-Fi")}
+    with _blocco:
+        elenco = [a for a in leggi_json(_file(), []) if a.get("servizio") != "casa"]
+        elenco.append({"servizio": "casa", "indirizzo": base, "utente": utente.strip(), "password": password.strip(),
+                       "cartella": cartella.strip(), "auto": True, "wifi": True, "scarica": True})
+        scrivi_json(_file(), elenco)
+        try:
+            _file().chmod(0o600)
+        except OSError:
+            pass
+    threading.Thread(target=sincronizza, daemon=True).start()
+    return {"ok": True, "messaggio": T("Server di casa collegato: le foto arrivano tra poco")}
+
+
+def scopri_server(secondi: float = 2.5) -> list:
+    """I server di foto sulla stessa rete (mDNS «_webdav._tcp»): [{nome, indirizzo}]."""
+    if _demo():
+        return [{"nome": "Foto di MacBook", "indirizzo": "http://192.168.1.23:8765"},
+                {"nome": "NAS di casa", "indirizzo": "http://192.168.1.40:5005"}]
+    try:
+        from zeroconf import ServiceBrowser, Zeroconf
+    except ImportError:
+        return []
+    trovati = {}
+
+    class Ascolta:
+        def add_service(self, z, tipo, nome):
+            info = z.get_service_info(tipo, nome, 1500)
+            if info and info.parsed_addresses():
+                percorso = (info.properties or {}).get(b"path", b"/").decode(errors="replace")
+                indirizzo = f"http://{info.parsed_addresses()[0]}:{info.port}{percorso.rstrip('/')}"
+                trovati[indirizzo] = {"nome": nome.split("._webdav")[0], "indirizzo": indirizzo}
+
+        def update_service(self, *a):
+            pass
+
+        def remove_service(self, *a):
+            pass
+
+    z = Zeroconf()
+    try:
+        ServiceBrowser(z, "_webdav._tcp.local.", Ascolta())
+        time.sleep(secondi)
+    finally:
+        z.close()
+    return list(trovati.values())
 
 
 def scollega(servizio: str) -> dict:
@@ -198,16 +276,16 @@ def sincronizza() -> None:
     finally:
         _blocco.release()
     for a in elenco:
-        if a.get("servizio") != "nextcloud" or not a.get("auto", True):
+        if a.get("servizio") not in ("nextcloud", "casa") or not a.get("auto", True):
             continue
         if a.get("wifi", True) and not _su_wifi():
             continue
-        base = _base_nextcloud(a["indirizzo"], a["utente"])
+        base = _base(a)
         try:
-            remoti = _elenca(base, a.get("cartella", "Photos"), a["utente"], a["password"])
+            remoti = _elenca(base, a.get("cartella", "Photos" if a["servizio"] == "nextcloud" else ""), a["utente"], a["password"])
         except (OSError, ET.ParseError):
             continue
-        cache = _cache("nextcloud")
+        cache = _cache(a["servizio"])
         indice = leggi_json(cache / "indice.json", {})
         for f in sorted(remoti, key=lambda x: -x["quando"])[:500]:
             nome = hashlib.sha1(f["relativo"].encode()).hexdigest()[:16] + Path(f["relativo"]).suffix.lower()
@@ -225,7 +303,7 @@ def sincronizza() -> None:
 def foto() -> list:
     """Le foto scaricate dagli account, nello stesso formato di quelle del telefono."""
     risultato = []
-    for servizio in ("nextcloud",):
+    for servizio in ("nextcloud", "casa"):
         cache = _cache(servizio)
         indice = leggi_json(cache / "indice.json", {})
         for nome, info in indice.items():

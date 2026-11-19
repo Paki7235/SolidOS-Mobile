@@ -75,6 +75,8 @@ G = {
     "segreteria": '<circle cx="6" cy="12" r="4"/><circle cx="18" cy="12" r="4"/><path d="M6 16h12"/>',
     "esporta": '<path d="M12 2v13M8 6l4-4 4 4"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>',
     "nuvola": '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+    "tasto-cancella": '<path d="M10 5a2 2 0 0 0-1.34.52l-6.33 5.74a1 1 0 0 0 0 1.48l6.33 5.74A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/><path d="m12 9 6 6M18 9l-6 6"/>',
+    "tasto-maiuscole": '<path d="M9 18v-6H5l7-7 7 7h-4v6H9z"/>',
     "rotazione": '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
 }
 
@@ -107,7 +109,7 @@ NOMI = {
     "media-skip-forward-symbolic": "avanti", "media-skip-backward-symbolic": "indietro",
 }
 APP = ["telefono", "messaggi", "contatti", "fotocamera", "foto", "musica", "note", "file", "dove",
-       "calcolatrice", "store", "vicina", "impostazioni", "esporta", "nuvola"]
+       "calcolatrice", "store", "vicina", "impostazioni", "esporta", "nuvola", "tasto-cancella", "tasto-maiuscole"]
 
 
 def svg(disegno: str) -> str:

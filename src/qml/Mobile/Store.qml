@@ -18,6 +18,10 @@ Rectangle {
     property string cerca: ""
     property bool cercando: false
     property var inCorso: ({})                // id → true durante installazione/rimozione
+    property var avanzamento: ({})            // id → percentuale dello scaricamento
+    property var account: ({ collegato: false, elenco: [], automatiche: true })   // «Le mie app» del Solid ID
+    readonly property var altrove: account.elenco.filter(function (x) { return !x.installata && !app.installata({ id: x.app }) })
+                                                  .map(function (x) { return { id: x.app, nome: x.nome, icona: x.icona || "", descrizione: x.dispositivo === "pc" ? I18n.t("Presa sul PC") : I18n.t("Presa su un altro telefono") } })
     property var raccolta: null               // raccolta aperta
     property var aperta: null                 // scheda dell'app aperta
     property var recensioni: ({ riepilogo: { media: 0, totale: 0, distribuzione: [0, 0, 0, 0, 0] }, elenco: [], account: { collegato: false } })
@@ -32,11 +36,13 @@ Rectangle {
     function aggiorna() {
         ponte.avvia("storeConsigliate", [], "store-consigliate")
         ponte.avvia("storeRaccolte", [], "store-raccolte")
+        ponte.avvia("storeMieApp", [], "store-account")
     }
     function installata(a) { return !!a && (a.installata === true || app.mie.some(function (x) { return x.id === a.id })) }
     function azione(a) {
         var c = Object.assign({}, inCorso); c[a.id] = true; inCorso = c
-        ponte.avvia(installata(a) ? "storeRimuovi" : "storeInstalla", [a.id], "store-fatto:" + a.id)
+        if (installata(a)) ponte.avvia("storeRimuovi", [a.id], "store-fatto:" + a.id)
+        else { var v = Object.assign({}, avanzamento); v[a.id] = 0; avanzamento = v; ponte.avvia("storeInstalla", [a.id, a.nome || "", a.icona || ""], "store-fatto:" + a.id) }
     }
     function apriApp(a) {
         if (!a) return
@@ -53,14 +59,22 @@ Rectangle {
         var s = ponte.chiama0("avvio").schermata
         if (s === "store-app") apriApp({ id: "io.bassi.Amberol", nome: "Amberol", descrizione: "", icona: "" })
         else if (s === "store-raccolta") provaRaccolta.start()
+        else if (s === "store-mie") scheda = "mie"
+        else if (s === "store-scarica") { apriApp({ id: "io.bassi.Amberol", nome: "Amberol", descrizione: "", icona: "" }); provaScarica.start() }
     }
+    Timer { id: provaScarica; interval: 10200; onTriggered: app.azione(app.aperta) }
     Timer { id: provaRaccolta; interval: 6000; onTriggered: if (app.raccolte.length) app.raccolta = app.raccolte[2] }
     Timer { id: ritardo; interval: 500; onTriggered: if (app.cerca) { app.cercando = true; ponte.avvia("storeCerca", [app.cerca], "store-cerca") } else app.risultati = [] }
     Connections {
         target: ponte
+        function onEvento(nome, d) {
+            if (nome === "store-avanzamento") { var v = Object.assign({}, app.avanzamento); v[d.id] = d.percento; app.avanzamento = v }
+            else if (nome === "store-scaricata") { tel.avviso(d.nome + ": " + I18n.t("scaricata dalle tue app")); app.aggiorna(); tel.ricaricaApp() }
+        }
         function onCompletato(id, r) {
             if (id === "store-consigliate") { app.consigliate = r.app; app.disponibile = r.disponibile }
             else if (id === "store-raccolte") app.raccolte = r
+            else if (id === "store-account") app.account = r
             else if (id === "store-cerca") { app.risultati = r; app.cercando = false }
             else if (id === "store-scheda") { if (r.ok && app.aperta && r.id === app.aperta.id) app.aperta = Object.assign({ caricata: true }, r) }
             else if (id === "store-recensioni") app.recensioni = r
@@ -70,6 +84,7 @@ Rectangle {
             }
             else if (id.indexOf("store-fatto:") === 0) {
                 var c = Object.assign({}, app.inCorso); delete c[id.slice(12)]; app.inCorso = c
+                var v = Object.assign({}, app.avanzamento); delete v[id.slice(12)]; app.avanzamento = v
                 tel.avviso(r.messaggio)
                 app.aggiorna()
                 if (app.aperta) app.aperta = Object.assign({}, app.aperta, { installata: !app.aperta.installata })
@@ -110,14 +125,25 @@ Rectangle {
         property var a: ({})
         property bool grigio: false
         readonly property bool presente: app.installata(a)
+        property string etichetta: ""
+        // Durante lo scaricamento: barra che si riempie con la percentuale
+        readonly property int percento: app.avanzamento[a.id] !== undefined ? app.avanzamento[a.id] : -1
         width: Math.max(84, et.implicitWidth + 28); height: 30; radius: 15
-        color: grigio || presente ? tel.pal.superficie2 : tel.accento
+        color: percento >= 0 ? tel.pal.superficie2 : (grigio || presente ? tel.pal.superficie2 : tel.accento)
         opacity: app.disponibile ? 1 : 0.4
+        clip: true
+        Rectangle {
+            visible: ta.percento >= 0
+            width: Math.max(ta.height, ta.width * ta.percento / 100); height: ta.height; radius: ta.radius
+            color: tel.accento
+            Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+        }
         Text {
             id: et
             anchors.centerIn: parent
-            text: app.inCorso[ta.a.id] ? "…" : (ta.presente ? I18n.t("Rimuovi") : I18n.t("Installa"))
-            color: ta.grigio || ta.presente ? tel.accento : "#FFFFFF"
+            text: ta.percento >= 0 ? (ta.percento >= 100 ? I18n.t("Installo…") : ta.percento + "%")
+                  : app.inCorso[ta.a.id] ? "…" : (ta.presente ? I18n.t("Rimuovi") : (ta.etichetta || I18n.t("Installa")))
+            color: ta.percento >= 0 ? (ta.percento > 45 ? "#FFFFFF" : tel.pal.testo) : (ta.grigio || ta.presente ? tel.accento : "#FFFFFF")
             font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Bold
         }
         MouseArea { anchors.fill: parent; anchors.margins: -6; enabled: app.disponibile && !app.inCorso[ta.a.id]; onClicked: app.azione(ta.a) }
@@ -239,6 +265,77 @@ Rectangle {
             Text {
                 visible: app.scheda === "cerca" && app.cerca !== "" && !app.cercando && app.risultati.length === 0
                 text: I18n.t("Nessuna app trovata"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(14)
+            }
+            // Le mie app: il Solid ID tiene l'elenco delle app prese su tutti i dispositivi
+            Rectangle {
+                visible: app.scheda === "mie"
+                width: parent.width; height: colSid.height + 24; radius: 18; color: tel.pal.superficie
+                Column {
+                    id: colSid
+                    x: 14; y: 12; width: parent.width - 28; spacing: 8
+                    Row {
+                        spacing: 10
+                        Avatar { lato: 36; nome: app.account.collegato ? (ponte.chiama0("solidId").nome || "S") : "?" }
+                        Column {
+                            anchors.verticalCenter: parent.verticalCenter
+                            Text { text: app.account.collegato ? (ponte.chiama0("solidId").nome || I18n.t("Solid ID")) : I18n.t("Accedi al Solid ID"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
+                            Text { text: app.account.collegato ? I18n.t("Le tue app sono legate al Solid ID") : I18n.t("Per avere le stesse app su PC e telefono"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12.5) }
+                        }
+                    }
+                    Text {
+                        width: parent.width; wrapMode: Text.Wrap
+                        text: app.account.collegato ? I18n.t("Ogni app che prendi dallo Store, qui o sul PC, resta nel tuo Solid ID: la ritrovi su tutti i tuoi dispositivi.")
+                                                    : I18n.t("Come con l'ID Apple: accedi e le app che prendi sul PC compaiono anche qui (e al contrario).")
+                        color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13)
+                    }
+                    Item {
+                        visible: app.account.collegato
+                        width: parent.width; height: 40
+                        Text { anchors.verticalCenter: parent.verticalCenter; width: parent.width - 60; wrapMode: Text.Wrap; text: I18n.t("Scarica da sola le app prese sul PC"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(14) }
+                        Rectangle {
+                            anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+                            width: 46; height: 28; radius: 14; color: app.account.automatiche ? tel.accento : tel.pal.superficie2
+                            Rectangle { width: 22; height: 22; radius: 11; y: 3; x: app.account.automatiche ? 21 : 3; color: "#FFFFFF" }
+                            MouseArea {
+                                anchors.fill: parent; anchors.margins: -6
+                                onClicked: {
+                                    var si = !app.account.automatiche
+                                    tel.imposta("app_automatiche", si)
+                                    app.account = Object.assign({}, app.account, { automatiche: si })
+                                    if (si) ponte.avvia("storeScaricaMie", [], "store-scarica-mie")
+                                }
+                            }
+                        }
+                    }
+                    Rectangle {
+                        visible: !app.account.collegato
+                        width: 120; height: 34; radius: 17; color: tel.accento
+                        Text { anchors.centerIn: parent; text: I18n.t("Accedi"); color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.Bold }
+                        MouseArea { anchors.fill: parent; onClicked: { tel.appInterna = "impostazioni"; impostazioniApp.apri("solidid") } }
+                    }
+                }
+            }
+            Text {
+                visible: app.scheda === "mie" && app.altrove.length > 0
+                text: I18n.t("Dagli altri dispositivi"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(20); font.weight: Font.Bold
+            }
+            Rectangle {
+                id: bloccoAltrove
+                visible: app.scheda === "mie" && app.altrove.length > 0
+                width: parent.width; height: righeAltrove.height; radius: 18
+                color: tel.pal.superficie
+                Column {
+                    id: righeAltrove
+                    width: bloccoAltrove.width
+                    Repeater {
+                        model: app.scheda === "mie" ? app.altrove : []
+                        RigaApp { required property var modelData; required property int index; a: modelData; ultima: index === app.altrove.length - 1 }
+                    }
+                }
+            }
+            Text {
+                visible: app.scheda === "mie"
+                text: I18n.t("Su questo telefono"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(20); font.weight: Font.Bold
             }
             Text {
                 visible: app.scheda === "mie" && app.mie.length === 0

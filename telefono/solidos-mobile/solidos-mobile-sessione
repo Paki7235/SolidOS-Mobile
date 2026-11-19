@@ -8,6 +8,8 @@
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 export HOME="${HOME:-$(getent passwd "$(id -un)" | cut -d: -f6)}"
 export LANG=it_IT.UTF-8
+# Tastiera fisica (o quella del Mac nel telefono virtuale) con la disposizione italiana
+export XKB_DEFAULT_LAYOUT="${XKB_DEFAULT_LAYOUT:-it}"
 export QT_MEDIA_BACKEND=ffmpeg
 export NUCLEO_BRANDING=/usr/share/solidos-mobile/branding.env
 export NUCLEO_QML=/usr/share/solidos-mobile/qml

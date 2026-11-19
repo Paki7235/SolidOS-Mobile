@@ -136,6 +136,62 @@ def salva_contatto(nome: str, numero: str, ident: str = "", email: str = "", not
     return {"ok": True, "messaggio": T("Contatto salvato"), "id": voce["id"]}
 
 
+# Campi della scheda (come quella dell'iPhone). «nome» è nome e cognome insieme.
+CAMPI = ("nome", "azienda", "numero", "numero2", "numero3", "email", "email2", "indirizzo",
+         "compleanno", "sito", "social", "note")
+
+
+def _pulisci(dati: dict) -> dict:
+    return {k: str(dati.get(k) or "").strip() for k in CAMPI}
+
+
+def mia_scheda() -> dict:
+    """La scheda del proprietario del telefono (id «io»): il nome viene dal Solid ID se manca."""
+    scheda = _leggi("mia-scheda.json", {})
+    if not scheda.get("nome"):
+        try:
+            from .. import solidid
+
+            u = solidid.utente() or {}
+            scheda["nome"] = u.get("nome", "")
+            scheda.setdefault("email", u.get("email", ""))
+        except Exception:  # noqa: BLE001
+            pass
+    if DEMO and not scheda.get("numero"):
+        scheda.update(nome=scheda.get("nome") or "Pasquale", numero="+39 333 000 0000", email="pasquale@esempio.it", compleanno="3 maggio")
+    return {**{k: "" for k in CAMPI}, **scheda, "id": "io", "preferito": False}
+
+
+def salva_scheda(dati: dict) -> dict:
+    """Salva un contatto con tutti i campi (o «La mia scheda», id «io»)."""
+    dati = dict(dati or {})
+    ident = str(dati.get("id") or "")
+    campi = _pulisci(dati)
+    if ident == "io":
+        if not campi["nome"]:
+            return {"ok": False, "messaggio": T("Scrivi il tuo nome")}
+        with _blocco:
+            _scrivi("mia-scheda.json", campi)
+        return {"ok": True, "messaggio": T("La tua scheda è salvata"), "id": "io"}
+    if not campi["nome"] or not any(normalizza(campi[k]) for k in ("numero", "numero2", "numero3")):
+        return {"ok": False, "messaggio": T("Scrivi il nome e almeno un numero")}
+    if not normalizza(campi["numero"]):   # il primo numero scritto diventa il principale
+        for k in ("numero2", "numero3"):
+            if normalizza(campi[k]):
+                campi["numero"], campi[k] = campi[k], ""
+                break
+    with _blocco:
+        elenco = _leggi("contatti.json", ESEMPIO_CONTATTI if DEMO else [])
+        voce = next((c for c in elenco if c["id"] == ident), None)
+        if voce:
+            voce.update(campi)
+        else:
+            voce = {"id": uuid.uuid4().hex[:10], **campi, "preferito": False}
+            elenco.append(voce)
+        _scrivi("contatti.json", elenco)
+    return {"ok": True, "messaggio": T("Contatto salvato"), "id": voce["id"]}
+
+
 # ── vCard (.vcf): il formato dei contatti di Android, iPhone, Gmail e Outlook ──
 def _valore_vcard(riga: str) -> str:
     valore = riga.split(":", 1)[1] if ":" in riga else ""
@@ -200,8 +256,11 @@ def esporta_vcard() -> dict:
         sicuro = lambda x: (x or "").replace(",", "\\,").replace(";", "\\;")
         righe += ["BEGIN:VCARD", "VERSION:3.0", f"FN:{sicuro(c['nome'])}", f"N:;{sicuro(c['nome'])};;;",
                   f"TEL;TYPE=CELL:{c['numero']}"]
-        if c.get("email"):
-            righe.append(f"EMAIL:{c['email']}")
+        for chiave, riga in (("numero2", "TEL;TYPE=HOME:"), ("numero3", "TEL;TYPE=WORK:"), ("email", "EMAIL:"),
+                             ("email2", "EMAIL;TYPE=WORK:"), ("azienda", "ORG:"), ("indirizzo", "ADR;TYPE=HOME:;;"),
+                             ("sito", "URL:"), ("note", "NOTE:")):
+            if c.get(chiave):
+                righe.append(riga + sicuro(c[chiave]))
         righe.append("END:VCARD")
     f.write_text("\r\n".join(righe) + "\r\n", encoding="utf-8")
     return {"ok": True, "messaggio": T("Contatti salvati in {f}", f=f"{cartella.name}/contatti.vcf")}

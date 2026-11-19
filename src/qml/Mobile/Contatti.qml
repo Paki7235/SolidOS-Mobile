@@ -17,10 +17,23 @@ Rectangle {
 
     function aggiorna() {
         contatti = ponte.chiama0("contatti")
-        if (scelto) scelto = contatti.find(function (c) { return c.id === scelto.id }) || null
+        mia = ponte.chiama0("miaScheda")
+        if (scelto) scelto = scelto.id === "io" ? mia : (contatti.find(function (c) { return c.id === scelto.id }) || null)
     }
+    property var mia: ({})
+    property var bozza: ({})           // i campi mentre si modifica
+    readonly property bool io: !!(scelto && scelto.id === "io")
     function apri(c) { scelto = c; modifica = false }
     function nuovo() { scelto = { id: "", nome: "", numero: "", email: "", note: "", preferito: false }; modifica = true }
+    onModificaChanged: if (modifica && scelto) bozza = Object.assign({}, scelto)
+    // I campi della scheda, nell'ordine dell'iPhone
+    readonly property var campi: [
+        { c: "nome", e: I18n.t("Nome e cognome"), g: 0 }, { c: "azienda", e: I18n.t("Azienda"), g: 0 },
+        { c: "numero", e: I18n.t("cellulare"), g: 1, t: "tel" }, { c: "numero2", e: I18n.t("casa"), g: 1, t: "tel" }, { c: "numero3", e: I18n.t("lavoro"), g: 1, t: "tel" },
+        { c: "email", e: I18n.t("email"), g: 2, t: "mail" }, { c: "email2", e: I18n.t("email di lavoro"), g: 2, t: "mail" },
+        { c: "indirizzo", e: I18n.t("indirizzo"), g: 3 }, { c: "compleanno", e: I18n.t("compleanno"), g: 3, s: I18n.t("es. 14 marzo") },
+        { c: "sito", e: I18n.t("sito web"), g: 4, t: "url" }, { c: "social", e: I18n.t("social"), g: 4, s: "@instagram, @tiktok…" },
+        { c: "note", e: I18n.t("note"), g: 5 }]
     onVisibleChanged: if (visible) aggiorna()
     Component.onCompleted: aggiorna()
 
@@ -49,7 +62,7 @@ Rectangle {
             id: miaScheda
             x: 16; y: 198; width: parent.width - 46; height: app.cerca ? 0 : 84
             visible: !app.cerca
-            readonly property string nome: (ponte.chiama0("solidId").nome || "") || I18n.t("Io")
+            readonly property string nome: app.mia.nome || (ponte.chiama0("solidId").nome || "") || I18n.t("Io")
             Avatar { y: 4; lato: 60; nome: miaScheda.nome }
             Column {
                 x: 74; y: 14
@@ -57,6 +70,7 @@ Rectangle {
                 Text { text: I18n.t("La mia scheda"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
             }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: app.linea }
+            MouseArea { anchors.fill: parent; onClicked: { app.aggiorna(); app.apri(app.mia) } }
         }
         // Indice delle lettere: tocca per saltare
         Column {
@@ -144,7 +158,8 @@ Rectangle {
                 anchors.fill: parent; anchors.margins: -10
                 onClicked: {
                     if (!app.modifica) { app.modifica = true; return }
-                    var r = ponte.chiama("salvaContatto", [campoNome.text, campoNumero.text, app.scelto.id, campoEmail.text, campoNote.text])
+                    var d = Object.assign({}, app.bozza); d.id = app.scelto.id
+                    var r = ponte.chiama("salvaScheda", [d])
                     tel.avviso(r.messaggio)
                     if (r.ok) { app.scelto = { id: r.id }; app.aggiorna(); app.modifica = false }
                 }
@@ -165,7 +180,7 @@ Rectangle {
             Text { visible: !app.modifica; anchors.horizontalCenter: parent.horizontalCenter; width: app.width - 40; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
                    text: app.scelto ? app.scelto.nome : ""; color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(30); font.weight: Font.Bold }
             Text { visible: !app.modifica && text !== ""; anchors.horizontalCenter: parent.horizontalCenter; width: app.width - 40; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
-                   text: app.scelto ? (app.scelto.note || (app.scelto.preferito ? "★ " + I18n.t("Preferito") : "")) : ""; color: "#D9FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.Medium }
+                   text: app.scelto ? (app.io ? I18n.t("La mia scheda") : (app.scelto.azienda || app.scelto.note || (app.scelto.preferito ? "★ " + I18n.t("Preferito") : ""))) : ""; color: "#D9FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.Medium }
         }
         // Azioni rapide
         Row {
@@ -201,36 +216,48 @@ Rectangle {
                 }
             }
         }
-        // Dettagli (lettura) o campi (modifica)
-        Rectangle {
+        // Modifica: tutti i campi, divisi in gruppi
+        Flickable {
             visible: app.modifica
-            x: 16; y: 210
-            width: parent.width - 32; height: dettagli.implicitHeight + 8
-            radius: 16; color: app.sezione
+            x: 16; y: 222; width: parent.width - 32; height: parent.height - y - (app.scelto && app.scelto.id !== "" && !app.io ? 110 : 30)
+            contentHeight: moduli.height + 20; clip: true
             Column {
-                id: dettagli
-                width: parent.width
+                id: moduli
+                width: parent.width; spacing: 12
                 Repeater {
-                    model: [{ e: I18n.t("Nome"), c: "nome", solo: true }, { e: I18n.t("Cellulare"), c: "numero" }, { e: I18n.t("Email"), c: "email" }, { e: I18n.t("Note"), c: "note" }]
-                    Item {
-                        required property var modelData
-                        visible: app.modifica ? true : !!(!modelData.solo && app.scelto && app.scelto[modelData.c])
-                        width: parent.width; height: visible ? 62 : 0
-                        Text { x: 16; y: 10; text: parent.modelData.e; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
-                        Text { x: 16; y: 30; visible: !app.modifica; text: app.scelto ? (app.scelto[parent.modelData.c] || "") : ""; color: parent.modelData.c === "note" ? tel.pal.testo : tel.accento; font.family: Tema.font; font.pixelSize: tel.px(16) }
-                        Rectangle { anchors.bottom: parent.bottom; x: 16; width: parent.width - 16; height: 1; color: app.linea }
+                    model: [0, 1, 2, 3, 4, 5]
+                    Rectangle {
+                        id: grM
+                        required property int modelData
+                        readonly property var righe: app.campi.filter(function (f) { return f.g === grM.modelData })
+                        width: moduli.width; height: colM.height; radius: 14; color: app.sezione
+                        Column {
+                            id: colM
+                            width: parent.width
+                            Repeater {
+                                model: grM.righe
+                                Item {
+                                    id: rigaM
+                                    required property var modelData
+                                    required property int index
+                                    width: colM.width; height: 56
+                                    Rectangle { visible: rigaM.index > 0; x: 16; width: parent.width - 16; height: 1; color: app.linea }
+                                    Text { x: 16; y: 8; text: rigaM.modelData.e; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
+                                    TextField {
+                                        x: 10; y: 20; width: parent.width - 20; height: 34
+                                        text: app.bozza[rigaM.modelData.c] || ""
+                                        onTextEdited: app.bozza[rigaM.modelData.c] = text
+                                        color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
+                                        placeholderText: rigaM.modelData.s || (rigaM.modelData.t === "tel" ? "+39 …" : rigaM.modelData.t === "mail" ? "nome@esempio.it" : rigaM.modelData.t === "url" ? "www.esempio.it" : "")
+                                        placeholderTextColor: Qt.rgba(tel.pal.testo2.r, tel.pal.testo2.g, tel.pal.testo2.b, 0.6)
+                                        inputMethodHints: rigaM.modelData.t === "tel" ? Qt.ImhDialableCharactersOnly : rigaM.modelData.t === "mail" ? Qt.ImhEmailCharactersOnly : rigaM.modelData.t === "url" ? Qt.ImhUrlCharactersOnly : Qt.ImhNone
+                                        background: Item {}
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-            }
-            // Campi di modifica sovrapposti alle righe (uno per riga)
-            Column {
-                visible: app.modifica
-                x: 16; y: 26; width: parent.width - 32
-                spacing: 24
-                TextField { id: campoNome; width: parent.width; height: 38; text: app.scelto ? app.scelto.nome || "" : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); placeholderText: I18n.t("Nome e cognome"); placeholderTextColor: tel.pal.testo2; background: Item {} }
-                TextField { id: campoNumero; width: parent.width; height: 38; text: app.scelto ? app.scelto.numero || "" : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); inputMethodHints: Qt.ImhDialableCharactersOnly; placeholderText: "+39 …"; placeholderTextColor: tel.pal.testo2; background: Item {} }
-                TextField { id: campoEmail; width: parent.width; height: 38; text: app.scelto ? app.scelto.email || "" : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); inputMethodHints: Qt.ImhEmailCharactersOnly; placeholderText: "nome@esempio.it"; placeholderTextColor: tel.pal.testo2; background: Item {} }
-                TextField { id: campoNote; width: parent.width; height: 38; text: app.scelto ? app.scelto.note || "" : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); background: Item {} }
             }
         }
         // Gruppi come la scheda dell'iPhone: numeri, email, compleanno, azioni
@@ -274,28 +301,42 @@ Rectangle {
             Column {
                 id: gruppi
                 width: parent.width; spacing: 12
-                Gruppo {
-                    Voce { etichetta: I18n.t("cellulare"); valore: app.scelto ? app.scelto.numero || "" : ""; onTocco: tel.chiama(app.scelto.numero) }
-                    Voce { visible: !!(app.scelto && app.scelto.numero2); prima: false; etichetta: I18n.t("casa"); valore: app.scelto ? app.scelto.numero2 || "" : ""; onTocco: tel.chiama(app.scelto.numero2) }
+                Repeater {
+                    model: [1, 2, 3, 4, 5]
+                    Gruppo {
+                        id: grV
+                        required property int modelData
+                        readonly property var voci: app.scelto ? app.campi.filter(function (f) { return f.g === grV.modelData && !!app.scelto[f.c] }) : []
+                        visible: voci.length > 0
+                        Repeater {
+                            model: grV.voci
+                            Voce {
+                                required property var modelData
+                                required property int index
+                                prima: index === 0
+                                etichetta: modelData.e
+                                valore: app.scelto[modelData.c] || ""
+                                cliccabile: !!modelData.t
+                                onTocco: {
+                                    var v = app.scelto[modelData.c]
+                                    if (modelData.t === "tel") tel.chiama(v)
+                                    else if (modelData.t === "mail") Qt.openUrlExternally("mailto:" + v)
+                                    else if (modelData.t === "url") Qt.openUrlExternally(v.indexOf("://") > 0 ? v : "https://" + v)
+                                }
+                            }
+                        }
+                    }
                 }
                 Gruppo {
-                    visible: !!(app.scelto && app.scelto.email)
-                    Voce { etichetta: I18n.t("email"); valore: app.scelto ? app.scelto.email || "" : ""; onTocco: Qt.openUrlExternally("mailto:" + app.scelto.email) }
-                }
-                Gruppo {
-                    visible: !!(app.scelto && app.scelto.compleanno)
-                    Voce { etichetta: I18n.t("compleanno"); valore: app.scelto ? app.scelto.compleanno || "" : ""; cliccabile: false }
-                }
-                Gruppo {
-                    Azione { testo: I18n.t("Condividi contatto"); onTocco: { var r = ponte.chiama0("esportaVcard"); tel.avviso(r.messaggio) } }
-                    Azione { prima: false; testo: app.scelto && app.scelto.preferito ? I18n.t("Togli dai preferiti") : I18n.t("Aggiungi ai preferiti")
+                    Azione { testo: app.io ? I18n.t("Condividi la mia scheda") : I18n.t("Condividi contatto"); onTocco: { var r = ponte.chiama0("esportaVcard"); tel.avviso(r.messaggio) } }
+                    Azione { visible: !app.io; prima: false; testo: app.scelto && app.scelto.preferito ? I18n.t("Togli dai preferiti") : I18n.t("Aggiungi ai preferiti")
                              onTocco: { ponte.chiama("preferito", [app.scelto.id, !app.scelto.preferito]); app.aggiorna() } }
-                    Azione { prima: false; testo: I18n.t("Blocca questo contatto"); colore: tel.rosso; onTocco: tel.avviso(I18n.t("Il blocco dei numeri arriva con il telefono vero")) }
+                    Azione { visible: !app.io; prima: false; testo: I18n.t("Blocca questo contatto"); colore: tel.rosso; onTocco: tel.avviso(I18n.t("Il blocco dei numeri arriva con il telefono vero")) }
                 }
             }
         }
         Rectangle {
-            visible: app.modifica && app.scelto && app.scelto.id !== ""
+            visible: app.modifica && app.scelto && app.scelto.id !== "" && !app.io
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom; anchors.bottomMargin: 50
             width: parent.width - 32; height: 48; radius: 14

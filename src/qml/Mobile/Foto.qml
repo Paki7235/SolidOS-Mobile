@@ -21,8 +21,8 @@ Rectangle {
     property var scelte: ({})                 // percorso → true (in «Seleziona»)
     readonly property int quanteScelte: Object.keys(scelte).length
     readonly property color sezione: tel.pal.superficie
-    readonly property var nomiFonte: ({ telefono: I18n.t("Telefono"), nextcloud: "Nextcloud", onedrive: "OneDrive", dropbox: "Dropbox", google: "Google Foto" })
-    readonly property var coloriFonte: ({ nextcloud: "#0082C9", onedrive: "#0078D4", dropbox: "#0061FE", google: "#4285F4" })
+    readonly property var nomiFonte: ({ telefono: I18n.t("Telefono"), nextcloud: "Nextcloud", casa: I18n.t("Server di casa"), onedrive: "OneDrive", dropbox: "Dropbox", google: "Google Foto" })
+    readonly property var coloriFonte: ({ nextcloud: "#0082C9", casa: "#30A46C", onedrive: "#0078D4", dropbox: "#0061FE", google: "#4285F4" })
     // Le foto mostrate (filtro o ricerca) e raggruppate per giorno
     readonly property var vista: elenco.filter(function (f) {
         if (scheda === "cerca") {
@@ -39,7 +39,7 @@ Rectangle {
         }
         return g
     }
-    readonly property var fonti: { var f = []; for (var i = 0; i < elenco.length; i++) if (f.indexOf(elenco[i].fonte) < 0) f.push(elenco[i].fonte); var o = ["telefono", "google", "onedrive", "nextcloud", "dropbox"]; return f.sort(function (a, b) { return o.indexOf(a) - o.indexOf(b) }) }
+    readonly property var fonti: { var f = []; for (var i = 0; i < elenco.length; i++) if (f.indexOf(elenco[i].fonte) < 0) f.push(elenco[i].fonte); var o = ["telefono", "google", "onedrive", "nextcloud", "casa", "dropbox"]; return f.sort(function (a, b) { return o.indexOf(a) - o.indexOf(b) }) }
     readonly property var fotoAperta: aperta >= 0 ? vista[aperta] : null
 
     function aggiorna() { elenco = ponte.chiama0("foto"); servizi = ponte.chiama0("fotoServizi") }
@@ -51,6 +51,7 @@ Rectangle {
         var s = ponte.chiama0("avvio").schermata
         if (s === "foto-account") scheda = "account"
         else if (s === "foto-google") { scheda = "account"; sceltaGoogle.apri() }
+        else if (s === "foto-casa") { scheda = "account"; collegaCasa.apri() }
         else if (s === "foto-una") aperturaProva.start()
     }
     Timer { id: aperturaProva; interval: 300; onTriggered: { var i = app.elenco.findIndex(function (f) { return f.fonte === "onedrive" }); app.apri(Math.max(0, i)) } }
@@ -78,7 +79,8 @@ Rectangle {
                 c.fillStyle = "#4285F4"; c.fillRect(cx, cy - w * 0.1, r + w * 0.1, w * 0.2)
             }
         }
-        Text { visible: fo.fonte !== "google"; anchors.centerIn: parent; text: (app.nomiFonte[fo.fonte] || "?").charAt(0); color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: fo.lato * 0.5; font.weight: Font.Bold }
+        Icona { visible: fo.fonte === "casa"; anchors.centerIn: parent; nome: "user-home"; lato: fo.lato * 0.62; tema: "scuro" }
+        Text { visible: fo.fonte !== "google" && fo.fonte !== "casa"; anchors.centerIn: parent; text: (app.nomiFonte[fo.fonte] || "?").charAt(0); color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: fo.lato * 0.5; font.weight: Font.Bold }
     }
     component Interruttore2: Rectangle {
         property bool acceso: false
@@ -377,7 +379,8 @@ Rectangle {
                                 readonly property bool spento: alt.modelData.stato === "impossibile"
                                 color: spento ? "transparent" : alt.modelData.colore
                                 border.width: spento ? 1.5 : 0; border.color: tel.pal.testo2
-                                Text { anchors.centerIn: parent; text: alt.modelData.lettera; color: parent.spento ? tel.pal.testo2 : "#FFFFFF"; font.family: Tema.font; font.pixelSize: 15; font.weight: Font.Bold }
+                                Icona { visible: alt.modelData.id === "casa"; anchors.centerIn: parent; nome: "user-home"; lato: 20; tema: "scuro" }
+                                Text { visible: alt.modelData.id !== "casa"; anchors.centerIn: parent; text: alt.modelData.lettera; color: parent.spento ? tel.pal.testo2 : "#FFFFFF"; font.family: Tema.font; font.pixelSize: 15; font.weight: Font.Bold }
                             }
                             Column {
                                 x: 62; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 62 - (alt.modelData.stato === "impossibile" ? 12 : 96)
@@ -390,11 +393,61 @@ Rectangle {
                                 testo: I18n.t("Collega"); blu: true
                                 onTocco: {
                                     if (alt.modelData.id === "nextcloud") collegaNc.open()
+                                    else if (alt.modelData.id === "casa") collegaCasa.apri()
                                     else tel.avviso(alt.modelData.nome + ": " + I18n.t("arriva quando SolidOS sarà registrato sul servizio"))
                                 }
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    // Collega un server di casa (NAS, router con disco, PC con «python3 -m nucleo.fotoserver»)
+    Popup {
+        id: collegaCasa
+        property var trovati: []
+        property bool cercando: false
+        function apri() { trovati = []; cercando = true; open(); ponte.avvia("fotoScopriServer", [], "foto-scopri") }
+        Connections { target: ponte; function onCompletato(id, r) { if (id === "foto-scopri") { collegaCasa.trovati = r; collegaCasa.cercando = false } } }
+        anchors.centerIn: parent
+        width: parent.width - 32; modal: true; padding: 18
+        background: Rectangle { radius: 20; color: tel.pal.superficie }
+        Column {
+            width: parent.width; spacing: 12
+            Text { text: I18n.t("Server di casa"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(19); font.weight: Font.Bold }
+            Text { width: parent.width; wrapMode: Text.Wrap; text: I18n.t("Un NAS, un router con il disco o un computer di casa che condivide le foto. Sul PC SolidOS o sul Mac basta avviare «python3 -m nucleo.fotoserver»."); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
+            Text { text: collegaCasa.cercando ? I18n.t("Cerco sulla rete Wi-Fi…") : (collegaCasa.trovati.length ? I18n.t("Trovati sulla tua rete") : I18n.t("Nessun server trovato da solo: scrivi l'indirizzo")); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+            Repeater {
+                model: collegaCasa.trovati
+                Rectangle {
+                    id: trovato
+                    required property var modelData
+                    width: parent.width; height: 52; radius: 12
+                    color: casaUrl.text === modelData.indirizzo ? Qt.rgba(tel.accento.r, tel.accento.g, tel.accento.b, 0.18) : tel.pal.superficie2
+                    Rectangle {
+                        x: 10; anchors.verticalCenter: parent.verticalCenter; width: 32; height: 32; radius: 16; color: "#30A46C"
+                        Icona { anchors.centerIn: parent; nome: "user-home"; lato: 18; tema: "scuro" }
+                    }
+                    Column {
+                        x: 52; anchors.verticalCenter: parent.verticalCenter
+                        Text { text: trovato.modelData.nome; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.DemiBold }
+                        Text { text: trovato.modelData.indirizzo.replace("http://", ""); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
+                    }
+                    MouseArea { anchors.fill: parent; onClicked: casaUrl.text = trovato.modelData.indirizzo }
+                }
+            }
+            CampoTesto { id: casaUrl; width: parent.width; placeholderText: I18n.t("Indirizzo, es. 192.168.1.10:8765"); inputMethodHints: Qt.ImhUrlCharactersOnly }
+            Text { width: parent.width; wrapMode: Text.Wrap; text: I18n.t("Nel telefono virtuale sul Mac il Mac è 10.0.2.2:8765."); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
+            CampoTesto { id: casaUtente; width: parent.width; placeholderText: I18n.t("Utente (se il server lo chiede)") }
+            CampoTesto { id: casaPw; width: parent.width; placeholderText: I18n.t("Password (se il server la chiede)"); echoMode: TextInput.Password }
+            Row {
+                spacing: 10; anchors.right: parent.right
+                Pulsante { text: I18n.t("Annulla"); onClicked: collegaCasa.close() }
+                Pulsante {
+                    text: I18n.t("Collega"); principale: true
+                    onClicked: { var r = ponte.chiama("fotoCollegaServer", [casaUrl.text, casaUtente.text, casaPw.text]); tel.avviso(r.messaggio); if (r.ok) { casaPw.text = ""; collegaCasa.close(); app.aggiorna() } }
                 }
             }
         }

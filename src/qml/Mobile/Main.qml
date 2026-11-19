@@ -172,12 +172,15 @@ Window {
         else if (a.schermata === "contatti") appInterna = "contatti"
         else if (a.schermata === "dove") appInterna = "dove"
         else if (["calcolatrice", "note", "file", "foto", "musica", "fotocamera", "store", "vicina"].indexOf(a.schermata) >= 0) appInterna = a.schermata
-        else if (a.schermata === "store-app" || a.schermata === "store-raccolta") appInterna = "store"
-        else if (a.schermata === "foto-account" || a.schermata === "foto-google" || a.schermata === "foto-una") appInterna = "foto"
+        else if (a.schermata === "store-app" || a.schermata === "store-raccolta" || a.schermata === "store-mie" || a.schermata === "store-scarica") appInterna = "store"
+        else if (a.schermata === "foto-account" || a.schermata === "foto-google" || a.schermata === "foto-casa" || a.schermata === "foto-una") appInterna = "foto"
         else if (a.schermata === "segreteria") { appInterna = "telefono"; telefonoApp.scheda = "segreteria" }
         else if (a.schermata === "condividi") condividi(ponte.chiama0("foto").slice(0, 2).map(function (f) { return f.percorso }))
         else if (a.schermata === "impostazioni") appInterna = "impostazioni"
         else if (["wifi", "bluetooth", "rete", "suoni", "schermo", "batteria", "info", "solidid", "sicurezza"].indexOf(a.schermata) >= 0) { appInterna = "impostazioni"; impostazioniApp.apri(a.schermata) }
+        else if (a.schermata === "tastiera" || a.schermata === "tastierino") { appInterna = "contatti"; contattiApp.nuovo() }
+        else if (a.schermata === "mia-scheda") { appInterna = "contatti"; contattiApp.aggiorna(); contattiApp.apri(contattiApp.mia) }
+        else if (a.schermata === "modifica-contatto") { appInterna = "contatti"; var cm = ponte.chiama0("contatti"); if (cm.length) { contattiApp.apri(cm[1] || cm[0]); contattiApp.modifica = true } }
         else if (a.schermata === "scheda") { appInterna = "contatti"; var cs = ponte.chiama0("contatti"); if (cs.length) contattiApp.apri(cs[1] || cs[0]) }
         else if (a.schermata === "banner") { schermata = "home"; var nn = ponte.chiama0("notifiche"); if (nn.length) banner = nn[0] }
         else if (a.schermata === "chiamata") { var cc = ponte.chiama0("contatti"); if (cc.length) chiama(cc[0].numero) }
@@ -217,7 +220,7 @@ Window {
     Telefono {
         id: telefonoApp
         anchors.left: parent.left; anchors.right: parent.right
-        height: parent.height
+        height: parent.height - tastiera.altezza
         // Si apre ingrandendosi dal centro (94% → 100%) e comparendo; si chiude più in fretta
         property real apertura: tel.appInterna === "telefono" ? 1 : 0
         Behavior on apertura { Movimento { apre: tel.appInterna === "telefono" } }
@@ -229,7 +232,7 @@ Window {
     Dove {
         id: doveApp
         anchors.left: parent.left; anchors.right: parent.right
-        height: parent.height
+        height: parent.height - tastiera.altezza
         // Si apre ingrandendosi dal centro (94% → 100%) e comparendo; si chiude più in fretta
         property real apertura: tel.appInterna === "dove" ? 1 : 0
         Behavior on apertura { Movimento { apre: tel.appInterna === "dove" } }
@@ -241,7 +244,7 @@ Window {
     Impostazioni {
         id: impostazioniApp
         anchors.left: parent.left; anchors.right: parent.right
-        height: parent.height
+        height: parent.height - tastiera.altezza
         // Si apre ingrandendosi dal centro (94% → 100%) e comparendo; si chiude più in fretta
         property real apertura: tel.appInterna === "impostazioni" ? 1 : 0
         Behavior on apertura { Movimento { apre: tel.appInterna === "impostazioni" } }
@@ -253,7 +256,7 @@ Window {
     Contatti {
         id: contattiApp
         anchors.left: parent.left; anchors.right: parent.right
-        height: parent.height
+        height: parent.height - tastiera.altezza
         // Si apre ingrandendosi dal centro (94% → 100%) e comparendo; si chiude più in fretta
         property real apertura: tel.appInterna === "contatti" ? 1 : 0
         Behavior on apertura { Movimento { apre: tel.appInterna === "contatti" } }
@@ -265,7 +268,7 @@ Window {
     Messaggi {
         id: messaggiApp
         anchors.left: parent.left; anchors.right: parent.right
-        height: parent.height
+        height: parent.height - tastiera.altezza
         // Si apre ingrandendosi dal centro (94% → 100%) e comparendo; si chiude più in fretta
         property real apertura: tel.appInterna === "messaggi" ? 1 : 0
         Behavior on apertura { Movimento { apre: tel.appInterna === "messaggi" } }
@@ -281,7 +284,7 @@ Window {
         property bool resta: false          // Musica: continua a suonare quando la chiudi
         property bool usata: false
         anchors.left: parent.left; anchors.right: parent.right
-        height: parent.height
+        height: parent.height - tastiera.altezza
         property real apertura: tel.appInterna === nome ? 1 : 0
         Behavior on apertura { Movimento { apre: tel.appInterna === nome } }
         y: (1 - apertura) * 40
@@ -430,6 +433,12 @@ Window {
             }
         }
     }
+
+    // Le app prese con lo stesso Solid ID sul PC: si scaricano da sole un minuto dopo l'avvio
+    Timer { interval: 60000; running: true; onTriggered: if (tel.imp.app_automatiche !== false) ponte.avvia("storeScaricaMie", [], "store-scarica-mie") }
+
+    // ── Tastiera sullo schermo ─────────────────────────────────────────
+    Tastiera { id: tastiera; z: 95 }
 
     // ── Messaggio temporaneo ──────────────────────────────────────────────
     Rectangle {

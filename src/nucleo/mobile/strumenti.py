@@ -506,8 +506,15 @@ def store_cerca(testo: str) -> list:
     return risultati
 
 
-def store_installa(ident: str) -> dict:
-    if DEMO:
+def store_installa(ident: str, avanzamento=None) -> dict:
+    """Installa da Flathub; avanzamento(percento, fase) riceve la percentuale per la barra."""
+    from .. import appmie
+
+    if DEMO:   # nella prova: uno scaricamento finto di 3 secondi
+        for p in range(0, 101, 5):
+            if avanzamento:
+                avanzamento(p, T("Scaricamento") if p < 100 else T("Installazione"))
+            time.sleep(0.15)
         return {"ok": True, "messaggio": T("Installata")}
     if not shutil.which("flatpak"):
         return {"ok": False, "messaggio": T("Flatpak non è installato")}
@@ -515,10 +522,14 @@ def store_installa(ident: str) -> dict:
         return {"ok": False, "messaggio": T("App non valida")}
     subprocess.run(["flatpak", "--user", "remote-add", "--if-not-exists", "flathub", _RIMOTO],
                    capture_output=True, timeout=120)
-    r = subprocess.run(["flatpak", "--user", "install", "-y", "--noninteractive", "flathub", ident],
-                       capture_output=True, text=True, timeout=3600)
-    return {"ok": r.returncode == 0,
-            "messaggio": T("Installata") if r.returncode == 0 else (r.stderr.strip().splitlines() or [T("Non riuscito")])[-1]}
+    codice, uscita = appmie.flatpak_installa(ident, avanzamento)
+    if codice == 0:
+        return {"ok": True, "messaggio": T("Installata")}
+    righe = [r.strip() for r in uscita.replace("\r", "\n").splitlines() if r.strip()]
+    errore = next((r for r in reversed(righe) if "error" in r.lower() or "errore" in r.lower()), righe[-1] if righe else "")
+    if "no remote refs" in errore.lower() or "nothing matches" in errore.lower():
+        errore = T("Questa app non c'è per il processore del telefono")
+    return {"ok": False, "messaggio": errore[-160:] or T("Non riuscito")}
 
 
 def store_rimuovi(ident: str) -> dict:

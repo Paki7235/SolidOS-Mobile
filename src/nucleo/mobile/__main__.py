@@ -18,6 +18,8 @@ from ..ponte import Backend, crea_ponte
 from ..sistema import config_utente, leggi_json, scrivi_json
 
 PREDEFINITE = {
+    "tastiera": True,
+    "app_automatiche": True,    # Store: scarica da sola le app prese con lo stesso Solid ID sul PC           # tastiera sullo schermo quando si tocca un campo di testo
     "riduci_movimento": False,   # Accessibilità: animazioni istantanee
     "tema": "scuro",          # scuro | chiaro
     "testo": 1,               # 0 piccolo, 1 normale, 2 grande
@@ -425,6 +427,24 @@ class BackendMobile(Backend):
 
         return telefonia.stato_modem()
 
+    # ── Tastiera sullo schermo: i tasti arrivano al campo come quelli di una tastiera vera ──
+    def tasto(self, testo: str, nome: str = "") -> None:
+        from PyQt6.QtCore import QCoreApplication, QEvent, Qt
+        from PyQt6.QtGui import QGuiApplication, QKeyEvent
+
+        finestra = QGuiApplication.focusWindow() or next(iter(QGuiApplication.topLevelWindows()), None)
+        if finestra is None:
+            return
+        tasti = {"invio": Qt.Key.Key_Return, "cancella": Qt.Key.Key_Backspace, "sinistra": Qt.Key.Key_Left,
+                 "destra": Qt.Key.Key_Right}
+        codice = tasti.get(nome, Qt.Key.Key_unknown)
+        if nome == "invio":
+            testo = "\r"
+        elif nome == "cancella":
+            testo = "\b"
+        for tipo in (QEvent.Type.KeyPress, QEvent.Type.KeyRelease):
+            QCoreApplication.sendEvent(finestra, QKeyEvent(tipo, codice, Qt.KeyboardModifier.NoModifier, testo))
+
     def contatti(self) -> list:
         from . import telefonia
 
@@ -434,6 +454,16 @@ class BackendMobile(Backend):
         from . import telefonia
 
         return telefonia.salva_contatto(nome, numero, ident, email, note)
+
+    def salvaScheda(self, dati: dict) -> dict:
+        from . import telefonia
+
+        return telefonia.salva_scheda(dati)
+
+    def miaScheda(self) -> dict:
+        from . import telefonia
+
+        return telefonia.mia_scheda()
 
     def cercaVcard(self) -> list:
         from . import telefonia
@@ -839,6 +869,16 @@ class BackendMobile(Backend):
 
         return fotoaccount.collega_nextcloud(indirizzo, utente, password, cartella)
 
+    def fotoCollegaServer(self, indirizzo: str, utente: str = "", password: str = "") -> dict:
+        from . import fotoaccount
+
+        return fotoaccount.collega_server(indirizzo, utente, password)
+
+    def fotoScopriServer(self) -> list:
+        from . import fotoaccount
+
+        return fotoaccount.scopri_server()
+
     def fotoScollega(self, servizio: str) -> dict:
         from . import fotoaccount
 
@@ -917,10 +957,53 @@ class BackendMobile(Backend):
 
         return recensioni.utile(recensione)
 
-    def storeInstalla(self, ident: str) -> dict:
-        r = strumenti.store_installa(ident)
+    def storeInstalla(self, ident: str, nome: str = "", icona: str = "") -> dict:
+        from .. import appmie
+
+        def avanzamento(percento: int, fase: str) -> None:
+            self.emetti("store-avanzamento", {"id": ident, "percento": percento, "fase": fase})
+
+        r = strumenti.store_installa(ident, avanzamento)
         self._app = None
+        if r.get("ok"):
+            appmie.aggiungi(ident, nome, icona)   # entra in «Le mie app» del Solid ID
         return r
+
+    # ── Le mie app: quelle prese con lo stesso Solid ID sugli altri dispositivi ──
+    def storeMieApp(self) -> dict:
+        from .. import appmie
+        from . import telefonia
+
+        installate = strumenti._installate_flatpak()
+        if telefonia.DEMO:   # solo per le foto della prova
+            elenco = [{"app": "org.gnome.Weather", "nome": "Meteo", "dispositivo": "telefono"},
+                      {"app": "org.gnome.Maps", "nome": "Mappe", "dispositivo": "pc", "icona": strumenti._icona_flathub("org.gnome.Maps")},
+                      {"app": "de.haeckerfelix.Shortwave", "nome": "Shortwave", "dispositivo": "pc",
+                       "icona": strumenti._icona_flathub("de.haeckerfelix.Shortwave")}]
+            collegato = True
+        else:
+            elenco, collegato = appmie.elenco(), appmie.collegato()
+        for a in elenco:
+            a["installata"] = a.get("app") in installate
+        return {"collegato": collegato, "elenco": elenco, "automatiche": bool(self.impostazioni().get("app_automatiche", True))}
+
+    def storeScaricaMie(self) -> dict:
+        """Scarica da sola le app prese sugli altri dispositivi (se l'impostazione è accesa)."""
+        from .. import appmie
+
+        if not self.impostazioni().get("app_automatiche", True) or not appmie.collegato():
+            return {"ok": True, "scaricate": 0}
+        n = 0
+        for a in appmie.da_scaricare(strumenti._installate_flatpak()):
+            if self.storeInstalla(a["app"], a.get("nome", ""), a.get("icona", "")).get("ok"):
+                n += 1
+                self.emetti("store-scaricata", {"id": a["app"], "nome": a.get("nome", "")})
+        return {"ok": True, "scaricate": n}
+
+    def storeTogliMia(self, ident: str) -> dict:
+        from .. import appmie
+
+        return appmie.togli(ident)
 
     def storeRimuovi(self, ident: str) -> dict:
         r = strumenti.store_rimuovi(ident)
