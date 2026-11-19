@@ -277,6 +277,66 @@ def codice_dispositivo() -> str:
     return hashlib.sha256(f"{mid}:{branding.id_os()}:dove".encode()).hexdigest()[:40]
 
 
+def codice_hardware() -> str:
+    """Impronta dell'hardware per il blocco di attivazione: non cambia con un reset o una nuova
+    installazione (numero di serie della scheda, oppure indirizzo fisso della rete).
+    Vuota nelle macchine virtuali: lì tutti avrebbero la stessa."""
+    import subprocess
+
+    try:
+        virtuale = subprocess.run(["systemd-detect-virt"], capture_output=True, text=True, timeout=3).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        virtuale = ""
+    if virtuale and virtuale != "none":
+        return ""
+    if "hypervisor" in _leggi("/proc/cpuinfo").split("flags", 1)[-1][:2000]:
+        return ""
+    parti = [_leggi("/sys/firmware/devicetree/base/serial-number").strip("\x00"),
+             next((r.split(":", 1)[1].strip() for r in _leggi("/proc/cpuinfo").splitlines() if r.startswith("Serial")), "")]
+    if not any(x and x.strip("0") for x in parti):
+        for rete in sorted(Path("/sys/class/net").glob("*")):
+            if rete.name == "lo" or not (rete / "device").exists():
+                continue
+            mac = _leggi(str(rete / "address"))
+            if mac and mac != "00:00:00:00:00:00":
+                parti.append(mac)
+                break
+    seme = "|".join(x for x in parti if x)
+    return hashlib.sha256(f"{seme}:{branding.id_os()}:attivazione".encode()).hexdigest()[:48] if seme else ""
+
+
+def blocco_attivazione() -> str:
+    """Se questo telefono appartiene a un altro Solid ID (o si è fuori dall'account): l'email
+    nascosta del proprietario (p•••@gmail.com); vuoto se è libero."""
+    h = codice_hardware()
+    if not h:
+        return ""
+    try:
+        chiave_accesso = token() if sessione().get("refresh_token") else ""
+    except ErroreSolidID:
+        chiave_accesso = ""
+    try:
+        r = _richiesta("POST", "/rest/v1/rpc/blocco_attivazione", {"h": h}, chiave_accesso)
+    except ErroreSolidID:
+        return ""
+    return r if isinstance(r, str) else ""
+
+
+def verifica_password(password: str) -> bool:
+    """Controlla la password del Solid ID di questo telefono (sblocco della modalità smarrito)."""
+    email = sessione().get("utente", {}).get("email", "")
+    if not email or not password:
+        return False
+    try:
+        r = _richiesta("POST", "/auth/v1/token?grant_type=password", {"email": email, "password": password})
+    except ErroreSolidID:
+        return False
+    if r and r.get("access_token"):
+        _salva({**sessione(), **_da_risposta_auth(r)})
+        return True
+    return False
+
+
 def _leggi(p: str) -> str:
     try:
         return Path(p).read_text(encoding="utf-8", errors="replace").strip()
@@ -350,6 +410,9 @@ def registra_dispositivo() -> str:
     s = sessione()
     corpo = {"proprietario": s["utente"]["id"], "codice": codice_dispositivo(), **info_dispositivo(),
              "trova_attivo": bool(s.get("trova", True)), "ultimo_visto": _adesso()}
+    hw = codice_hardware()
+    if hw:
+        corpo["hardware"] = hw
     r = rest("POST", "dispositivi", corpo, "on_conflict=proprietario,codice",
              extra={"Prefer": "resolution=merge-duplicates,return=representation"})
     ident = r[0]["id"] if isinstance(r, list) and r else ""
@@ -383,7 +446,7 @@ def dispositivi() -> list[dict]:
 
 
 def invia_comando(dispositivo: str, tipo: str, messaggio: str = "") -> dict:
-    if tipo not in ("suona", "ferma", "blocca", "posizione"):
+    if tipo not in ("suona", "ferma", "blocca", "perso", "cancella", "posizione"):
         return {"ok": False, "messaggio": T("Comando non valido")}
     corpo = {"dispositivo": dispositivo, "tipo": tipo, "proprietario": sessione()["utente"]["id"]}
     if messaggio:

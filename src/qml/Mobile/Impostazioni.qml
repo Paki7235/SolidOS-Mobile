@@ -19,7 +19,15 @@ Rectangle {
     property var info: ({})
     property var account: ({})
     property var voip: ({})
-    property var campiSip: ({})        // quello che si scrive nei campi dell'account SIP
+    property var campiSip: ({})
+    property var furto: ({})
+    // Le cose importanti (protezione in caso di furto): chiede il codice, poi prova l'azione
+    function protetta(metodo, argomenti, dopo) {
+        if (imp.codice) { chiediCodice.metodo = metodo; chiediCodice.argomenti = argomenti; chiediCodice.dopo = dopo; chiediCodice.open(); return }
+        var r = ponte.chiama(metodo, argomenti.concat([""]))
+        if (r.messaggio) tel.avviso(r.messaggio)
+        if (dopo) dopo(r)
+    }        // quello che si scrive nei campi dell'account SIP
     property int volume: 50
     property int luce: 70
     property bool codice: false         // c'è un codice di sblocco
@@ -34,7 +42,7 @@ Rectangle {
         else if (p === "batteria") batteria = ponte.chiama0("batteriaInfo")
         else if (p === "info") info = ponte.chiama0("infoTelefono")
         else if (p === "solidid") account = ponte.chiama0("solidId")
-        else if (p === "sicurezza") codice = ponte.chiama0("haCodice")
+        else if (p === "sicurezza") { codice = ponte.chiama0("haCodice"); furto = ponte.chiama0("protezioneFurto") }
         else if (p === "chiamate") { voip = ponte.chiama0("voipAccount"); campiSip = { nome: voip.nome || "", utente: voip.utente || "", dominio: voip.dominio || "", server: voip.server || "", password: "" } }
     }
     function riepilogo() {
@@ -75,6 +83,7 @@ Rectangle {
             "preferences-desktop-wallpaper-symbolic": "#8B5CF6", "battery-good-symbolic": "#30A46C", "system-lock-screen-symbolic": "#E5484D",
             "help-about-symbolic": "#71717A", "avatar-default-symbolic": "#71717A" })[icona] || "#71717A"
         property string titolo: ""
+        property color coloreTitolo: tel.pal.testo
         property string valore: ""
         property bool freccia: true
         property bool ultima: false
@@ -92,7 +101,7 @@ Rectangle {
             width: 32; height: 32; radius: 9; color: r.coloreIcona
             Icona { anchors.centerIn: parent; nome: r.icona; lato: 18; tema: "scuro" }
         }
-        Text { x: r.icona !== "" ? 60 : 16; anchors.verticalCenter: parent.verticalCenter; text: r.titolo; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16) }
+        Text { x: r.icona !== "" ? 60 : 16; anchors.verticalCenter: parent.verticalCenter; text: r.titolo; color: r.coloreTitolo; font.family: Tema.font; font.pixelSize: tel.px(16) }
         Text {
             anchors.right: parent.right; anchors.rightMargin: r.freccia ? 34 : 16; anchors.verticalCenter: parent.verticalCenter
             visible: !r.interruttore
@@ -558,7 +567,7 @@ Rectangle {
                     }
                     Gruppo {
                         Riga { titolo: I18n.t("Dov'è"); interruttore: true; acceso: imp.account.trova === true; freccia: false; ultima: true
-                            onCambiato: function (si) { var r = ponte.chiama("sidTrova", [si]); tel.avviso(r.messaggio); imp.account = ponte.chiama0("solidId") } }
+                            onCambiato: function (si) { imp.protetta("sidTrova", [si], function () { imp.account = ponte.chiama0("solidId") }) } }
                     }
                     Nota { text: I18n.t("Con «Dov'è» attivo ritrovi il telefono sulla mappa dal PC, lo fai suonare o lo blocchi con un messaggio. La posizione arriva dal GPS o dalle reti Wi-Fi vicine.") }
                     Titoletto { text: I18n.t("I tuoi dispositivi") }
@@ -594,7 +603,27 @@ Rectangle {
                     Riga { visible: imp.codice; titolo: I18n.t("Cambia il codice"); onScelta: codiceDlg.apri("cambia") }
                     Riga { visible: imp.codice; titolo: I18n.t("Togli il codice"); ultima: true; onScelta: codiceDlg.apri("togli") }
                 }
-                Nota { text: I18n.t("Il codice (da 4 a 8 cifre) serve per entrare nel telefono dalla schermata di blocco. Dopo 5 tentativi sbagliati bisogna aspettare sempre di più. Se blocchi il telefono da «Dov'è», per riaprirlo serve questo codice.") }
+                Nota { text: I18n.t("Il codice (da 4 a 8 cifre) serve per entrare nel telefono dalla schermata di blocco. Dopo 5 tentativi sbagliati bisogna aspettare sempre di più.") }
+                Titoletto { text: I18n.t("PROTEZIONE IN CASO DI FURTO") }
+                Gruppo {
+                    Riga {
+                        titolo: I18n.t("Protezione in caso di furto"); interruttore: true; freccia: false
+                        acceso: tel.imp.protezione_furto !== false
+                        onCambiato: function (si) {
+                            if (si) tel.imposta("protezione_furto", true)
+                            else imp.protetta("disattivaProtezioneFurto", [], function () { tel.imp = ponte.chiama0("impostazioni") })
+                        }
+                    }
+                    Riga { titolo: I18n.t("Luoghi abituali"); freccia: false; ultima: true
+                           valore: (imp.furto.luoghi || []).length ? imp.furto.luoghi.slice(0, 2).join(", ") : I18n.t("Li impara da solo") }
+                }
+                Nota { text: I18n.t("Se qualcuno ti vede mettere il codice e ruba il telefono, non può comunque prenderti tutto. Lontano dai luoghi abituali (le reti Wi-Fi dove stai spesso), per spegnere Dov'è, uscire dal Solid ID, cambiare il codice o cancellare il telefono servono il codice e un'ora di attesa.") }
+                Titoletto { text: I18n.t("SMARRITO O RUBATO") }
+                Nota { text: I18n.t("Da «Dov'è» (su un altro telefono o sul PC) puoi mettere questo telefono in modalità smarrito: si sblocca solo con la password del Solid ID. Puoi anche cancellarlo a distanza: dopo, il blocco di attivazione chiede ancora il tuo Solid ID, così a chi l'ha preso non serve a niente.") }
+                Item { width: 1; height: 12 }
+                Gruppo {
+                    Riga { titolo: I18n.t("Inizializza il telefono"); coloreTitolo: tel.rosso; freccia: false; ultima: true; onScelta: confermaReset.open() }
+                }
             }
 
             // ══ Info sul telefono ════════════════════════════════════════
@@ -639,7 +668,7 @@ Rectangle {
             Row {
                 spacing: 10; anchors.right: parent.right
                 Pulsante { text: I18n.t("Annulla"); onClicked: esciSid.close() }
-                Pulsante { text: I18n.t("Esci"); pericoloso: true; onClicked: { var r = ponte.chiama0("sidEsci"); tel.avviso(r.messaggio); esciSid.close(); imp.account = ponte.chiama0("solidId") } }
+                Pulsante { text: I18n.t("Esci"); pericoloso: true; onClicked: { esciSid.close(); imp.protetta("sidEsci", [], function () { imp.account = ponte.chiama0("solidId") }) } }
             }
         }
     }
@@ -721,5 +750,56 @@ Rectangle {
         width: testoAttesa.implicitWidth + 40; height: 44; radius: 22
         color: tel.pal.pieno
         Text { id: testoAttesa; anchors.centerIn: parent; text: I18n.t("Connessione in corso…"); color: tel.pal.suPieno; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.DemiBold }
+    }
+
+    // ── Codice per le cose importanti ────────────────────────────────────
+    Popup {
+        id: chiediCodice
+        property string metodo: ""
+        property var argomenti: []
+        property var dopo: null
+        anchors.centerIn: parent
+        width: parent.width - 40; modal: true; padding: 18
+        background: Rectangle { radius: 20; color: imp.sezione }
+        onOpened: { campoProtetto.text = ""; erroreProtetto.text = ""; campoProtetto.forceActiveFocus() }
+        Column {
+            width: parent.width; spacing: 12
+            Text { text: I18n.t("Inserisci il codice"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(17); font.weight: Font.Bold }
+            CampoTesto { id: campoProtetto; width: parent.width; echoMode: TextInput.Password; inputMethodHints: Qt.ImhDigitsOnly; onAccepted: okProtetto.clicked() }
+            Text { id: erroreProtetto; width: parent.width; wrapMode: Text.Wrap; visible: text !== ""; color: tel.rosso; font.family: Tema.font; font.pixelSize: tel.px(13) }
+            Row {
+                spacing: 10; anchors.right: parent.right
+                Pulsante { text: I18n.t("Annulla"); onClicked: { chiediCodice.close(); if (chiediCodice.dopo) chiediCodice.dopo({ ok: false }) } }
+                Pulsante {
+                    id: okProtetto
+                    text: I18n.t("Continua"); principale: true
+                    onClicked: {
+                        var r = ponte.chiama(chiediCodice.metodo, chiediCodice.argomenti.concat([campoProtetto.text]))
+                        campoProtetto.text = ""
+                        if (r.chiediCodice) { erroreProtetto.text = r.messaggio; return }
+                        chiediCodice.close()
+                        if (r.messaggio) tel.avviso(r.messaggio)
+                        if (chiediCodice.dopo) chiediCodice.dopo(r)
+                    }
+                }
+            }
+        }
+    }
+    // ── Inizializza il telefono ──────────────────────────────────────────
+    Popup {
+        id: confermaReset
+        anchors.centerIn: parent
+        width: parent.width - 40; modal: true; padding: 18
+        background: Rectangle { radius: 20; color: imp.sezione }
+        Column {
+            width: parent.width; spacing: 12
+            Text { text: I18n.t("Inizializzare il telefono?"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(17); font.weight: Font.Bold }
+            Text { width: parent.width; wrapMode: Text.Wrap; text: I18n.t("Si cancellano foto, file, contatti, messaggi, app e impostazioni. Non si può tornare indietro. Il blocco di attivazione resta: per riusarlo servirà il tuo Solid ID."); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
+            Row {
+                spacing: 10; anchors.right: parent.right
+                Pulsante { text: I18n.t("Annulla"); onClicked: confermaReset.close() }
+                Pulsante { text: I18n.t("Cancella tutto"); pericoloso: true; onClicked: { confermaReset.close(); imp.protetta("inizializzaDaImpostazioni", [], null) } }
+            }
+        }
     }
 }

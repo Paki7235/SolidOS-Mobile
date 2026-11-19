@@ -19,13 +19,14 @@ from ..sistema import config_utente, leggi_json, scrivi_json
 
 PREDEFINITE = {
     "tastiera": True,
+    "protezione_furto": True,   # codice + un'ora di attesa per le cose importanti lontano da casa
     # Widget della Home (in ordine): tipo oggi|batterie|meteo|calendario|musica|foto|note|orologio, misura piccolo|medio|grande
     "widget": [{"tipo": "oggi", "misura": "piccolo"}, {"tipo": "batterie", "misura": "piccolo"}],
     "ordine_home": [],          # ordine delle app della Home scelto spostandole (vuoto = quello di SolidOS)
     "nascoste_home": [],        # app tolte dalla Home (restano nella Libreria)
     "citta_meteo": "",          # vuota = la posizione del telefono
     "widget_blocco": [],        # widget sotto l'orologio della schermata di blocco (meteo, batterie, oggi, musica)
-    "stile_icone": "colori",    # colori | scure | tinta
+    "stile_icone": "vetro",     # vetro | colori | scure | tinta
     "app_automatiche": True,    # Store: scarica da sola le app prese con lo stesso Solid ID sul PC           # tastiera sullo schermo quando si tocca un campo di testo
     "riduci_movimento": False,   # Accessibilità: animazioni istantanee
     "tema": "scuro",          # scuro | chiaro
@@ -746,11 +747,78 @@ class BackendMobile(Backend):
     def sidPassword(self, email: str) -> dict:
         return self._sid().password_dimenticata(email)
 
-    def sidEsci(self) -> dict:
-        return self._sid().esci()
+    def sidEsci(self, codice: str = "") -> dict:
+        p = self.azioneProtetta("esci", codice)
+        return p if not p["ok"] else self._sid().esci()
 
-    def sidTrova(self, si: bool) -> dict:
+    def sidTrova(self, si: bool, codice: str = "") -> dict:
+        if not si:
+            p = self.azioneProtetta("trova", codice)
+            if not p["ok"]:
+                return p
         return self._sid().imposta_trova(bool(si))
+
+    # ── Protezione in caso di furto (come su iPhone) ─────────────────────
+    # Lontano dai luoghi abituali (le reti Wi-Fi dove il telefono sta spesso), le cose importanti
+    # chiedono il codice e poi un'attesa di un'ora: chi ruba il telefono dopo aver visto il codice
+    # non può spegnere Dov'è, uscire dal Solid ID, cambiare il codice o cancellare il telefono.
+    ATTESA_FURTO = 3600
+
+    def _file_luoghi(self) -> Path:
+        return config_utente("luoghi-familiari.json")
+
+    def _impara_luogo(self) -> None:
+        """Ogni rete Wi-Fi a cui il telefono è collegato conta un giorno: dopo 3 giorni è «familiare»."""
+        try:
+            from . import impostazioni
+
+            reti = impostazioni.wifi(False).get("reti", [])
+            rete = next((x.get("ssid") for x in reti if x.get("connessa")), "")
+        except Exception:  # noqa: BLE001
+            rete = ""
+        if not rete:
+            return
+        luoghi = leggi_json(self._file_luoghi(), {})
+        giorni = luoghi.get(rete, [])
+        oggi = time.strftime("%Y-%m-%d")
+        if oggi not in giorni:
+            luoghi[rete] = (giorni + [oggi])[-30:]
+            scrivi_json(self._file_luoghi(), luoghi)
+        self._rete_attuale = rete
+
+    def inLuogoFamiliare(self) -> bool:
+        self._impara_luogo()
+        rete = getattr(self, "_rete_attuale", "")
+        return bool(rete) and len(leggi_json(self._file_luoghi(), {}).get(rete, [])) >= 3
+
+    def protezioneFurto(self) -> dict:
+        from . import telefonia
+
+        attiva = self.impostazioni().get("protezione_furto", True)
+        familiare = True if telefonia.DEMO else self.inLuogoFamiliare()
+        return {"attiva": bool(attiva), "familiare": familiare, "luoghi": list(leggi_json(self._file_luoghi(), {}).keys())}
+
+    def azioneProtetta(self, nome: str, codice: str = "") -> dict:
+        """{ok} se si può fare adesso; altrimenti il motivo (codice sbagliato o attesa di sicurezza)."""
+        if self.haCodice() and not self.verificaCodice(codice).get("ok"):
+            return {"ok": False, "chiediCodice": True, "messaggio": T("Per farlo serve il codice di sblocco")}
+        stato = self.protezioneFurto()
+        if not stato["attiva"] or stato["familiare"]:
+            return {"ok": True}
+        attese = leggi_json(config_utente("attese-sicurezza.json"), {})
+        inizio = attese.get(nome, 0)
+        passato = time.time() - inizio
+        if inizio and self.ATTESA_FURTO <= passato <= self.ATTESA_FURTO * 2:
+            attese.pop(nome, None)
+            scrivi_json(config_utente("attese-sicurezza.json"), attese)
+            return {"ok": True}
+        if not inizio or passato > self.ATTESA_FURTO * 2:
+            attese[nome] = time.time()
+            scrivi_json(config_utente("attese-sicurezza.json"), attese)
+            passato = 0
+        minuti = max(1, -(-int(self.ATTESA_FURTO - passato) // 60))
+        return {"ok": False, "attesa": True,
+                "messaggio": T("Ritardo di sicurezza: sei lontano dai luoghi abituali. Riprova tra {m} minuti (con il codice).", m=minuti)}
 
     def sidDispositivi(self) -> dict:
         from . import telefonia
@@ -813,6 +881,10 @@ class BackendMobile(Backend):
 
         if self.haCodice() and not self.verificaCodice(attuale)["ok"]:
             return {"ok": False, "messaggio": T("Il codice attuale non è giusto")}
+        if self.haCodice():
+            p = self.azioneProtetta("codice", attuale)
+            if not p["ok"]:
+                return p
         if nuovo == "":
             scrivi_json(self._file_codice(), {})
             return {"ok": True, "messaggio": T("Codice tolto: il telefono si apre senza codice")}
@@ -844,7 +916,80 @@ class BackendMobile(Backend):
         ora = (base / "blocca-ora").exists()
         if ora:
             (base / "blocca-ora").unlink(missing_ok=True)
-        return {"blocca": ora, "messaggio": messaggio}
+        cancella = (base / "cancella-ora").exists()
+        return {"blocca": ora, "messaggio": messaggio, "perso": (base / "perso").exists() and bool(messaggio),
+                "cancella": cancella}
+
+    # ── Sicurezza come su iPhone ─────────────────────────────────────────
+    def verificaSolidId(self, password: str) -> dict:
+        """Modalità smarrito: si sblocca solo con la password del Solid ID (il codice non basta)."""
+        from . import telefonia
+
+        if telefonia.DEMO:
+            return {"ok": password == "prova", "messaggio": "" if password == "prova" else T("Password sbagliata")}
+        from .. import solidid
+
+        if solidid.verifica_password(password):
+            return {"ok": True}
+        return {"ok": False, "messaggio": T("Password del Solid ID sbagliata (o niente connessione a Internet)")}
+
+    def emailSolidId(self) -> str:
+        from .. import solidid
+
+        email = solidid.utente().get("email", "")
+        return (email[0] + "•••" + email[email.index("@"):]) if "@" in email else ""
+
+    def bloccoAttivazione(self) -> str:
+        """Telefono di un altro Solid ID (anche dopo un reset): l'email nascosta del proprietario."""
+        from . import telefonia
+
+        if telefonia.DEMO:
+            return "p•••@gmail.com" if self.avvio().get("schermata") == "attivazione" else ""
+        from .. import solidid
+
+        try:
+            return solidid.blocco_attivazione()
+        except Exception:  # noqa: BLE001 — senza rete il telefono non resta bloccato per sempre
+            return ""
+
+    def sbloccaAttivazione(self, email: str, password: str) -> dict:
+        from .. import solidid
+
+        r = solidid.accedi(email, password)
+        if not r.get("ok"):
+            return r
+        if solidid.blocco_attivazione():
+            solidid.esci()
+            return {"ok": False, "messaggio": T("Questo telefono appartiene a un altro Solid ID")}
+        return {"ok": True, "messaggio": T("Telefono sbloccato: bentornato")}
+
+    def disattivaProtezioneFurto(self, codice: str = "") -> dict:
+        p = self.azioneProtetta("protezione", codice)
+        if not p["ok"]:
+            return p
+        self.imposta("protezione_furto", False)
+        return {"ok": True, "messaggio": T("Protezione in caso di furto spenta")}
+
+    def inizializzaDaImpostazioni(self, codice: str = "") -> dict:
+        p = self.azioneProtetta("inizializza", codice)
+        return p if not p["ok"] else self.inizializza()
+
+    def inizializza(self) -> dict:
+        """Cancella tutti i dati dell'utente (Dov'è › Inizializza a distanza, o dalle Impostazioni)
+        e riparte come nuovo. Il blocco di attivazione resta: serve il Solid ID del proprietario."""
+        from . import telefonia
+
+        casa = Path.home()
+        if telefonia.DEMO or str(casa) in ("/", "/root") or not str(casa).startswith("/home/"):
+            return {"ok": False, "messaggio": T("Non disponibile qui")}
+        import shutil
+
+        for voce in list(casa.iterdir()):
+            try:
+                shutil.rmtree(voce) if voce.is_dir() and not voce.is_symlink() else voce.unlink()
+            except OSError:
+                pass
+        os._exit(0)          # il servizio dell'interfaccia riparte da solo, come un telefono nuovo
 
     def sbloccatoRemoto(self) -> None:
         try:

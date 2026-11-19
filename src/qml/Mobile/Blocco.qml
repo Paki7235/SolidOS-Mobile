@@ -8,6 +8,9 @@ Item {
     id: blocco
     signal sblocca()
     property bool chiedeCodice: false       // tastierino del codice visibile
+    property bool chiedeSolidId: false      // modalità smarrito: serve la password del Solid ID
+    // Il numero nel messaggio del proprietario (per «Chiama il proprietario»)
+    readonly property string numeroProprietario: { var m = (tel.messaggioRemoto || "").match(/\+?\d[\d\s.\/-]{6,}\d/); return m ? m[0] : "" }
     property string codice: ""
     property string errore: ""
     // Sblocco che segue il dito: il contenuto sale e sfuma mentre si trascina in su
@@ -22,12 +25,13 @@ Item {
     }
     // Si entra: con il codice se impostato, poi si toglie l'eventuale blocco di «Dov'è»
     function entra() {
+        if (tel.perso) { chiedeSolidId = true; errore = ""; passwordSid.text = ""; return }
         if (ponte.chiama0("haCodice")) { chiedeCodice = true; codice = ""; errore = ""; return }
         fatto()
     }
     function fatto() {
-        chiedeCodice = false; codice = ""; errore = ""
-        if (tel.messaggioRemoto) { ponte.chiama0("sbloccatoRemoto"); tel.messaggioRemoto = "" }
+        chiedeCodice = false; chiedeSolidId = false; codice = ""; errore = ""
+        if (tel.messaggioRemoto) { ponte.chiama0("sbloccatoRemoto"); tel.messaggioRemoto = ""; tel.perso = false }
         blocco.sblocca()
     }
     function cifra(c) {
@@ -105,18 +109,37 @@ Item {
         anchors.bottom: parent.bottom; anchors.bottomMargin: 116
         width: parent.width - 28
         spacing: 8
-        visible: !blocco.chiedeCodice
+        visible: !blocco.chiedeCodice && !blocco.chiedeSolidId
         // Messaggio del proprietario mandato da «Dov'è»
-        Rectangle {
+        Vetro {
             visible: tel.messaggioRemoto !== ""
-            width: parent.width; height: remoto.implicitHeight + 28; radius: tel.r2
-            color: tel.pal.superficie
-            border.color: tel.rosso; border.width: 1
+            width: parent.width; height: remoto.implicitHeight + 40; radius: 24
             Column {
                 id: remoto
-                x: 16; y: 14; width: parent.width - 32; spacing: 4
-                Text { text: I18n.t("Telefono bloccato dal proprietario"); color: tel.pal.pericolo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Bold }
-                Text { width: parent.width; wrapMode: Text.Wrap; text: tel.messaggioRemoto; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(17); font.weight: Font.DemiBold }
+                x: 20; y: 20; width: parent.width - 40; spacing: 8
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: 52; height: 52; radius: 26; color: tel.rosso
+                    Icona { anchors.centerIn: parent; nome: "system-lock-screen-symbolic"; lato: 26; tema: "scuro" }
+                }
+                Text { anchors.horizontalCenter: parent.horizontalCenter; text: tel.perso ? I18n.t("Telefono smarrito") : I18n.t("Telefono bloccato dal proprietario"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(18); font.weight: Font.Bold }
+                Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap; text: tel.messaggioRemoto; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15) }
+                Rectangle {
+                    visible: blocco.numeroProprietario !== ""
+                    width: parent.width; height: 46; radius: 23; color: tel.chiaro ? "#1D1D1F" : "#FFFFFF"
+                    Row {
+                        anchors.centerIn: parent; spacing: 8
+                        Icona { anchors.verticalCenter: parent.verticalCenter; nome: "call-start-symbolic"; lato: 18; tema: tel.chiaro ? "scuro" : "chiaro" }
+                        Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.t("Chiama il proprietario"); color: tel.chiaro ? "#FFFFFF" : "#1D1D1F"; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
+                    }
+                    MouseArea { anchors.fill: parent; onClicked: tel.chiama(blocco.numeroProprietario) }
+                }
+                Text {
+                    visible: tel.perso
+                    width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap
+                    text: I18n.t("Questo telefono è collegato a un Solid ID. Per sbloccarlo serve la sua password.")
+                    color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12)
+                }
             }
         }
         Repeater {
@@ -181,6 +204,40 @@ Item {
             }
         }
         TapHandler { onDoubleTapped: blocco.entra() }
+    }
+
+    // ── Modalità smarrito: sblocco con la password del Solid ID ───────────
+    Rectangle {
+        anchors.fill: parent
+        visible: blocco.chiedeSolidId
+        color: tel.chiaro ? Qt.rgba(0.95, 0.95, 0.97, 0.97) : Qt.rgba(0.07, 0.08, 0.11, 0.96)
+        MouseArea { anchors.fill: parent }
+        Column {
+            x: 28; y: 140; width: parent.width - 56; spacing: 14
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: 64; height: 64; radius: 20
+                gradient: Gradient { GradientStop { position: 0; color: "#4C7DFF" } GradientStop { position: 1; color: "#8B5CF6" } }
+                Icona { anchors.centerIn: parent; nome: "system-lock-screen-symbolic"; lato: 30; tema: "scuro" }
+            }
+            Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Sblocca con il Solid ID"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(21); font.weight: Font.Bold }
+            Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap
+                   text: { var e = ponte.chiama0("emailSolidId"); return I18n.t("Il telefono è in modalità smarrito. Scrivi la password del Solid ID") + (e ? " " + e : "") + "." }
+                   color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(14) }
+            CampoTesto { id: passwordSid; width: parent.width; echoMode: TextInput.Password; placeholderText: I18n.t("Password del Solid ID"); onAccepted: sbloccaSid.clicked() }
+            Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap; text: blocco.errore; color: tel.rosso; font.family: Tema.font; font.pixelSize: tel.px(13) }
+            Pulsante {
+                id: sbloccaSid
+                width: parent.width; text: I18n.t("Sblocca"); principale: true
+                onClicked: { var r = ponte.chiama("verificaSolidId", [passwordSid.text]); passwordSid.text = ""; if (r.ok) blocco.fatto(); else blocco.errore = r.messaggio }
+            }
+        }
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 50
+            text: I18n.t("Annulla"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
+            MouseArea { anchors.fill: parent; anchors.margins: -12; onClicked: blocco.chiedeSolidId = false }
+        }
     }
 
     // ── Tastierino del codice di sblocco ─────────────────────────────────

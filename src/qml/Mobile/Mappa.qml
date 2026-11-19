@@ -14,7 +14,7 @@ Item {
     signal segnapostoScelto(string ident)
 
     property var tessere: ({})           // "stile/z/x/y" → "file:///…"
-    readonly property string stile: "osm"
+    readonly property string stile: tel.chiaro ? "morbida-chiara" : "morbida-scura"
     property var richieste: ({})
     readonly property real lato: 256
     readonly property real mondo: Math.pow(2, zoom) * lato

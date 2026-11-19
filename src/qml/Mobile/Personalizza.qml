@@ -119,12 +119,12 @@ Rectangle {
             Sezione {
                 titolo: I18n.t("Stile delle icone")
                 Repeater {
-                    model: [{ k: "colori", t: I18n.t("Colori") }, { k: "scure", t: I18n.t("Scure") }, { k: "tinta", t: I18n.t("Tinta") }]
+                    model: [{ k: "vetro", t: I18n.t("Vetro") }, { k: "colori", t: I18n.t("Colori") }, { k: "scure", t: I18n.t("Scure") }, { k: "tinta", t: I18n.t("Tinta") }]
                     Rectangle {
                         id: prova
                         required property var modelData
-                        readonly property bool attiva: (tel.imp.stile_icone || "colori") === modelData.k
-                        width: (elenco.width - 32 - 16) / 3; height: 132; radius: 16; clip: true
+                        readonly property bool attiva: (tel.imp.stile_icone || "vetro") === modelData.k
+                        width: (elenco.width - 32 - 24) / 4; height: 132; radius: 16; clip: true
                         color: "transparent"
                         border.width: attiva ? 3 : 0; border.color: tel.accento
                         Image {
@@ -137,7 +137,7 @@ Rectangle {
                             columns: 2; spacing: 8
                             Repeater {
                                 model: ["telefono", "messaggi", "foto", "note"]
-                                IconaApp { required property string modelData; app: ({ icona: "nucleo-" + modelData, nome: "" }); conNome: false; lato: 34; stileForzato: prova.modelData.k; width: 34; enabled: false }
+                                IconaApp { required property string modelData; app: ({ icona: "nucleo-" + modelData, nome: "" }); conNome: false; lato: 28; stileForzato: prova.modelData.k; width: 34; enabled: false }
                             }
                         }
                         Text { anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; anchors.bottomMargin: 8; text: prova.modelData.t; color: "#FFFFFF"; style: Text.Raised; styleColor: "#66000000"; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }

@@ -108,6 +108,17 @@ class Servizio:
                 self.suona_fino = 0
             elif tipo == "blocca":
                 await self.blocca(c.get("messaggio") or "")
+            elif tipo == "perso":
+                # Modalità smarrito: bloccato, e per sbloccarlo serve la password del Solid ID
+                await self.blocca(c.get("messaggio") or "", perso=True)
+            elif tipo == "cancella":
+                # Inizializza a distanza: lo fa l'interfaccia (che cancella i dati e riparte);
+                # dopo, il blocco di attivazione chiede ancora il Solid ID del proprietario
+                await self.esegui(self._segna, ident, "eseguito")
+                f = file_messaggio_blocco()
+                f.parent.mkdir(parents=True, exist_ok=True)
+                (f.parent / "cancella-ora").touch()
+                return
             elif tipo == "posizione":
                 await self.aggiorna()
             await self.esegui(self._segna, ident, "eseguito")
@@ -206,9 +217,12 @@ class Servizio:
                 await self.esegui(lambda: subprocess.run(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", str(volume_prima)],
                                                          check=False, timeout=5))
 
-    async def blocca(self, messaggio: str):
+    async def blocca(self, messaggio: str, perso: bool = False):
         f = file_messaggio_blocco()
         f.parent.mkdir(parents=True, exist_ok=True)
+        if perso:
+            (f.parent / "perso").touch()
+            await self.esegui(lambda: aggiorna_stato(None, perso=True))
         f.write_text(messaggio.strip()[:200] or T("Questo dispositivo è stato bloccato dal proprietario."), encoding="utf-8")
         await self.esegui(lambda: aggiorna_stato(None, bloccato=True, messaggio_blocco=messaggio[:200] or None))
         # Sul telefono l'interfaccia controlla questo file e passa subito alla schermata di blocco
@@ -249,10 +263,11 @@ def _secondi(iso: str) -> float:
 def sbloccato() -> None:
     """Chiamato dopo lo sblocco: toglie il messaggio e lo segna nel Solid ID."""
     f = file_messaggio_blocco()
+    (f.parent / "perso").unlink(missing_ok=True)
     if f.exists():
         f.unlink(missing_ok=True)
         try:
-            aggiorna_stato(None, bloccato=False, messaggio_blocco=None)
+            aggiorna_stato(None, bloccato=False, messaggio_blocco=None, perso=False)
         except (ErroreSolidID, KeyError):
             pass
 

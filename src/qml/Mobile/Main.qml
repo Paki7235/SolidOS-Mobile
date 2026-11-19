@@ -91,6 +91,9 @@ Window {
     property bool chiamataRidotta: false
     // Blocco a distanza da «Dov'è»: messaggio del proprietario sulla schermata di blocco
     property string messaggioRemoto: ""
+    property bool perso: false                   // Dov'è › Modalità smarrito: si sblocca solo con il Solid ID
+    property bool inizializzando: false          // Dov'è › Inizializza a distanza
+    property string attivazione: ""              // blocco di attivazione: email nascosta del proprietario
     Timer { interval: 2000; running: true; repeat: true; onTriggered: ponte.avvia("richiestaBlocco", [], "blocco-remoto") }
     // Chiamate: controllo ogni secondo durante la chiamata, ogni 3 secondi per quelle in arrivo
     Timer {
@@ -126,8 +129,11 @@ Window {
         }
         function onCompletato(id, r) {
             if (id === "stato") tel.stato = r
+            else if (id === "attivazione") tel.attivazione = r || ""
             else if (id === "blocco-remoto") {
-                if (r.blocca) { tel.messaggioRemoto = r.messaggio; tel.chiudiTutto(); tel.appInterna = ""; tel.schermata = "blocco" }
+                if (r.cancella && !tel.inizializzando) { tel.inizializzando = true; fineInizializza.start() }
+                if (r.blocca || (r.perso && !tel.perso)) { tel.messaggioRemoto = r.messaggio; tel.chiudiTutto(); tel.appInterna = ""; tel.schermata = "blocco" }
+                tel.perso = r.perso === true
             }
             else if (id === "chiamata") {
                 if (r.inArrivo && !tel.chiamataInfo.inArrivo) tel.chiamataRidotta = false
@@ -160,10 +166,13 @@ Window {
     function chiudiTutto() { notifiche = false; controllo = false; personalizza = false }
     Component.onCompleted: {
         ponte.avvia("voipAvvia", [], "voip-avvio")   // chiamate via Internet: si collega all'account SIP
+        ponte.avvia("bloccoAttivazione", [], "attivazione")   // telefono di un altro Solid ID?
         var a = ponte.chiama0("avvio")
         if (a.tema) imp = Object.assign({}, imp, { tema: a.tema })
         if (!a.schermata || a.schermata === "blocco") return
         if (a.schermata === "bloccato") { messaggioRemoto = I18n.t("Se lo trovi chiama il 333 123 4567. Grazie!"); return }
+        if (a.schermata === "perso") { messaggioRemoto = I18n.t("Se lo trovi chiama il 333 123 4567. Grazie!"); perso = true; return }
+        if (a.schermata === "perso-sblocca") { messaggioRemoto = I18n.t("Se lo trovi chiama il 333 123 4567. Grazie!"); perso = true; bloccoSchermata.entra(); return }
         if (a.schermata === "codice") { bloccoSchermata.chiedeCodice = true; return }
         schermata = "home"
         if (a.schermata === "libreria") home.pagina = 1
@@ -375,12 +384,13 @@ Window {
             onActiveChanged: {
                 if (active) { ultimaY = 0; inizioX = centroid.pressPosition.x; return }
                 if (ultimaY > 50) {
+                    if (tel.perso) return          // telefono smarrito: niente Centro di controllo né notifiche
                     if (inizioX > parent.width * 0.6) tel.controllo = true
                     else tel.notifiche = true
                 }
             }
         }
-        TapHandler { onTapped: function (punto) { if (punto.position.x > parent.width * 0.6) tel.controllo = true; else tel.notifiche = true } }
+        TapHandler { onTapped: function (punto) { if (tel.perso) return; if (punto.position.x > parent.width * 0.6) tel.controllo = true; else tel.notifiche = true } }
     }
 
     BarraStato { anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; z: 60 }
@@ -470,6 +480,22 @@ Window {
             }
         }
     }
+
+    // ── Dov'è › Inizializza a distanza: avviso, poi si cancella tutto ─────
+    Timer { id: fineInizializza; interval: 4000; onTriggered: ponte.chiama0("inizializza") }
+    Rectangle {
+        anchors.fill: parent; z: 200
+        visible: tel.inizializzando
+        color: "#000000"
+        MouseArea { anchors.fill: parent }
+        Column {
+            anchors.centerIn: parent; spacing: 14; width: parent.width - 60
+            Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.t("Inizializzazione"); color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(22); font.weight: Font.Bold }
+            Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap; text: I18n.t("Il proprietario ha chiesto di cancellare questo telefono da Dov'è. Tutti i dati vengono cancellati."); color: "#B3FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(14) }
+        }
+    }
+    // ── Blocco di attivazione (telefono di un altro Solid ID, anche dopo un reset) ──
+    Attivazione { anchors.fill: parent; z: 190; visible: tel.attivazione !== "" }
 
     // ── Tastiera sullo schermo ─────────────────────────────────────────
     Tastiera { id: tastiera; z: 95 }

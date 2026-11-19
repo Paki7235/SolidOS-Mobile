@@ -49,7 +49,44 @@ def _quando(iso: str) -> str:
     return t.astimezone().strftime("%d/%m/%Y")
 
 
+def _variante(originale: Path, stile: str) -> str:
+    """Mappa «morbida» (come le mappe dei telefoni): gli stessi dati di OpenStreetMap con colori
+    tenui e strade leggere; la scura per il tema scuro. Si prepara una volta e resta salvata."""
+    f = originale.with_name(f"{originale.stem}-{stile}.png")
+    if f.exists() and f.stat().st_size > 0:
+        return str(f)
+    from PyQt6.QtGui import QColor, QImage, QPainter
+
+    img = QImage(str(originale)).convertToFormat(QImage.Format.Format_RGB32)
+    if img.isNull():
+        return str(originale)
+    grigia = img.convertToFormat(QImage.Format.Format_Grayscale8).convertToFormat(QImage.Format.Format_RGB32)
+    p = QPainter(img)
+    if stile == "morbida-scura":
+        grigia.invertPixels()
+        p.drawImage(0, 0, grigia)
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Multiply)
+        p.fillRect(img.rect(), QColor(178, 186, 210))          # grafite un po' blu
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+        p.fillRect(img.rect(), QColor(30, 34, 46, 22))
+    else:
+        p.setOpacity(0.62)
+        p.drawImage(0, 0, grigia)                               # colori tenui
+        p.setOpacity(1)
+        p.fillRect(img.rect(), QColor(250, 249, 245, 46))       # più chiara, meno contrasto
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Multiply)
+        p.fillRect(img.rect(), QColor(246, 244, 238))           # carta calda
+    p.end()
+    tmp = f.with_suffix(".tmp.png")
+    img.save(str(tmp), "PNG")
+    tmp.replace(f)
+    return str(f)
+
+
 def _scarica_tessera(stile: str, z: int, x: int, y: int) -> str:
+    if stile in ("morbida-chiara", "morbida-scura"):
+        originale = _scarica_tessera("osm", z, x, y)
+        return _variante(Path(originale), stile) if originale else ""
     f = _cartella_mappe() / str(z) / str(x) / f"{y}.png"
     if f.exists() and f.stat().st_size > 0:
         return str(f)

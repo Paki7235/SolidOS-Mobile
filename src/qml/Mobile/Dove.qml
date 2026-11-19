@@ -66,7 +66,7 @@ Rectangle {
             var s = ponte.chiama("doveStatoComando", [app.comandoId])
             app.tentativi++
             if (s === "eseguito") {
-                tel.avviso(app.comandoTipo === "suona" ? I18n.t("Il dispositivo sta suonando") : I18n.t("Dispositivo bloccato"))
+                tel.avviso(({ suona: I18n.t("Il dispositivo sta suonando"), perso: I18n.t("Modalità smarrito attiva"), cancella: I18n.t("Il telefono si sta cancellando") })[app.comandoTipo] || I18n.t("Dispositivo bloccato"))
                 app.comandoId = 0
             } else if (app.tentativi > 40) app.comandoId = 0
         }
@@ -209,7 +209,7 @@ Rectangle {
                 spacing: 10
                 Repeater {
                     model: [{ k: "suona", t: I18n.t("Fai suonare"), i: "audio-volume-high-symbolic", c: "#3f7cf5" },
-                            { k: "blocca", t: I18n.t("Blocca"), i: "system-lock-screen-symbolic", c: tel.rosso },
+                            { k: "blocca", t: app.dispositivo && app.dispositivo.tipo === "telefono" ? I18n.t("Smarrito") : I18n.t("Blocca"), i: "system-lock-screen-symbolic", c: tel.rosso },
                             { k: "strada", t: I18n.t("Indicazioni"), i: "mark-location-symbolic", c: "#22c55e" }]
                     Rectangle {
                         required property var modelData
@@ -240,6 +240,13 @@ Rectangle {
                     }
                 }
             }
+            // Inizializza a distanza (solo telefoni): cancella tutto, il blocco di attivazione resta
+            Rectangle {
+                visible: !!app.dispositivo && !app.dispositivo.questo && app.dispositivo.tipo === "telefono"
+                width: parent.width; height: 48; radius: 14; color: app.sezione; border.width: 1; border.color: tel.pal.bordo
+                Text { anchors.centerIn: parent; text: I18n.t("Inizializza a distanza"); color: tel.rosso; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
+                MouseArea { anchors.fill: parent; onClicked: cancellaDlg.open() }
+            }
             Text {
                 visible: app.dispositivo !== null && app.dispositivo.questo === true
                 width: parent.width; wrapMode: Text.Wrap
@@ -262,13 +269,35 @@ Rectangle {
         onOpened: messaggio.text = ""
         Column {
             width: parent.width; spacing: 12
-            Text { width: parent.width; wrapMode: Text.Wrap; text: I18n.t("Bloccare") + " «" + (app.dispositivo ? app.dispositivo.nome : "") + "»?"; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(17); font.weight: Font.Bold }
-            Text { width: parent.width; wrapMode: Text.Wrap; text: I18n.t("Il messaggio comparirà sulla schermata di blocco, per chi lo trova."); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
+            readonly property bool telefono: !!app.dispositivo && app.dispositivo.tipo === "telefono"
+            Text { width: parent.width; wrapMode: Text.Wrap; text: (parent.telefono ? I18n.t("Modalità smarrito per") : I18n.t("Bloccare")) + " «" + (app.dispositivo ? app.dispositivo.nome : "") + "»"; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(17); font.weight: Font.Bold }
+            Text { width: parent.width; wrapMode: Text.Wrap; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13)
+                   text: parent.telefono ? I18n.t("Il telefono si blocca subito e per sbloccarlo serve la password del tuo Solid ID, non basta il codice. Centro di controllo e notifiche si fermano. Il messaggio compare sullo schermo, per chi lo trova.")
+                                         : I18n.t("Il messaggio comparirà sulla schermata di blocco, per chi lo trova.") }
             CampoTesto { id: messaggio; width: parent.width; placeholderText: I18n.t("Es. Se lo trovi chiama il 333 …") }
             Row {
                 spacing: 10; anchors.right: parent.right
                 Pulsante { text: I18n.t("Annulla"); onClicked: bloccaDlg.close() }
-                Pulsante { text: I18n.t("Blocca"); pericoloso: true; onClicked: { app.comando("blocca", messaggio.text); bloccaDlg.close() } }
+                Pulsante { text: I18n.t("Attiva"); pericoloso: true; onClicked: { app.comando(app.dispositivo && app.dispositivo.tipo === "telefono" ? "perso" : "blocca", messaggio.text); bloccaDlg.close() } }
+            }
+        }
+    }
+
+    // ── Inizializza a distanza ───────────────────────────────────────────
+    Popup {
+        id: cancellaDlg
+        anchors.centerIn: parent
+        width: parent.width - 40; modal: true; padding: 18
+        background: Rectangle { radius: 20; color: app.sezione }
+        Column {
+            width: parent.width; spacing: 12
+            Text { width: parent.width; wrapMode: Text.Wrap; text: I18n.t("Cancellare") + " «" + (app.dispositivo ? app.dispositivo.nome : "") + "»?"; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(17); font.weight: Font.Bold }
+            Text { width: parent.width; wrapMode: Text.Wrap; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13)
+                   text: I18n.t("Appena è collegato a Internet, il telefono cancella tutti i dati e riparte come nuovo. Non si può tornare indietro e non lo vedrai più sulla mappa. Il blocco di attivazione resta: per usarlo servirà il tuo Solid ID.") }
+            Row {
+                spacing: 10; anchors.right: parent.right
+                Pulsante { text: I18n.t("Annulla"); onClicked: cancellaDlg.close() }
+                Pulsante { text: I18n.t("Cancella il telefono"); pericoloso: true; onClicked: { app.comando("cancella", ""); cancellaDlg.close() } }
             }
         }
     }

@@ -17,9 +17,13 @@ Item {
     readonly property string nomeIcona: app.icona || "application-x-executable"
     readonly property bool propria: nomeIcona.indexOf("nucleo-") === 0
     property string stileForzato: ""      // anteprime in Personalizza
-    readonly property string stile: stileForzato || tel.imp.stile_icone || "colori"
+    readonly property string stile: stileForzato || tel.imp.stile_icone || "vetro"
     readonly property bool altroStile: propria && stile !== "colori"
     // Colore del simbolo nello stile «Scure» (lo stesso della tessera a colori)
+    // Colore del simbolo nello stile «Vetro liquido» (vivo, si vede sul vetro)
+    readonly property var coloriVetro: ({ telefono: "#34C759", messaggi: "#0A84FF", contatti: "#FF9500", fotocamera: "#D1D1D6", foto: "#FF6B6B",
+                                          musica: "#FF375F", note: "#FFCC00", file: "#0A84FF", dove: "#30C4A8", store: "#A08CFF",
+                                          vicina: "#32D2E6", calcolatrice: "#FF9F0A", impostazioni: "#D1D1D6" })
     readonly property var colori: ({ telefono: "#4ADE80", messaggi: "#60A5FA", contatti: "#FCD34D", fotocamera: "#D4D4D8", foto: "#FDBA74",
                                      musica: "#FB7185", note: "#FDE68A", file: "#7DD3FC", dove: "#5EEAD4", store: "#C4B5FD",
                                      vicina: "#67E8F9", calcolatrice: "#FB923C", impostazioni: "#D4D4D8" })
@@ -59,8 +63,37 @@ Item {
         Icona { anchors.fill: parent; visible: !ic.altroStile; nome: ic.nomeIcona; lato: ic.lato }
         // Stili «Scure» e «Tinta» (Personalizza › Icone): tessera scura o del colore del tema,
         // con il simbolo a linea colorato o bianco
+        // Stile «Vetro liquido» (predefinito): tessera di vetro con il bordo luminoso, il simbolo
+        // colorato con un alone, luce in alto e un po' d'ombra in basso
+        Item {
+            visible: ic.altroStile && ic.stile === "vetro"
+            anchors.fill: parent
+            readonly property string chiave: ic.nomeIcona.slice(7)
+            readonly property color tinta: { var c = ic.coloriVetro[chiave] || "#FFFFFF"; return tel.chiaro && c === "#D1D1D6" ? "#6E6E73" : c }
+            Rectangle { anchors.fill: parent; anchors.topMargin: 3; anchors.bottomMargin: -2; radius: width * 0.26; color: tel.chiaro ? "#14000000" : "#40000000" }
+            Rectangle {
+                id: lastra
+                anchors.fill: parent; radius: width * 0.26
+                gradient: Gradient {
+                    GradientStop { position: 0; color: tel.chiaro ? "#D9FFFFFF" : "#57FFFFFF" }
+                    GradientStop { position: 0.55; color: tel.chiaro ? "#99FFFFFF" : "#21FFFFFF" }
+                    GradientStop { position: 1; color: tel.chiaro ? "#80F2F2F7" : "#14FFFFFF" }
+                }
+                border.width: 1; border.color: tel.chiaro ? "#CCFFFFFF" : "#73FFFFFF"
+            }
+            // ombra interna in basso
+            Rectangle {
+                anchors.fill: parent; anchors.margins: 1; radius: lastra.radius - 1
+                gradient: Gradient { GradientStop { position: 0.6; color: "transparent" } GradientStop { position: 1; color: tel.chiaro ? "#0F000000" : "#2E000000" } }
+            }
+            // riflesso sul bordo alto
+            Rectangle { x: parent.width * 0.18; y: 1.5; width: parent.width * 0.64; height: 1.5; radius: 1; color: "#B3FFFFFF" }
+            // alone e simbolo
+            Icona { anchors.centerIn: parent; anchors.verticalCenterOffset: 1.5; lato: ic.lato * 0.56; nome: "linea-" + parent.chiave; colore: parent.tinta; opacity: 0.35 }
+            Icona { anchors.centerIn: parent; lato: ic.lato * 0.5; nome: "linea-" + parent.chiave; colore: parent.tinta }
+        }
         Rectangle {
-            visible: ic.altroStile
+            visible: ic.altroStile && ic.stile !== "vetro"
             anchors.fill: parent; anchors.margins: ic.lato * 0.03; radius: width * 0.24
             gradient: Gradient {
                 GradientStop { position: 0; color: ic.stile === "scure" ? "#2A2B31" : Qt.rgba(tel.accento.r, tel.accento.g, tel.accento.b, 0.62) }
