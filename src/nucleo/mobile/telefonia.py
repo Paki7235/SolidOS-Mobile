@@ -86,8 +86,15 @@ def stato_modem() -> dict:
                 "tecnologia": "4G", "messaggio": ""}
     m = _modem()
     if not m:
+        from . import voip
+
+        v = voip.baresip()
+        if v.registrato:
+            return {"presente": False, "sim": False, "operatore": T("Internet"), "segnale": 0, "numero": "", "tecnologia": "VoIP",
+                    "internet": True, "messaggio": ""}
         return {"presente": False, "sim": False, "operatore": "", "segnale": 0, "numero": "", "tecnologia": "",
-                "messaggio": T("Nessuna SIM o nessun modem")}
+                "messaggio": T("Nessuna SIM: per chiamare attiva le chiamate via Internet in Impostazioni") if not voip.account().get("attivo")
+                else (v.errore or T("Chiamate via Internet: mi collego…"))}
     info = _mmcli("-m", m).get("modem", {})
     g = info.get("generic", {})
     p3 = info.get("3gpp", {})
@@ -328,7 +335,8 @@ def cancella_registro() -> None:
 
 # ── Chiamate ─────────────────────────────────────────────────────────────────
 class Chiamate:
-    """Una chiamata alla volta (come la maggior parte dei telefoni Linux oggi)."""
+    """Una chiamata alla volta (come la maggior parte dei telefoni Linux oggi).
+    Passa dal modem con la SIM; se non c'è (o non ha campo) e c'è un account SIP, via Internet."""
 
     def __init__(self):
         self.percorso = ""
@@ -339,7 +347,13 @@ class Chiamate:
         self.muto = False
         self.vivavoce = False
         self._demo_stato = ""
+        self.via = ""                        # modem | internet
         self.persa = lambda numero: None     # avviso di chiamata persa (dato dall'interfaccia)
+
+    def _voip(self):
+        from . import voip
+
+        return voip.baresip()
 
     def stato(self) -> dict:
         if not self.percorso and not DEMO:
@@ -348,7 +362,12 @@ class Chiamate:
                 return entrata
         if not self.percorso:
             return {"attiva": False}
-        if DEMO:
+        if self.via == "internet":
+            c = self._voip().chiamata
+            st = c.get("stato", "terminated")
+            if st == "active" and not self.risposta:
+                self.risposta = time.time()
+        elif DEMO:
             st = self._demo_stato
             if st == "dialing" and time.time() - self.inizio > 3:
                 st = self._demo_stato = "active"
@@ -366,9 +385,15 @@ class Chiamate:
         durata = int(time.time() - self.risposta) if self.risposta else 0
         nome = nome_di(self.numero)
         return {"attiva": True, "stato": st, "testo": testo or "%d:%02d" % divmod(durata, 60), "numero": self.numero,
-                "nome": nome or self.numero, "inArrivo": st == "ringing-in", "muto": self.muto, "vivavoce": self.vivavoce}
+                "nome": nome or self.numero, "inArrivo": st == "ringing-in", "muto": self.muto, "vivavoce": self.vivavoce,
+                "internet": self.via == "internet"}
 
     def _in_arrivo(self) -> dict | None:
+        c = self._voip().chiamata
+        if c.get("stato") == "ringing-in":
+            self.percorso, self.numero, self.direzione, self.via = "voip", c.get("numero", ""), "entrata", "internet"
+            self.inizio = time.time()
+            return self.stato()
         m = _modem()
         if not m:
             return None
@@ -382,7 +407,7 @@ class Chiamate:
 
     def chiama(self, numero: str) -> dict:
         numero = numero.strip()
-        if not normalizza(numero):
+        if not normalizza(numero) and "@" not in numero:
             return {"ok": False, "messaggio": T("Numero non valido")}
         if self.percorso:
             return {"ok": False, "messaggio": T("C'è già una chiamata in corso")}
@@ -392,8 +417,21 @@ class Chiamate:
             self.percorso, self._demo_stato = "demo", "dialing"
             return {"ok": True}
         m = _modem()
-        if not m:
-            return {"ok": False, "messaggio": T("Nessuna SIM: non si possono fare chiamate")}
+        sim = m and stato_modem().get("sim")
+        if not sim:
+            # Senza SIM: via Internet, se c'è un account SIP collegato
+            v = self._voip()
+            if v.registrato or "@" in numero:
+                r = v.chiama(numero)
+                if r.get("ok"):
+                    self.percorso, self.via = "voip", "internet"
+                return r
+            from . import voip
+
+            if voip.account().get("attivo"):
+                return {"ok": False, "messaggio": v.errore or T("Chiamate via Internet non collegate: controlla la rete")}
+            return {"ok": False, "messaggio": T("Nessuna SIM: attiva le chiamate via Internet in Impostazioni")}
+        self.via = "modem"
         r = subprocess.run(["mmcli", "-m", m, f"--voice-create-call=number={normalizza(numero)}"],
                            capture_output=True, text=True, timeout=20)
         trovato = re.search(r"(/org/freedesktop/ModemManager1/Call/\d+)", r.stdout)
@@ -404,16 +442,22 @@ class Chiamate:
         return {"ok": True}
 
     def rispondi(self) -> None:
-        if self.percorso and not DEMO:
+        if self.via == "internet":
+            self._voip().rispondi()
+        elif self.percorso and not DEMO:
             subprocess.run(["mmcli", "-o", self.percorso, "--accept"], capture_output=True, timeout=20)
 
     def riaggancia(self) -> None:
-        if self.percorso and not DEMO:
+        if self.via == "internet":
+            self._voip().riaggancia()
+        elif self.percorso and not DEMO:
             subprocess.run(["mmcli", "-o", self.percorso, "--hangup"], capture_output=True, timeout=20)
         self._fine()
 
     def tono(self, cifra: str) -> None:
-        if self.percorso and not DEMO and re.fullmatch(r"[0-9*#]", cifra or ""):
+        if self.via == "internet":
+            self._voip().tono(cifra)
+        elif self.percorso and not DEMO and re.fullmatch(r"[0-9*#]", cifra or ""):
             subprocess.run(["mmcli", "-o", self.percorso, f"--send-dtmf={cifra}"], capture_output=True, timeout=10)
 
     def imposta_muto(self, si: bool) -> None:
@@ -436,7 +480,9 @@ class Chiamate:
                 self.persa(self.numero)
         if self.muto:
             self.imposta_muto(False)
-        self.percorso, self.numero, self.risposta, self._demo_stato = "", "", 0.0, ""
+        if self.via == "internet":
+            self._voip().chiamata = {}
+        self.percorso, self.numero, self.risposta, self._demo_stato, self.via = "", "", 0.0, "", ""
 
 
 # ── Messaggi (SMS) ───────────────────────────────────────────────────────────

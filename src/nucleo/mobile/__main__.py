@@ -567,6 +567,27 @@ class BackendMobile(Backend):
     def chiama(self, numero: str) -> dict:
         return self._chiamate().chiama(numero)
 
+    # ── Chiamate via Internet (SIP) ──────────────────────────────────────
+    def voipAccount(self) -> dict:
+        from . import voip, telefonia
+
+        if telefonia.DEMO:
+            return {"utente": "0812345678", "dominio": "sip.messagenet.it", "server": "", "nome": "Pasquale", "attivo": True,
+                    "haPassword": True, "disponibile": True, "registrato": True, "errore": ""}
+        return {**voip.account(), **voip.baresip().stato()}
+
+    def voipSalva(self, utente: str, password: str, dominio: str, server: str = "", nome: str = "", attivo: bool = True) -> dict:
+        from . import voip
+
+        return voip.salva(utente, password, dominio, server, nome, attivo)
+
+    def voipAvvia(self) -> None:
+        """All'avvio dell'interfaccia: si collega all'account SIP (se attivo)."""
+        from . import voip, telefonia
+
+        if not telefonia.DEMO and not voip.baresip().proc:
+            voip.baresip().avvia()
+
     def chiamata(self) -> dict:
         return self._chiamate().stato()
 

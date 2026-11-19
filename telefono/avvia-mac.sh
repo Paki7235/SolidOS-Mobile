@@ -29,6 +29,13 @@ if [ "$(stat -f %z "$IMG")" -lt 8000000000 ]; then
 fi
 
 COMUNI="-name SolidOS-Mobile -M virt,highmem=off -accel hvf -cpu host -smp 2 -m 2048"
+# Audio del Mac (altoparlante e microfono) per musica e chiamate via Internet.
+# Il Mac chiede una volta il permesso per il microfono.
+if qemu-system-aarch64 -device help 2>/dev/null | grep -q virtio-sound; then
+	COMUNI="$COMUNI -audiodev coreaudio,id=suono -device virtio-sound-pci,audiodev=suono"
+else
+	echo "Questo QEMU non ha l'audio per il telefono virtuale: aggiornalo con  brew upgrade qemu"
+fi
 DISCO="file=$IMG,format=raw,if=virtio"
 
 if [ "${1:-}" = finestra ]; then

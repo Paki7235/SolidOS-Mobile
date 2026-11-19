@@ -28,6 +28,8 @@ App del telefono (tutte dentro l'interfaccia, si aprono subito):
 
 Telefoni supportati: **OnePlus 6 e 6T, Google Pixel 3a, Fairphone 4, SHIFT6mq, PinePhone Pro**
 (chiamate, SMS, audio e grafica funzionanti) e **Huawei P10 Lite** (solo interfaccia e Wi-Fi).
+Senza SIM si chiama via Internet con un account SIP (Impostazioni › Chiamate via Internet):
+serve un telefono con l'audio funzionante, anche il telefono virtuale sul Mac.
 Guida: [docs/installa-telefono.md](docs/installa-telefono.md) · P10 Lite: [docs/installa-p10-lite.md](docs/installa-p10-lite.md).
 Le immagini si costruiscono su GitHub (scheda **Actions** › **Telefoni**) e finiscono nelle
 **Releases**: un solo file zip per ogni telefono.

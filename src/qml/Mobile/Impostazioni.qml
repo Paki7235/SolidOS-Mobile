@@ -18,6 +18,8 @@ Rectangle {
     property var batteria: ({})
     property var info: ({})
     property var account: ({})
+    property var voip: ({})
+    property var campiSip: ({})        // quello che si scrive nei campi dell'account SIP
     property int volume: 50
     property int luce: 70
     property bool codice: false         // c'è un codice di sblocco
@@ -33,6 +35,7 @@ Rectangle {
         else if (p === "info") info = ponte.chiama0("infoTelefono")
         else if (p === "solidid") account = ponte.chiama0("solidId")
         else if (p === "sicurezza") codice = ponte.chiama0("haCodice")
+        else if (p === "chiamate") { voip = ponte.chiama0("voipAccount"); campiSip = { nome: voip.nome || "", utente: voip.utente || "", dominio: voip.dominio || "", server: voip.server || "", password: "" } }
     }
     function riepilogo() {
         wifi = ponte.chiama0("wifiStato")
@@ -41,6 +44,7 @@ Rectangle {
         batteria = ponte.chiama0("batteriaInfo")
         account = ponte.chiama0("solidId")
         codice = ponte.chiama0("haCodice")
+        voip = ponte.chiama0("voipAccount")
     }
     onVisibleChanged: if (visible) riepilogo()
     Component.onCompleted: riepilogo()
@@ -66,7 +70,7 @@ Rectangle {
         id: r
         property string icona: ""
         // Colore del quadratino secondo l'argomento (come sul PC)
-        property color coloreIcona: ({ "network-wireless-symbolic": "#4C7DFF", "bluetooth-active-symbolic": "#4C7DFF", "network-cellular-symbolic": "#30A46C",
+        property color coloreIcona: ({ "network-wireless-symbolic": "#4C7DFF", "bluetooth-active-symbolic": "#4C7DFF", "network-cellular-symbolic": "#30A46C", "call-start-symbolic": "#30A46C",
             "audio-volume-high-symbolic": "#E5484D", "preferences-system-notifications-symbolic": "#E5484D", "display-brightness-symbolic": "#4C7DFF",
             "preferences-desktop-wallpaper-symbolic": "#8B5CF6", "battery-good-symbolic": "#30A46C", "system-lock-screen-symbolic": "#E5484D",
             "help-about-symbolic": "#71717A", "avatar-default-symbolic": "#71717A" })[icona] || "#71717A"
@@ -169,7 +173,7 @@ Rectangle {
     Text {
         x: 20; y: imp.pagina === "" ? 60 : 86
         text: ({ "": I18n.t("Impostazioni"), wifi: "Wi-Fi", bluetooth: "Bluetooth", rete: I18n.t("Rete mobile"), suoni: I18n.t("Suoni e vibrazione"),
-                 schermo: I18n.t("Schermo"), notifiche: I18n.t("Notifiche"), batteria: I18n.t("Batteria"), solidid: "Solid ID", sicurezza: I18n.t("Codice di sblocco"), info: I18n.t("Info sul telefono") })[imp.pagina]
+                 schermo: I18n.t("Schermo"), notifiche: I18n.t("Notifiche"), batteria: I18n.t("Batteria"), solidid: "Solid ID", chiamate: I18n.t("Chiamate via Internet"), sicurezza: I18n.t("Codice di sblocco"), info: I18n.t("Info sul telefono") })[imp.pagina]
         color: tel.pal.testo; font.family: Tema.font; font.pixelSize: imp.pagina === "" ? 32 : 28; font.weight: Font.Bold; font.letterSpacing: -0.6
         width: parent.width - 40; elide: Text.ElideRight
     }
@@ -200,7 +204,9 @@ Rectangle {
                 Gruppo {
                     Riga { icona: "network-wireless-symbolic"; titolo: "Wi-Fi"; valore: !imp.wifi.acceso ? I18n.t("No") : ((imp.wifi.reti || []).filter(function (x) { return x.connessa }).map(function (x) { return x.ssid })[0] || I18n.t("Non connesso")); onScelta: imp.apri("wifi") }
                     Riga { icona: "bluetooth-active-symbolic"; titolo: "Bluetooth"; valore: !imp.bt.disponibile ? I18n.t("Assente") : (imp.bt.acceso ? I18n.t("Sì") : I18n.t("No")); onScelta: imp.apri("bluetooth") }
-                    Riga { icona: "network-cellular-symbolic"; titolo: I18n.t("Rete mobile"); valore: imp.mobile.sim ? (imp.mobile.operatore || "SIM") : I18n.t("Nessuna SIM"); ultima: true; onScelta: imp.apri("rete") }
+                    Riga { icona: "network-cellular-symbolic"; titolo: I18n.t("Rete mobile"); valore: imp.mobile.sim ? (imp.mobile.operatore || "SIM") : I18n.t("Nessuna SIM"); onScelta: imp.apri("rete") }
+                    Riga { icona: "call-start-symbolic"; titolo: I18n.t("Chiamate via Internet"); ultima: true; onScelta: imp.apri("chiamate")
+                           valore: !imp.voip.attivo ? I18n.t("No") : (imp.voip.registrato ? I18n.t("Collegate") : I18n.t("Non collegate")) }
                 }
                 Gruppo {
                     Riga { icona: "audio-volume-high-symbolic"; titolo: I18n.t("Suoni e vibrazione"); onScelta: imp.apri("suoni") }
@@ -322,6 +328,61 @@ Rectangle {
                     Riga { titolo: I18n.t("Sblocca con il PIN"); onScelta: pin.open() }
                     Riga { titolo: "IMEI"; valore: imp.mobile.imei || "—"; freccia: false; ultima: true }
                 }
+            }
+
+            // ══ Chiamate via Internet (SIP) ══════════════════════════════
+            Column {
+                visible: imp.pagina === "chiamate"
+                width: parent.width
+                Gruppo {
+                    Riga { titolo: I18n.t("Chiamate via Internet"); interruttore: true; acceso: imp.voip.attivo === true; freccia: false
+                           onCambiato: function (si) { var r = ponte.chiama("voipSalva", [imp.campiSip.utente || imp.voip.utente || "", imp.campiSip.password || "", imp.campiSip.dominio || imp.voip.dominio || "", imp.campiSip.server || "", imp.campiSip.nome || "", si]); tel.avviso(r.messaggio); imp.voip = ponte.chiama0("voipAccount") } }
+                    Riga { titolo: I18n.t("Stato"); freccia: false; ultima: true
+                           valore: !imp.voip.attivo ? I18n.t("Spente") : imp.voip.registrato ? "● " + I18n.t("Collegate") : (imp.voip.errore || I18n.t("Mi collego…")) }
+                }
+                Nota { text: I18n.t("Chiami e ricevi chiamate con Internet (Wi-Fi o dati), anche senza SIM. Ti serve un account SIP: te lo dà un operatore VoIP (con un numero di telefono vero, per chiamare fissi e cellulari) oppure il centralino di casa o dell'ufficio.") }
+                Titoletto { text: I18n.t("ACCOUNT SIP") }
+                Gruppo {
+                    Repeater {
+                        model: [{ id: "nome", e: I18n.t("Nome mostrato"), s: I18n.t("es. Pasquale") }, { id: "utente", e: I18n.t("Utente o numero"), s: "0812345678" },
+                                { id: "password", e: I18n.t("Password"), s: imp.voip.haPassword ? I18n.t("(salvata, lascia vuoto)") : "" },
+                                { id: "dominio", e: I18n.t("Dominio"), s: "sip.operatore.it" }, { id: "server", e: I18n.t("Server (se diverso)"), s: I18n.t("facoltativo") }]
+                        Item {
+                            id: campoSip
+                            required property var modelData
+                            required property int index
+                            width: parent.width; height: 58
+                            Text { x: 16; y: 8; text: campoSip.modelData.e; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
+                            TextField {
+                                x: 10; y: 22; width: parent.width - 20; height: 34
+                                text: campoSip.modelData.id === "password" ? "" : (imp.voip[campoSip.modelData.id] || "")
+                                onTextChanged: imp.campiSip[campoSip.modelData.id] = text
+                                echoMode: campoSip.modelData.id === "password" ? TextInput.Password : TextInput.Normal
+                                inputMethodHints: campoSip.modelData.id === "dominio" || campoSip.modelData.id === "server" ? Qt.ImhUrlCharactersOnly : Qt.ImhNoAutoUppercase
+                                color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
+                                placeholderText: campoSip.modelData.s; placeholderTextColor: tel.pal.testo3
+                                background: Item {}
+                            }
+                            Rectangle { visible: campoSip.index < 4; anchors.bottom: parent.bottom; x: 16; width: parent.width - 16; height: 1; color: imp.linea }
+                        }
+                    }
+                }
+                Item { width: 1; height: 14 }
+                Rectangle {
+                    x: 16; width: imp.width - 32; height: 48; radius: 24; color: tel.accento
+                    Text { anchors.centerIn: parent; text: I18n.t("Salva e collega"); color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            var c = imp.campiSip
+                            var r = ponte.chiama("voipSalva", [c.utente || "", c.password || "", c.dominio || "", c.server || "", c.nome || "", true])
+                            tel.avviso(r.messaggio)
+                            imp.voip = ponte.chiama0("voipAccount"); aggiornaVoip.start()
+                        }
+                    }
+                }
+                Timer { id: aggiornaVoip; interval: 2000; repeat: true; running: imp.pagina === "chiamate" && imp.voip.attivo === true && !imp.voip.registrato; onTriggered: imp.voip = ponte.chiama0("voipAccount") }
+                Nota { text: I18n.t("Con la SIM le chiamate passano dalla SIM; senza SIM passano da Internet. Si possono chiamare anche indirizzi SIP (nome@dominio).") }
             }
 
             // ══ Suoni ════════════════════════════════════════════════════

@@ -159,6 +159,7 @@ Window {
     function avviso(testo) { messaggio.testo = testo; messaggio.opacity = 1; nascondi.restart() }
     function chiudiTutto() { notifiche = false; controllo = false; personalizza = false }
     Component.onCompleted: {
+        ponte.avvia("voipAvvia", [], "voip-avvio")   // chiamate via Internet: si collega all'account SIP
         var a = ponte.chiama0("avvio")
         if (a.tema) imp = Object.assign({}, imp, { tema: a.tema })
         if (!a.schermata || a.schermata === "blocco") return
@@ -190,6 +191,7 @@ Window {
         else if (a.schermata.indexOf("file-") === 0) appInterna = "file"
         else if (a.schermata.indexOf("calc-") === 0) appInterna = "calcolatrice"
         else if (a.schermata === "tastiera" || a.schermata === "tastierino") { appInterna = "contatti"; contattiApp.nuovo() }
+        else if (a.schermata === "voip") { appInterna = "impostazioni"; impostazioniApp.apri("chiamate") }
         else if (a.schermata === "mia-scheda") { appInterna = "contatti"; contattiApp.aggiorna(); contattiApp.apri(contattiApp.mia) }
         else if (a.schermata === "modifica-contatto") { appInterna = "contatti"; var cm = ponte.chiama0("contatti"); if (cm.length) { contattiApp.apri(cm[1] || cm[0]); contattiApp.modifica = true } }
         else if (a.schermata === "scheda") { appInterna = "contatti"; var cs = ponte.chiama0("contatti"); if (cs.length) contattiApp.apri(cs[1] || cs[0]) }

@@ -18,5 +18,6 @@ tieni premuti Volume giù + Accensione):
 Utente: solid   Password: solidos   (cambiala dal terminale con: passwd)
 
 Funziona: schermo, tocco, Wi-Fi, Solid ID e Dov'è (via Wi-Fi).
-Non ancora: chiamate, SMS, dati mobili, audio, Bluetooth, GPS, fotocamera.
+Non ancora: chiamate e SMS con la SIM, dati mobili, audio (quindi anche le chiamate
+via Internet restano mute), Bluetooth, GPS, fotocamera.
 Per tornare ad Android: riscrivi kernel e ramdisk originali di EMUI.
