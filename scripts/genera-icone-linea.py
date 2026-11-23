@@ -11,6 +11,25 @@ from pathlib import Path
 DEST = Path(__file__).resolve().parent.parent / "src" / "dati" / "icone" / "linea"
 
 G = {
+    "foglia": '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10Z"/><path d="M2 21c0-3 1.9-5.4 5.2-6.1A15 15 0 0 0 13 12"/>',
+    "parz-nuvoloso": '<path d="M12 2v2M4.9 4.9l1.4 1.4M20 12h2M19.1 4.9l-1.4 1.4M15.9 13.1A4 4 0 1 0 8 11.5"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/>',
+    "nebbia": '<path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2"/><path d="M16 17H7M17 21H9"/>',
+    "vento": '<path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2M9.6 4.6A2 2 0 1 1 11 8H2M12.6 19.4A2 2 0 1 0 14 16H2"/>',
+    "goccia": '<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>',
+    "alba": '<path d="M12 2v8M4.9 10.9l1.4 1.4M2 18h2M20 18h2M19.1 10.9l-1.4 1.4M22 22H2M8 6l4-4 4 4M16 18a4 4 0 0 0-8 0"/>',
+    "tramonto": '<path d="M12 10V2M4.9 10.9l1.4 1.4M2 18h2M20 18h2M19.1 10.9l-1.4 1.4M22 22H2M16 6l-4 4-4-4M16 18a4 4 0 0 0-8 0"/>',
+    "termometro": '<path d="M14 4v10.5a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/>',
+    "occhio": '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+    "sveglia": '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M5 3 2 6M22 6l-3-3M6.4 19.6 4 22M17.6 19.6 20 22"/>',
+    "clessidra": '<path d="M5 22h14M5 2h14M17 22v-4.2a2 2 0 0 0-.6-1.4L12 12l-4.4 4.4a2 2 0 0 0-.6 1.4V22M7 2v4.2a2 2 0 0 0 .6 1.4L12 12l4.4-4.4a2 2 0 0 0 .6-1.4V2"/>',
+    "cronometro": '<circle cx="12" cy="14" r="8"/><path d="M10 2h4M12 14l3-3M12 2v4"/>',
+    "microfono": '<rect width="6" height="12" x="9" y="2" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8 22h8"/>',
+    "registra": '<circle cx="12" cy="12" r="7"/>',
+    "stop": '<rect width="12" height="12" x="6" y="6" rx="2"/>',
+    "ripeti": '<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
+    "cerchio-spunta": '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+    "freccia-giro": '<path d="M3 12a9 9 0 1 0 9-9 9.8 9.8 0 0 0-6.7 2.7L3 8"/><path d="M3 3v5h5"/>',
+
     "posate": '<path d="M5 2v6a3 3 0 0 0 6 0V2M8 2v20"/><path d="M19 22V2c-2.8 1.2-4 4-4 7v5h4"/>',
     "tazza": '<path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M7 2v2M11 2v2M15 2v2"/>',
     "carburante": '<path d="M3 22h12M4 9h10M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 4 0V9.8a2 2 0 0 0-.6-1.4L18 5"/>',
@@ -161,7 +180,7 @@ NOMI = {
     "media-playback-start-symbolic": "play", "media-playback-pause-symbolic": "pausa",
     "media-skip-forward-symbolic": "avanti", "media-skip-backward-symbolic": "indietro",
 }
-APP = ["auto", "posate", "tazza", "carburante", "fulmine", "croce", "carrello", "parcheggio", "letto", "ospedale", "banconota", "monumento", "treno", "autobus", "tram", "metro", "nave", "bici", "pedone", "funivia", "naviga", "bussola", "nord", "mirino", "globo", "chiudi", "cuore", "dritto", "svolta-destra", "svolta-sinistra", "leggera-destra", "leggera-sinistra", "brusca-destra", "brusca-sinistra", "inversione", "rotonda", "arrivo", "busta", "spunta", "scambia", "puntina", "schermo", "freccia-giu", "freccia-su", "freccia-sinistra", "freccia-destra", "stella", "casa", "valigetta", "volume", "silenzioso", "cronologia", "impostazioni", "nuvola", "griglia", "scarica", "lucchetto", "attenzione", "condividi", "telefono", "messaggi", "contatti", "fotocamera", "foto", "musica", "note", "file", "dove", "mappe",
+APP = ["foglia", "parz-nuvoloso", "nebbia", "vento", "goccia", "alba", "tramonto", "termometro", "occhio", "sveglia", "clessidra", "cronometro", "microfono", "registra", "stop", "ripeti", "cerchio-spunta", "freccia-giro", "sole", "nuvola", "pioggia", "neve", "temporale", "luna", "calendario", "orologio", "play", "pausa", "elenco", "piu", "cestino", "matita", "cerca", "auto", "posate", "tazza", "carburante", "fulmine", "croce", "carrello", "parcheggio", "letto", "ospedale", "banconota", "monumento", "treno", "autobus", "tram", "metro", "nave", "bici", "pedone", "funivia", "naviga", "bussola", "nord", "mirino", "globo", "chiudi", "cuore", "dritto", "svolta-destra", "svolta-sinistra", "leggera-destra", "leggera-sinistra", "brusca-destra", "brusca-sinistra", "inversione", "rotonda", "arrivo", "busta", "spunta", "scambia", "puntina", "schermo", "freccia-giu", "freccia-su", "freccia-sinistra", "freccia-destra", "stella", "casa", "valigetta", "volume", "silenzioso", "cronologia", "impostazioni", "nuvola", "griglia", "scarica", "lucchetto", "attenzione", "condividi", "telefono", "messaggi", "contatti", "fotocamera", "foto", "musica", "note", "file", "dove", "mappe",
        "calcolatrice", "store", "vicina", "impostazioni", "esporta", "nuvola", "tasto-cancella", "tasto-maiuscole", "cronologia", "smartphone", "chiavetta", "casa", "portatile", "documento", "scarica", "video", "griglia", "elenco", "tag", "piu", "cerca", "condividi", "matita", "cestino", "info", "orologio", "sole", "luna", "pioggia", "neve", "temporale", "play", "pausa", "avanti", "indietro", "calendario", "batteria"]
 
 
@@ -178,7 +197,7 @@ def main() -> None:
         (DEST / f"{nome}.svg").write_text(svg(G[g]))
     for a in APP:
         (DEST / f"linea-{a}.svg").write_text(svg(G[a]))
-    for pieno in ("stella", "cuore"):
+    for pieno in ("stella", "cuore", "registra", "stop"):
         (DEST / f"linea-{pieno}-piena.svg").write_text(svg(G[pieno]).replace('fill="none"', 'fill="#000"', 1))
     # la tastiera è fatta di punti pieni
     (DEST / "input-dialpad-symbolic.svg").write_text(svg(G["tastiera"]).replace('fill="none"', 'fill="#000"', 1))
