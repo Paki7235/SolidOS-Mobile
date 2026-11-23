@@ -20,6 +20,8 @@ G = {
     "tramonto": '<path d="M12 10V2M4.9 10.9l1.4 1.4M2 18h2M20 18h2M19.1 10.9l-1.4 1.4M22 22H2M16 6l-4 4-4-4M16 18a4 4 0 0 0-8 0"/>',
     "termometro": '<path d="M14 4v10.5a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/>',
     "occhio": '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+    "bandiera": '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+    "onda": '<path d="M2 12h2M6 8v8M10 4v16M14 7v10M18 9v6M22 12h-2"/>',
     "sveglia": '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M5 3 2 6M22 6l-3-3M6.4 19.6 4 22M17.6 19.6 20 22"/>',
     "clessidra": '<path d="M5 22h14M5 2h14M17 22v-4.2a2 2 0 0 0-.6-1.4L12 12l-4.4 4.4a2 2 0 0 0-.6 1.4V22M7 2v4.2a2 2 0 0 0 .6 1.4L12 12l4.4-4.4a2 2 0 0 0 .6-1.4V2"/>',
     "cronometro": '<circle cx="12" cy="14" r="8"/><path d="M10 2h4M12 14l3-3M12 2v4"/>',
@@ -180,7 +182,7 @@ NOMI = {
     "media-playback-start-symbolic": "play", "media-playback-pause-symbolic": "pausa",
     "media-skip-forward-symbolic": "avanti", "media-skip-backward-symbolic": "indietro",
 }
-APP = ["foglia", "parz-nuvoloso", "nebbia", "vento", "goccia", "alba", "tramonto", "termometro", "occhio", "sveglia", "clessidra", "cronometro", "microfono", "registra", "stop", "ripeti", "cerchio-spunta", "freccia-giro", "sole", "nuvola", "pioggia", "neve", "temporale", "luna", "calendario", "orologio", "play", "pausa", "elenco", "piu", "cestino", "matita", "cerca", "auto", "posate", "tazza", "carburante", "fulmine", "croce", "carrello", "parcheggio", "letto", "ospedale", "banconota", "monumento", "treno", "autobus", "tram", "metro", "nave", "bici", "pedone", "funivia", "naviga", "bussola", "nord", "mirino", "globo", "chiudi", "cuore", "dritto", "svolta-destra", "svolta-sinistra", "leggera-destra", "leggera-sinistra", "brusca-destra", "brusca-sinistra", "inversione", "rotonda", "arrivo", "busta", "spunta", "scambia", "puntina", "schermo", "freccia-giu", "freccia-su", "freccia-sinistra", "freccia-destra", "stella", "casa", "valigetta", "volume", "silenzioso", "cronologia", "impostazioni", "nuvola", "griglia", "scarica", "lucchetto", "attenzione", "condividi", "telefono", "messaggi", "contatti", "fotocamera", "foto", "musica", "note", "file", "dove", "mappe",
+APP = ["campana", "bandiera", "onda", "foglia", "parz-nuvoloso", "nebbia", "vento", "goccia", "alba", "tramonto", "termometro", "occhio", "sveglia", "clessidra", "cronometro", "microfono", "registra", "stop", "ripeti", "cerchio-spunta", "freccia-giro", "sole", "nuvola", "pioggia", "neve", "temporale", "luna", "calendario", "orologio", "play", "pausa", "elenco", "piu", "cestino", "matita", "cerca", "auto", "posate", "tazza", "carburante", "fulmine", "croce", "carrello", "parcheggio", "letto", "ospedale", "banconota", "monumento", "treno", "autobus", "tram", "metro", "nave", "bici", "pedone", "funivia", "naviga", "bussola", "nord", "mirino", "globo", "chiudi", "cuore", "dritto", "svolta-destra", "svolta-sinistra", "leggera-destra", "leggera-sinistra", "brusca-destra", "brusca-sinistra", "inversione", "rotonda", "arrivo", "busta", "spunta", "scambia", "puntina", "schermo", "freccia-giu", "freccia-su", "freccia-sinistra", "freccia-destra", "stella", "casa", "valigetta", "volume", "silenzioso", "cronologia", "impostazioni", "nuvola", "griglia", "scarica", "lucchetto", "attenzione", "condividi", "telefono", "messaggi", "contatti", "fotocamera", "foto", "musica", "note", "file", "dove", "mappe",
        "calcolatrice", "store", "vicina", "impostazioni", "esporta", "nuvola", "tasto-cancella", "tasto-maiuscole", "cronologia", "smartphone", "chiavetta", "casa", "portatile", "documento", "scarica", "video", "griglia", "elenco", "tag", "piu", "cerca", "condividi", "matita", "cestino", "info", "orologio", "sole", "luna", "pioggia", "neve", "temporale", "play", "pausa", "avanti", "indietro", "calendario", "batteria"]
 
 
@@ -197,7 +199,7 @@ def main() -> None:
         (DEST / f"{nome}.svg").write_text(svg(G[g]))
     for a in APP:
         (DEST / f"linea-{a}.svg").write_text(svg(G[a]))
-    for pieno in ("stella", "cuore", "registra", "stop"):
+    for pieno in ("stella", "cuore", "registra", "stop", "bandiera"):
         (DEST / f"linea-{pieno}-piena.svg").write_text(svg(G[pieno]).replace('fill="none"', 'fill="#000"', 1))
     # la tastiera è fatta di punti pieni
     (DEST / "input-dialpad-symbolic.svg").write_text(svg(G["tastiera"]).replace('fill="none"', 'fill="#000"', 1))
