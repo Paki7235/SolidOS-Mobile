@@ -284,28 +284,31 @@ def trasporti(da: dict, a: dict) -> dict:
         soluzioni.append({"ok": True, "mezzo": "mezzi", "forma": forma, "manovre": [], "tratti": tratti,
                           "secondi": secondi, "metri": 0, "tempo": testo_tempo(secondi), "distanza": "",
                           "parte": _ora(it.get("startTime", "")), "arrivo": _ora(it.get("endTime", "")),
-                          "cambi": max(0, cambi)})
+                          "cambi": max(0, cambi), "_fine": it.get("endTime", "")})
     if not soluzioni:
         return {"ok": False, "messaggio": T("Nessun collegamento con i mezzi pubblici trovato")}
+    # prima quella che arriva prima (a parità, la più breve)
+    soluzioni.sort(key=lambda x: (x["_fine"], x["secondi"]))
+    for x in soluzioni:
+        x.pop("_fine", None)
     principale = soluzioni[0]
     principale["alternative"] = soluzioni[1:]
     return principale
 
 
-# ── Luoghi vicini per categoria (OpenStreetMap, servizio Overpass) ──────────
-OVERPASS = "https://overpass-api.de/api/interpreter"
+# ── Luoghi vicini per categoria (OpenStreetMap, ricerca per tipo di Nominatim) ──
 CATEGORIE = {
-    "ristoranti": ('["amenity"~"^(restaurant|fast_food)$"]', "Ristoranti", "🍴"),
-    "bar": ('["amenity"~"^(cafe|bar|pub)$"]', "Bar e caffè", "☕"),
-    "benzina": ('["amenity"="fuel"]', "Benzina", "⛽"),
-    "ricarica": ('["amenity"="charging_station"]', "Ricarica auto", "⚡"),
-    "farmacie": ('["amenity"="pharmacy"]', "Farmacie", "✚"),
-    "supermercati": ('["shop"~"^(supermarket|convenience)$"]', "Supermercati", "🛒"),
-    "parcheggi": ('["amenity"="parking"]', "Parcheggi", "P"),
-    "hotel": ('["tourism"~"^(hotel|guest_house|hostel)$"]', "Hotel", "🛏"),
-    "ospedali": ('["amenity"~"^(hospital|clinic)$"]', "Ospedali", "H"),
-    "bancomat": ('["amenity"="atm"]', "Bancomat", "€"),
-    "musei": ('["tourism"~"^(museum|attraction)$"]', "Da vedere", "★"),
+    "ristoranti": (["amenity=restaurant", "amenity=fast_food"], "Ristoranti", "🍴"),
+    "bar": (["amenity=cafe", "amenity=bar"], "Bar e caffè", "☕"),
+    "benzina": (["amenity=fuel"], "Benzina", "⛽"),
+    "ricarica": (["amenity=charging_station"], "Ricarica auto", "⚡"),
+    "farmacie": (["amenity=pharmacy"], "Farmacie", "✚"),
+    "supermercati": (["shop=supermarket", "shop=convenience"], "Supermercati", "🛒"),
+    "parcheggi": (["amenity=parking"], "Parcheggi", "P"),
+    "hotel": (["tourism=hotel", "tourism=guest_house"], "Hotel", "🛏"),
+    "ospedali": (["amenity=hospital", "amenity=clinic"], "Ospedali", "H"),
+    "bancomat": (["amenity=atm", "amenity=bank"], "Bancomat", "€"),
+    "musei": (["tourism=museum", "tourism=attraction"], "Da vedere", "★"),
 }
 
 
@@ -314,29 +317,31 @@ def categorie() -> list[dict]:
 
 
 def vicini(categoria: str, lat: float, lon: float, raggio: int = 1500) -> list[dict]:
+    """I luoghi di una categoria intorno a un punto, dal più vicino (con orari se ci sono)."""
     if categoria not in CATEGORIE:
         return []
-    filtro = CATEGORIE[categoria][0]
-    q = f'[out:json][timeout:20];nwr{filtro}(around:{int(raggio)},{lat:.6f},{lon:.6f});out center tags 60;'
-    try:
-        req = urllib.request.Request(OVERPASS, data=urllib.parse.urlencode({"data": q}).encode(), headers=_agente())
-        with urllib.request.urlopen(req, timeout=40) as risposta:
-            elementi = json.load(risposta).get("elements") or []
-    except (OSError, ValueError):
-        return []
-    luoghi = []
-    for e in elementi:
-        t = e.get("tags") or {}
-        la, lo = e.get("lat", (e.get("center") or {}).get("lat")), e.get("lon", (e.get("center") or {}).get("lon"))
-        if la is None or lo is None:
+    d = raggio / 111000 * 1.4
+    luoghi, visti = [], set()
+    for etichetta in CATEGORIE[categoria][0]:
+        _pausa_nominatim()
+        q = {"q": f"[{etichetta}]", "format": "jsonv2", "limit": "40", "bounded": "1", "extratags": "1",
+             "addressdetails": "1", "accept-language": "it",
+             "viewbox": f"{lon - d / math.cos(math.radians(lat))},{lat + d},{lon + d / math.cos(math.radians(lat))},{lat - d}"}
+        try:
+            risultati = _json(f"{NOMINATIM}/search?{urllib.parse.urlencode(q)}")
+        except (OSError, ValueError):
             continue
-        nome = t.get("name:it") or t.get("name") or t.get("brand") or T(CATEGORIE[categoria][1])
-        via = " ".join(x for x in (t.get("addr:street", ""), t.get("addr:housenumber", "")) if x)
-        l = {"nome": nome, "dettaglio": via or t.get("addr:city", ""), "lat": float(la), "lon": float(lo),
-             "osm": {"node": "N", "way": "W", "relation": "R"}.get(e.get("type"), "") + str(e.get("id", "")),
-             "tipo": categoria, "distanza": distanza(lat, lon, float(la), float(lo))}
-        l.update(_dettagli_da_tag(t))
-        luoghi.append(l)
+        for r in risultati:
+            if "lat" not in r or (r.get("osm_type"), r.get("osm_id")) in visti:
+                continue
+            visti.add((r.get("osm_type"), r.get("osm_id")))
+            l = _luogo(r)
+            if not r.get("name"):
+                l["nome"] = T(CATEGORIE[categoria][1])
+            l["tipo"] = categoria
+            l["distanza"] = distanza(lat, lon, l["lat"], l["lon"])
+            l.update(_dettagli_da_tag(r.get("extratags") or {}))
+            luoghi.append(l)
     luoghi.sort(key=lambda x: x["distanza"])
     return luoghi[:40]
 
