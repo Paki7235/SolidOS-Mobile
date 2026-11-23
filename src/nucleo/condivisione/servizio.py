@@ -240,7 +240,7 @@ class Gestore:
             await self.notifiche.mostra(T("Spazio insufficiente"), T("Non c'è abbastanza spazio per ricevere i file."), "dialog-error")
             return False
         nomi = [f.nome for f in t.file[:5]]
-        elenco = "\n".join(f"• {n}" + (" ⚠️" if rischioso(n) else "") for n in nomi)
+        elenco = "\n".join(f"• {n}" + (" (" + T("attenzione") + ")" if rischioso(n) else "") for n in nomi)
         if len(t.file) > 5:
             elenco += "\n" + T("…e altri {n}", n=len(t.file) - 5)
         dimensione = f"{t.totale / 1048576:.1f} MB"
@@ -249,7 +249,7 @@ class Gestore:
         if t.codice:
             testo += "\n" + T("Codice di verifica: {c} (deve essere uguale sul telefono)", c=t.codice)
         if any(rischioso(n) for n in [f.nome for f in t.file]):
-            testo += "\n⚠️ " + T("Contiene programmi o script: accetta solo se ti fidi del mittente.")
+            testo += "\n" + T("Attenzione: contiene programmi o script: accetta solo se ti fidi del mittente.")
         azioni = [("accetta", T("Accetta")), ("rifiuta", T("Rifiuta"))]
         if ident_mittente and not self.associato(ident_mittente):
             azioni.insert(1, ("ricorda", T("Accetta e ricorda")))
@@ -295,7 +295,7 @@ class Gestore:
                 avvisi = [p for p in t.percorsi if dopo_ricezione(Path(p))["ingannevole"]]
                 testo = T("{n} file salvati in {c}", n=len(t.percorsi), c=cartella)
                 if avvisi:
-                    testo += "\n⚠️ " + T("Attenzione: almeno un file ha un'estensione che non corrisponde al contenuto.")
+                    testo += "\n" + T("Attenzione: almeno un file ha un'estensione che non corrisponde al contenuto.")
                 await self.notifiche.mostra(T("File ricevuti da {d}", d=t.dispositivo), testo, "document-send",
                                             [("default", T("Apri cartella"))],
                                             al_clic=lambda _k: subprocess.Popen(["xdg-open", cartella]))

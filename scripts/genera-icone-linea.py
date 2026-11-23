@@ -11,6 +11,52 @@ from pathlib import Path
 DEST = Path(__file__).resolve().parent.parent / "src" / "dati" / "icone" / "linea"
 
 G = {
+    "posate": '<path d="M5 2v6a3 3 0 0 0 6 0V2M8 2v20"/><path d="M19 22V2c-2.8 1.2-4 4-4 7v5h4"/>',
+    "tazza": '<path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M7 2v2M11 2v2M15 2v2"/>',
+    "carburante": '<path d="M3 22h12M4 9h10M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 4 0V9.8a2 2 0 0 0-.6-1.4L18 5"/>',
+    "fulmine": '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+    "croce": '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>',
+    "carrello": '<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2 2h3l2.7 12.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 1.9-1.5L23 6H6"/>',
+    "parcheggio": '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/>',
+    "letto": '<path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/>',
+    "ospedale": '<rect width="16" height="20" x="4" y="2" rx="2"/><path d="M12 6v6M9 9h6M10 22v-4h4v4"/>',
+    "banconota": '<rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>',
+    "monumento": '<path d="M3 22h18M6 18v-7M10 18v-7M14 18v-7M18 18v-7M12 2l8 5H4z"/><path d="M4 11h16"/>',
+    "treno": '<rect width="16" height="16" x="4" y="3" rx="2"/><path d="M4 11h16M12 3v8M8 19l-2 3M18 22l-2-3M8 15h.01M16 15h.01"/>',
+    "autobus": '<path d="M8 6v6M15 6v6M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/>',
+    "tram": '<rect width="14" height="15" x="5" y="5" rx="2"/><path d="M5 12h14M9 2h6M12 2v3M9 20l-2 2M17 22l-2-2"/>',
+    "metro": '<rect width="16" height="16" x="4" y="3" rx="3"/><path d="M4 11h16M9 7h6M8 15h.01M16 15h.01M9 19l-2 3M17 22l-2-3"/>',
+    "nave": '<path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1s1.2 1 2.5 1c2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M19.4 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.9.9 5.3 2.8 7.8"/><path d="M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6M12 10v4M12 2v3"/>',
+    "bici": '<circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>',
+    "pedone": '<circle cx="13" cy="4" r="2"/><path d="M13 7.5 11 13l3 3v5.5M11 13l-3 8.5M7.5 11.5 10.5 8l4.5 2.5 2.5 3"/>',
+    "funivia": '<path d="M2 5 22 2M12 3.5V7"/><rect width="14" height="12" x="5" y="7" rx="2"/><path d="M5 13h14M10 7v6M14 7v6"/>',
+    "naviga": '<path d="M3 11 22 2l-9 19-2-8z"/>',
+    "bussola": '<circle cx="12" cy="12" r="10"/><path d="m16.2 7.8-2.1 6.3-6.3 2.1 2.1-6.3z"/>',
+    "nord": '<path d="M12 2 5 21l7-4 7 4z"/>',
+    "mirino": '<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>',
+    "globo": '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+    "chiudi": '<path d="M18 6 6 18M6 6l12 12"/>',
+    "cuore": '<path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.1 3 5.5l7 7Z"/>',
+    "dritto": '<path d="M12 21V3M5 10l7-7 7 7"/>',
+    "svolta-destra": '<path d="M6 21v-8a5 5 0 0 1 5-5h9M15 3l5 5-5 5"/>',
+    "svolta-sinistra": '<path d="M18 21v-8a5 5 0 0 0-5-5H4M9 3 4 8l5 5"/>',
+    "leggera-destra": '<path d="M8 21v-8.5L17 4M11 4h6v6"/>',
+    "leggera-sinistra": '<path d="M16 21v-8.5L7 4M13 4H7v6"/>',
+    "brusca-destra": '<path d="M7 3v9l10 8M17 13v7h-7"/>',
+    "brusca-sinistra": '<path d="M17 3v9L7 20M7 13v7h7"/>',
+    "inversione": '<path d="M7 21V9a5 5 0 0 1 10 0v6M13 12l4 4 4-4"/>',
+    "rotonda": '<circle cx="12" cy="13" r="4"/><path d="M12 22v-5M12 9V2M8.5 5.5 12 2l3.5 3.5"/>',
+    "arrivo": '<path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.3 2q2 0 3.7-1.3a1 1 0 0 1 1.6.8v9.4a1 1 0 0 1-.4.8A6 6 0 0 1 16 14c-3 0-5-2-8-2a6 6 0 0 0-4 1.3"/>',
+    "busta": '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-9 5.7a2 2 0 0 1-2 0L2 7"/>',
+    "spunta": '<path d="M20 6 9 17l-5-5"/>',
+    "scambia": '<path d="m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16"/>',
+    "puntina": '<path d="M12 17v5M9 10.8a2 2 0 0 1-1.1 1.8l-1.8.9A2 2 0 0 0 5 15.2V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.8a2 2 0 0 0-1.1-1.8l-1.8-.9A2 2 0 0 1 15 10.8V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
+    "schermo": '<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8M12 17v4"/>',
+    "freccia-giu": '<path d="M12 5v14M19 12l-7 7-7-7"/>',
+    "freccia-su": '<path d="M12 19V5M5 12l7-7 7 7"/>',
+    "freccia-sinistra": '<path d="M19 12H5M12 19l-7-7 7-7"/>',
+    "freccia-destra": '<path d="M5 12h14M12 5l7 7-7 7"/>',
+
     "wifi": '<path d="M5 13a10 10 0 0 1 14 0"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M12 20h.01"/>',
     "bluetooth": '<path d="m7 7 10 10-5 5V2l5 5L7 17"/>',
     "aereo": '<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>',
@@ -115,7 +161,7 @@ NOMI = {
     "media-playback-start-symbolic": "play", "media-playback-pause-symbolic": "pausa",
     "media-skip-forward-symbolic": "avanti", "media-skip-backward-symbolic": "indietro",
 }
-APP = ["telefono", "messaggi", "contatti", "fotocamera", "foto", "musica", "note", "file", "dove", "mappe",
+APP = ["auto", "posate", "tazza", "carburante", "fulmine", "croce", "carrello", "parcheggio", "letto", "ospedale", "banconota", "monumento", "treno", "autobus", "tram", "metro", "nave", "bici", "pedone", "funivia", "naviga", "bussola", "nord", "mirino", "globo", "chiudi", "cuore", "dritto", "svolta-destra", "svolta-sinistra", "leggera-destra", "leggera-sinistra", "brusca-destra", "brusca-sinistra", "inversione", "rotonda", "arrivo", "busta", "spunta", "scambia", "puntina", "schermo", "freccia-giu", "freccia-su", "freccia-sinistra", "freccia-destra", "stella", "casa", "valigetta", "volume", "silenzioso", "cronologia", "impostazioni", "nuvola", "griglia", "scarica", "lucchetto", "attenzione", "condividi", "telefono", "messaggi", "contatti", "fotocamera", "foto", "musica", "note", "file", "dove", "mappe",
        "calcolatrice", "store", "vicina", "impostazioni", "esporta", "nuvola", "tasto-cancella", "tasto-maiuscole", "cronologia", "smartphone", "chiavetta", "casa", "portatile", "documento", "scarica", "video", "griglia", "elenco", "tag", "piu", "cerca", "condividi", "matita", "cestino", "info", "orologio", "sole", "luna", "pioggia", "neve", "temporale", "play", "pausa", "avanti", "indietro", "calendario", "batteria"]
 
 
@@ -132,6 +178,8 @@ def main() -> None:
         (DEST / f"{nome}.svg").write_text(svg(G[g]))
     for a in APP:
         (DEST / f"linea-{a}.svg").write_text(svg(G[a]))
+    for pieno in ("stella", "cuore"):
+        (DEST / f"linea-{pieno}-piena.svg").write_text(svg(G[pieno]).replace('fill="none"', 'fill="#000"', 1))
     # la tastiera è fatta di punti pieni
     (DEST / "input-dialpad-symbolic.svg").write_text(svg(G["tastiera"]).replace('fill="none"', 'fill="#000"', 1))
     print(f"{len(NOMI) + len(APP)} icone in {DEST}")

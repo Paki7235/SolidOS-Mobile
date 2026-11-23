@@ -75,7 +75,7 @@ $('scelta').addEventListener('change', async (e) => {
   xhr.open('POST', '/carica/' + esito.id);
   $('barra').hidden = false;
   xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) $('barra').value = ev.loaded * 100 / ev.total; };
-  xhr.onload = () => { $('messaggio').textContent = xhr.status === 200 ? '✅ Inviati ' + file.length + ' file' : 'Invio non riuscito'; $('barra').hidden = true; };
+  xhr.onload = () => { $('messaggio').textContent = xhr.status === 200 ? 'Inviati ' + file.length + ' file' : 'Invio non riuscito'; $('barra').hidden = true; };
   xhr.onerror = () => { $('messaggio').textContent = 'Connessione interrotta'; };
   $('messaggio').textContent = 'Invio in corso…';
   xhr.send(dati);

@@ -298,22 +298,22 @@ def trasporti(da: dict, a: dict) -> dict:
 
 # ── Luoghi vicini per categoria (OpenStreetMap, ricerca per tipo di Nominatim) ──
 CATEGORIE = {
-    "ristoranti": (["amenity=restaurant", "amenity=fast_food"], "Ristoranti", "🍴"),
-    "bar": (["amenity=cafe", "amenity=bar"], "Bar e caffè", "☕"),
-    "benzina": (["amenity=fuel"], "Benzina", "⛽"),
-    "ricarica": (["amenity=charging_station"], "Ricarica auto", "⚡"),
-    "farmacie": (["amenity=pharmacy"], "Farmacie", "✚"),
-    "supermercati": (["shop=supermarket", "shop=convenience"], "Supermercati", "🛒"),
-    "parcheggi": (["amenity=parking"], "Parcheggi", "P"),
-    "hotel": (["tourism=hotel", "tourism=guest_house"], "Hotel", "🛏"),
-    "ospedali": (["amenity=hospital", "amenity=clinic"], "Ospedali", "H"),
-    "bancomat": (["amenity=atm", "amenity=bank"], "Bancomat", "€"),
-    "musei": (["tourism=museum", "tourism=attraction"], "Da vedere", "★"),
+    "ristoranti": (["amenity=restaurant", "amenity=fast_food"], "Ristoranti", "posate"),
+    "bar": (["amenity=cafe", "amenity=bar"], "Bar e caffè", "tazza"),
+    "benzina": (["amenity=fuel"], "Benzina", "carburante"),
+    "ricarica": (["amenity=charging_station"], "Ricarica auto", "fulmine"),
+    "farmacie": (["amenity=pharmacy"], "Farmacie", "croce"),
+    "supermercati": (["shop=supermarket", "shop=convenience"], "Supermercati", "carrello"),
+    "parcheggi": (["amenity=parking"], "Parcheggi", "parcheggio"),
+    "hotel": (["tourism=hotel", "tourism=guest_house"], "Hotel", "letto"),
+    "ospedali": (["amenity=hospital", "amenity=clinic"], "Ospedali", "ospedale"),
+    "bancomat": (["amenity=atm", "amenity=bank"], "Bancomat", "banconota"),
+    "musei": (["tourism=museum", "tourism=attraction"], "Da vedere", "monumento"),
 }
 
 
 def categorie() -> list[dict]:
-    return [{"id": k, "nome": T(v[1]), "simbolo": v[2]} for k, v in CATEGORIE.items()]
+    return [{"id": k, "nome": T(v[1]), "simbolo": v[2]} for k, v in CATEGORIE.items()]   # simbolo = disegno a linea
 
 
 def vicini(categoria: str, lat: float, lon: float, raggio: int = 1500) -> list[dict]:

@@ -54,7 +54,7 @@ Rectangle {
                     x: 16; y: 12; width: parent.width - 32; spacing: 3
                     Row {
                         width: parent.width; spacing: 6
-                        Text { visible: modelData.fissata; text: "📌"; font.pixelSize: 13 }
+                        Simbolo { visible: modelData.fissata; nome: "puntina"; lato: 14; colore: tel.pal.testo2 }
                         Text { width: parent.width - 30; elide: Text.ElideRight; text: modelData.titolo; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
                     }
                     Text { width: parent.width; elide: Text.ElideRight; text: modelData.quando + (modelData.anteprima ? "  " + modelData.anteprima : ""); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }

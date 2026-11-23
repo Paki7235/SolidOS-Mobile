@@ -1081,7 +1081,7 @@ class BackendMobile(Backend):
         if telefonia.DEMO:
             return {"ok": True, "dispositivi": [
                 {"id": "a", "nome": "Portatile di Pasquale", "tipo": "portatile", "icona": "computer-laptop", "modello": "Lenovo ThinkPad",
-                 "questo": False, "stato": "adesso · 76% ⚡", "posizione": True, "lat": 41.8986, "lon": 12.4769, "precisione": 60,
+                 "questo": False, "stato": "adesso · 76% · in carica", "posizione": True, "lat": 41.8986, "lon": 12.4769, "precisione": 60,
                  "fonte": "wifi", "quandoPosizione": "adesso", "bloccato": False, "trova": True},
                 {"id": "b", "nome": "Telefono di Pasquale", "tipo": "telefono", "icona": "phone", "modello": "Huawei P10 Lite",
                  "questo": True, "stato": "Questo telefono · 82%", "posizione": True, "lat": 41.9028, "lon": 12.4964, "precisione": 15,

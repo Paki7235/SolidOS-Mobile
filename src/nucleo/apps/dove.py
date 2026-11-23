@@ -168,7 +168,7 @@ class BackendDove(Backend):
             icona = _icona_tipo(d.get("tipo", "computer"))
             stato = [T("Questo computer") if d["id"] == questo else _quando(d.get("ultimo_visto", ""))]
             if d.get("batteria") is not None:
-                stato.append(f"{d['batteria']}%" + (" ⚡" if d.get("in_carica") else ""))
+                stato.append(f"{d['batteria']}%" + (" · " + T("in carica") if d.get("in_carica") else ""))
             if not d.get("trova_attivo", True):
                 stato.append(T("Dov'è spento"))
             risultato.append({

@@ -94,21 +94,22 @@ Rectangle {
             m("parla", [g.metriAllaManovra < 60 ? g.manovra.testo : I18n.t("Tra") + " " + g.allaManovra + ", " + g.manovra.annuncio])
         }
     }
+    // disegno della manovra (tipi di Valhalla) e del mezzo pubblico
     function freccia(tipo) {
-        if ([4, 5, 6].indexOf(tipo) >= 0) return "⚑"
-        if ([9, 18, 20, 23].indexOf(tipo) >= 0) return "↗"
-        if (tipo === 10) return "→"
-        if (tipo === 11) return "↘"
-        if ([12, 13].indexOf(tipo) >= 0) return "↶"
-        if (tipo === 14) return "↙"
-        if (tipo === 15) return "←"
-        if ([16, 19, 21, 24].indexOf(tipo) >= 0) return "↖"
-        if ([26, 27].indexOf(tipo) >= 0) return "⟳"
-        return "↑"
+        if ([4, 5, 6].indexOf(tipo) >= 0) return "arrivo"
+        if ([9, 18, 20, 23].indexOf(tipo) >= 0) return "leggera-destra"
+        if (tipo === 10) return "svolta-destra"
+        if (tipo === 11) return "brusca-destra"
+        if ([12, 13].indexOf(tipo) >= 0) return "inversione"
+        if (tipo === 14) return "brusca-sinistra"
+        if (tipo === 15) return "svolta-sinistra"
+        if ([16, 19, 21, 24].indexOf(tipo) >= 0) return "leggera-sinistra"
+        if ([26, 27].indexOf(tipo) >= 0) return "rotonda"
+        return "dritto"
     }
     function simboloMezzo(x) {
-        return ({ WALK: "🚶", BUS: "🚌", TRAM: "🚋", SUBWAY: "🚇", METRO: "🚇", RAIL: "🚆", REGIONAL_RAIL: "🚆", HIGHSPEED_RAIL: "🚄",
-                  LONG_DISTANCE: "🚆", SUBURBAN: "🚆", FERRY: "⛴", COACH: "🚌", FUNICULAR: "🚞", CABLE_CAR: "🚡", AERIAL_LIFT: "🚡" })[x] || "🚏"
+        return ({ WALK: "pedone", BUS: "autobus", COACH: "autobus", TRAM: "tram", SUBWAY: "metro", METRO: "metro", FERRY: "nave",
+                  FUNICULAR: "funivia", CABLE_CAR: "funivia", AERIAL_LIFT: "funivia" })[x] || "treno"
     }
 
     Connections {
@@ -212,7 +213,7 @@ Rectangle {
             border.color: tel.pal.bordo
             Row {
                 anchors.fill: parent; anchors.leftMargin: 16; spacing: 10
-                Text { anchors.verticalCenter: parent.verticalCenter; text: "⌕"; color: tel.pal.testo2; font.pixelSize: 20 }
+                Simbolo { anchors.verticalCenter: parent.verticalCenter; nome: "cerca"; lato: 19; colore: tel.pal.testo2 }
                 TextInput {
                     id: campo
                     anchors.verticalCenter: parent.verticalCenter
@@ -235,10 +236,14 @@ Rectangle {
             clip: true
             model: app.categorie
             delegate: Rectangle {
-                width: tCat.implicitWidth + 24; height: 34; radius: 17
+                width: tCat.implicitWidth + 26; height: 34; radius: 17
                 color: app.categoria === modelData.id ? tel.accento : (tel.chiaro ? "#F2FFFFFF" : "#EB1E293B")
                 border.color: tel.pal.bordo
-                Text { id: tCat; anchors.centerIn: parent; text: modelData.simbolo + " " + modelData.nome; color: app.categoria === modelData.id ? "white" : tel.pal.testo; font.family: Tema.font; font.pixelSize: 13 }
+                Row {
+                    id: tCat; anchors.centerIn: parent; spacing: 6
+                    Simbolo { anchors.verticalCenter: parent.verticalCenter; nome: modelData.simbolo; lato: 15; colore: app.categoria === modelData.id ? "#FFFFFF" : tel.accento }
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: modelData.nome; color: app.categoria === modelData.id ? "white" : tel.pal.testo; font.family: Tema.font; font.pixelSize: 13 }
+                }
                 MouseArea { anchors.fill: parent; onClicked: app.cercaCategoria(modelData) }
             }
         }
@@ -246,7 +251,11 @@ Rectangle {
             visible: app.modoCerca === "partenza"
             width: posTesto.implicitWidth + 30; height: 38; radius: 19
             color: tel.chiaro ? "#F2FFFFFF" : "#EB1E293B"
-            Text { id: posTesto; anchors.centerIn: parent; text: "➤ " + I18n.t("La mia posizione"); color: tel.accento; font.family: Tema.font; font.pixelSize: 14 }
+            Row {
+                id: posTesto; anchors.centerIn: parent; spacing: 6
+                Simbolo { anchors.verticalCenter: parent.verticalCenter; nome: "mirino"; lato: 16; colore: tel.accento }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.t("La mia posizione"); color: tel.accento; font.family: Tema.font; font.pixelSize: 14 }
+            }
             MouseArea { anchors.fill: parent; onClicked: { app.partenza = null; app.modoCerca = "luogo"; app.indicazioni() } }
         }
     }
@@ -308,8 +317,8 @@ Rectangle {
                     Row {
                         width: parent.width
                         Text { width: parent.width - 30; text: app.luogo ? app.luogo.nome : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 22; font.weight: Font.Bold; wrapMode: Text.WordWrap }
-                        Text {
-                            text: "✕"; color: tel.pal.testo2; font.pixelSize: 18
+                        Simbolo {
+                            nome: "chiudi"; lato: 20; colore: tel.pal.testo2
                             MouseArea { anchors.fill: parent; anchors.margins: -12; onClicked: { app.luogo = null; app.percorsi = []; app.tappe = []; app.partenza = null } }
                         }
                     }
@@ -324,11 +333,11 @@ Rectangle {
                         spacing: 12
                         Repeater {
                             model: [
-                                { t: I18n.t("Vai"), s: "➤", pieno: true, ok: true, f: function () { app.indicazioni() } },
-                                { t: I18n.t("Chiama"), s: "☎", ok: !!(app.luogo && app.luogo.telefono), f: function () { app.m("apri", ["tel:" + app.luogo.telefono.replace(/\s/g, "")]) } },
-                                { t: I18n.t("Sito"), s: "🌐", ok: !!(app.luogo && app.luogo.sito), f: function () { app.m("apri", [app.luogo.sito]) } },
-                                { t: I18n.t("Salva"), s: "☆", ok: true, f: function () { app.m("preferito", [app.luogo, ""]); tel.avviso(I18n.t("Salvato nei preferiti")) } },
-                                { t: I18n.t("Condividi"), s: "⇪", ok: true, f: function () { tel.copia(app.m("collegamento", [app.luogo.lat, app.luogo.lon])); tel.avviso(I18n.t("Collegamento copiato")) } }
+                                { t: I18n.t("Vai"), s: "naviga", pieno: true, ok: true, f: function () { app.indicazioni() } },
+                                { t: I18n.t("Chiama"), s: "telefono", ok: !!(app.luogo && app.luogo.telefono), f: function () { app.m("apri", ["tel:" + app.luogo.telefono.replace(/\s/g, "")]) } },
+                                { t: I18n.t("Sito"), s: "globo", ok: !!(app.luogo && app.luogo.sito), f: function () { app.m("apri", [app.luogo.sito]) } },
+                                { t: I18n.t("Salva"), s: "stella", ok: true, f: function () { app.m("preferito", [app.luogo, ""]); tel.avviso(I18n.t("Salvato nei preferiti")) } },
+                                { t: I18n.t("Condividi"), s: "condividi", ok: true, f: function () { tel.copia(app.m("collegamento", [app.luogo.lat, app.luogo.lon])); tel.avviso(I18n.t("Collegamento copiato")) } }
                             ]
                             Column {
                                 spacing: 4
@@ -337,7 +346,7 @@ Rectangle {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     width: 52; height: 52; radius: 26
                                     color: modelData.pieno ? tel.accento : tel.pal.superficie2
-                                    Text { anchors.centerIn: parent; text: modelData.s; color: modelData.pieno ? "white" : tel.accento; font.pixelSize: 20; rotation: modelData.s === "➤" ? -45 : 0 }
+                                    Simbolo { anchors.centerIn: parent; nome: modelData.s; lato: 22; colore: modelData.pieno ? "#FFFFFF" : tel.accento }
                                     MouseArea { anchors.fill: parent; enabled: modelData.ok; onClicked: modelData.f() }
                                 }
                                 Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.t; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: 11 }
@@ -364,33 +373,39 @@ Rectangle {
                     Rectangle { width: parent.width; height: 1; color: tel.pal.bordo }
                     Row {
                         width: parent.width
-                        Text { width: parent.width - 70; text: "🟢 " + I18n.t("Da") + ": " + (app.partenza ? app.partenza.nome : I18n.t("La mia posizione")); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 14; elide: Text.ElideRight }
-                        Text { width: 70; horizontalAlignment: Text.AlignRight; text: I18n.t("Cambia"); color: tel.accento; font.family: Tema.font; font.pixelSize: 14
+                        spacing: 8
+                        Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 10; height: 10; radius: 5; color: "#22C55E" }
+                        Text { width: parent.width - 112; text: I18n.t("Da") + ": " + (app.partenza ? app.partenza.nome : I18n.t("La mia posizione")); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 14; elide: Text.ElideRight }
+                        Text { width: 86; horizontalAlignment: Text.AlignRight; text: I18n.t("Cambia"); color: tel.accento; font.family: Tema.font; font.pixelSize: 14
                             MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: { app.modoCerca = "partenza"; campo.forceActiveFocus() } } }
                     }
                     Repeater {
                         model: app.mezzo === "mezzi" ? [] : app.tappe
                         Row {
                             width: colFoglio.width
-                            Text { width: parent.width - 30; text: "🟣 " + I18n.t("Tappa") + ": " + modelData.nome; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 14; elide: Text.ElideRight }
-                            Text { text: "✕"; color: tel.pal.testo2; font.pixelSize: 14
+                            spacing: 8
+                            Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 10; height: 10; radius: 5; color: "#A855F7" }
+                            Text { width: parent.width - 48; text: I18n.t("Tappa") + ": " + modelData.nome; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 14; elide: Text.ElideRight }
+                            Simbolo { nome: "chiudi"; lato: 16; colore: tel.pal.testo2
                                 MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: { var t = app.tappe.slice(); t.splice(index, 1); app.tappe = t; app.indicazioni() } } }
                         }
                     }
                     Row {
                         width: parent.width
-                        Text { width: parent.width - 70; text: "🔴 " + I18n.t("A") + ": " + (app.luogo ? app.luogo.nome : ""); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 14; elide: Text.ElideRight }
-                        Text { visible: app.mezzo !== "mezzi"; width: 70; horizontalAlignment: Text.AlignRight; text: "+ " + I18n.t("Tappa"); color: tel.accento; font.family: Tema.font; font.pixelSize: 14
+                        spacing: 8
+                        Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 10; height: 10; radius: 5; color: "#EF4444" }
+                        Text { width: parent.width - 88; text: I18n.t("A") + ": " + (app.luogo ? app.luogo.nome : ""); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 14; elide: Text.ElideRight }
+                        Text { visible: app.mezzo !== "mezzi"; width: 86; horizontalAlignment: Text.AlignRight; text: "+ " + I18n.t("Tappa"); color: tel.accento; font.family: Tema.font; font.pixelSize: 14
                             MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: { app.modoCerca = "tappa"; campo.forceActiveFocus() } } }
                     }
                     Row {
                         spacing: 8
                         Repeater {
-                            model: [{ id: "auto", t: "🚗" }, { id: "mezzi", t: "🚆" }, { id: "bici", t: "🚲" }, { id: "piedi", t: "🚶" }]
+                            model: [{ id: "auto", s: "auto" }, { id: "mezzi", s: "treno" }, { id: "bici", s: "bici" }, { id: "piedi", s: "pedone" }]
                             Rectangle {
                                 width: 58; height: 40; radius: 20
                                 color: app.mezzo === modelData.id ? tel.accento : tel.pal.superficie2
-                                Text { anchors.centerIn: parent; text: modelData.t; font.pixelSize: 18 }
+                                Simbolo { anchors.centerIn: parent; nome: modelData.s; lato: 20; colore: app.mezzo === modelData.id ? "#FFFFFF" : tel.pal.testo }
                                 MouseArea { anchors.fill: parent; onClicked: { app.mezzo = modelData.id; app.indicazioni() } }
                             }
                         }
@@ -450,16 +465,25 @@ Rectangle {
                                             visible: modelData.mezzo !== "WALK" || modelData.minuti > 0
                                             height: 24; radius: 7; width: tTr.implicitWidth + 12
                                             color: modelData.mezzo === "WALK" ? "transparent" : modelData.colore
-                                            Text { id: tTr; anchors.centerIn: parent; text: app.simboloMezzo(modelData.mezzo) + (modelData.linea ? " " + modelData.linea : "") + (modelData.mezzo === "WALK" ? " " + modelData.minuti + "′" : ""); color: modelData.mezzo === "WALK" ? tel.pal.testo2 : "white"; font.family: Tema.font; font.pixelSize: 13; font.weight: Font.DemiBold }
+                                            Row {
+                                                id: tTr; anchors.centerIn: parent; spacing: 4
+                                                Simbolo { anchors.verticalCenter: parent.verticalCenter; nome: app.simboloMezzo(modelData.mezzo); lato: 15; colore: modelData.mezzo === "WALK" ? tel.pal.testo2 : "#FFFFFF" }
+                                                Text { anchors.verticalCenter: parent.verticalCenter; text: modelData.mezzo === "WALK" ? modelData.minuti + "′" : modelData.linea; color: modelData.mezzo === "WALK" ? tel.pal.testo2 : "white"; font.family: Tema.font; font.pixelSize: 13; font.weight: Font.DemiBold }
+                                            }
                                         }
                                     }
                                 }
                                 Repeater {
                                     model: sch.modelData.mezzo === "mezzi" && sch.index === app.scelto ? (sch.modelData.tratti || []) : []
-                                    Text {
-                                        width: colSch.width; wrapMode: Text.WordWrap
-                                        text: modelData.parte + "  " + app.simboloMezzo(modelData.mezzo) + "  " + (modelData.mezzo === "WALK" ? I18n.t("A piedi") + " " + modelData.minuti + " min" : modelData.nome + " " + modelData.linea + (modelData.direzione ? " → " + modelData.direzione : "") + " · " + modelData.fermate + " " + I18n.t("fermate"))
-                                        color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 13
+                                    Row {
+                                        width: colSch.width; spacing: 6
+                                        Text { text: modelData.parte; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: 13 }
+                                        Simbolo { nome: app.simboloMezzo(modelData.mezzo); lato: 15; colore: modelData.mezzo === "WALK" ? tel.pal.testo2 : modelData.colore }
+                                        Text {
+                                            width: colSch.width - 70; wrapMode: Text.WordWrap
+                                            text: modelData.mezzo === "WALK" ? I18n.t("A piedi") + " " + modelData.minuti + " min" : modelData.nome + " " + modelData.linea + (modelData.direzione ? " → " + modelData.direzione : "") + " · " + modelData.fermate + " " + I18n.t("fermate")
+                                            color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 13
+                                        }
                                     }
                                 }
                             }
@@ -496,7 +520,7 @@ Rectangle {
             color: "#1E3A8A"
             Row {
                 anchors.fill: parent; anchors.margins: 16; spacing: 16
-                Text { anchors.verticalCenter: parent.verticalCenter; text: app.stato ? app.freccia(app.stato.manovra.tipo) : ""; color: "white"; font.pixelSize: 44; font.weight: Font.Bold }
+                Simbolo { anchors.verticalCenter: parent.verticalCenter; nome: app.stato ? app.freccia(app.stato.manovra.tipo) : ""; lato: 48; colore: "#FFFFFF" }
                 Column {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width - 80
@@ -510,9 +534,13 @@ Rectangle {
             x: 16
             width: Math.min(parent.width - 32, tDopo.implicitWidth + 24); height: 32
             radius: 10; color: "#172E6E"
-            Text { id: tDopo; anchors.centerIn: parent; width: Math.min(implicitWidth, parent.width - 24); elide: Text.ElideRight
-                text: app.stato && app.stato.dopo ? I18n.t("Poi") + "  " + app.freccia(app.stato.dopo.tipo) + "  " + (app.stato.dopo.via || app.stato.dopo.testo) : ""
-                color: "#E0E7FF"; font.family: Tema.font; font.pixelSize: 13 }
+            Row {
+                id: tDopo; anchors.centerIn: parent; spacing: 6
+                Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.t("Poi"); color: "#E0E7FF"; font.family: Tema.font; font.pixelSize: 13 }
+                Simbolo { anchors.verticalCenter: parent.verticalCenter; nome: app.stato && app.stato.dopo ? app.freccia(app.stato.dopo.tipo) : ""; lato: 15; colore: "#E0E7FF" }
+                Text { anchors.verticalCenter: parent.verticalCenter; width: Math.min(implicitWidth, app.width - 140); elide: Text.ElideRight
+                    text: app.stato && app.stato.dopo ? (app.stato.dopo.via || app.stato.dopo.testo) : ""; color: "#E0E7FF"; font.family: Tema.font; font.pixelSize: 13 }
+            }
         }
     }
     Rectangle {
@@ -547,12 +575,12 @@ Rectangle {
             y: 44; anchors.right: parent.right; anchors.rightMargin: tel.margine; spacing: 8
             Repeater {
                 model: [
-                    { s: app.voce ? "🔊" : "🔇", f: function () { app.voce = !app.voce } },
-                    { s: app.seguendo ? (app.ruota ? "🧭" : "⬆") : "◎", f: function () { if (!app.seguendo) { app.seguendo = true; if (app.qui) carta.centra(app.qui.lat, app.qui.lon, 17) } else app.ruota = !app.ruota } }
+                    { s: app.voce ? "volume" : "silenzioso", f: function () { app.voce = !app.voce } },
+                    { s: app.seguendo ? (app.ruota ? "bussola" : "nord") : "mirino", f: function () { if (!app.seguendo) { app.seguendo = true; if (app.qui) carta.centra(app.qui.lat, app.qui.lon, 17) } else app.ruota = !app.ruota } }
                 ]
                 Rectangle {
                     width: 46; height: 46; radius: 23; color: tel.pal.superficie2
-                    Text { anchors.centerIn: parent; text: modelData.s; font.pixelSize: 18 }
+                    Simbolo { anchors.centerIn: parent; nome: modelData.s; lato: 20; colore: tel.pal.testo }
                     MouseArea { anchors.fill: parent; onClicked: modelData.f() }
                 }
             }
@@ -570,7 +598,7 @@ Rectangle {
         y: app.luogo || app.categoria ? 104 : 150
         width: 44; height: 44; radius: 22
         color: tel.chiaro ? "#F2FFFFFF" : "#EB1E293B"
-        Text { anchors.centerIn: parent; text: "➤"; rotation: -45; color: tel.accento; font.pixelSize: 18 }
+        Simbolo { anchors.centerIn: parent; nome: "mirino"; lato: 22; colore: tel.accento }
         MouseArea { anchors.fill: parent; onClicked: { if (app.qui) carta.centra(app.qui.lat, app.qui.lon, 16); app.ma("posizione", [], "mappe-qui") } }
     }
 }
