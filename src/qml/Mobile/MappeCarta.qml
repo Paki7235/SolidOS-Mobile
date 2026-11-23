@@ -1,4 +1,4 @@
-// Carta delle Mappe di SolidOS (telefono; la stessa del PC, con le tessere chieste a ponte.mappe): tessere disegnate da noi (nucleo.mappe.disegno) dai dati
+// Carta delle Mappe di SolidOS: tessere disegnate da noi (nucleo.mappe.disegno) dai dati
 // aperti di OpenStreetMap, chiare o scure col tema. Sopra: il percorso, la posizione (punto
 // blu con il cerchio della precisione) e i segnaposti dei luoghi. Trascinare, rotellina,
 // pizzico; tenere premuto sceglie un punto.
@@ -13,6 +13,8 @@ Item {
     property int zoom: 5
     property var segnaposti: []          // [{id, lat, lon, nome, colore}]
     property var forma: []               // percorso: [[lat, lon], …]
+    property var altre: []               // percorsi alternativi (grigi, si possono scegliere)
+    signal alternativaScelta(int indice)
     property int fattoFino: 0            // punti del percorso già fatti (grigi durante la guida)
     property var posizione: null         // {lat, lon, precisione, direzione}
     signal segnapostoScelto(string ident)
@@ -134,7 +136,7 @@ Item {
         id: tracciato
         anchors.fill: parent
         visible: mappa.forma.length > 1
-        property var chiave: [mappa.cx, mappa.cy, mappa.zoom, mappa.forma, mappa.fattoFino, mappa.width, mappa.height]
+        property var chiave: [mappa.cx, mappa.cy, mappa.zoom, mappa.forma, mappa.altre, mappa.fattoFino, mappa.width, mappa.height]
         onChiaveChanged: requestPaint()
         onPaint: {
             var g = getContext("2d"); g.reset()
@@ -147,6 +149,11 @@ Item {
                     if (i === da) g.moveTo(x, y); else g.lineTo(x, y)
                 }
                 g.stroke()
+            }
+            for (var k = 0; k < mappa.altre.length; k++) {
+                var salva = f; f = mappa.altre[k]
+                if (f && f.length > 1) { disegna(0, f.length - 1, "#6B7280", 8); disegna(0, f.length - 1, "#AEB6C2", 5) }
+                f = salva
             }
             var fatto = Math.min(mappa.fattoFino, f.length - 1)
             if (fatto > 0) disegna(0, fatto, "#9AA3AE", 6)
@@ -229,5 +236,26 @@ Item {
         text: "© OpenStreetMap · OpenFreeMap"
         color: "#99000000"; font.pixelSize: 10
         Rectangle { anchors.fill: parent; anchors.margins: -2; z: -1; color: "#B3FFFFFF"; radius: 3 }
+    }
+
+    // Scala: una barretta con una distanza tonda (100 m, 1 km…)
+    Item {
+        id: scala
+        anchors.left: parent.left; anchors.leftMargin: 10
+        anchors.bottom: parent.bottom; anchors.bottomMargin: 26
+        readonly property var misura: {
+            var mpp = mappa.metriPerPixel(), tonde = [5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000]
+            var scelta = tonde[0]
+            for (var i = 0; i < tonde.length; i++) if (tonde[i] / mpp <= 110) scelta = tonde[i]
+            return { metri: scelta, px: scelta / mpp }
+        }
+        width: misura.px; height: 16
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 3; radius: 1.5; color: Tema.chiaro ? "#3B3F46" : "#E3E7EE" }
+        Text {
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 5
+            text: scala.misura.metri >= 1000 ? (scala.misura.metri / 1000) + " km" : scala.misura.metri + " m"
+            color: Tema.chiaro ? "#3B3F46" : "#E3E7EE"; font.pixelSize: 11; font.weight: Font.DemiBold
+            style: Text.Outline; styleColor: Tema.chiaro ? "#F7F5F1" : "#1C2028"
+        }
     }
 }

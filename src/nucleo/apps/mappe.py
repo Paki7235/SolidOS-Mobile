@@ -40,6 +40,8 @@ class BackendMappe(Backend):
     def __init__(self):
         self._pool = ThreadPoolExecutor(max_workers=4)
         self._percorso: dict = {}
+        self._strade: list = []
+        self._scarica = {"attivo": False, "fatte": 0, "totale": 0}
 
     # ── Carta ───────────────────────────────────────────────────────────────
     def tessere(self, richieste: list, tema: str) -> dict:
@@ -100,16 +102,94 @@ class BackendMappe(Backend):
         scrivi_json(config_utente("mappe.json"), c)
         return c
 
+    # ── Categorie e scheda del luogo ────────────────────────────────────────
+    def categorie(self) -> list:
+        return mappe.categorie()
+
+    def vicini(self, categoria: str, lat: float, lon: float) -> list:
+        return mappe.vicini(str(categoria), float(lat), float(lon))
+
+    def dettagli(self, luogo: dict) -> dict:
+        return mappe.dettagli(dict(luogo))
+
+    def collegamento(self, lat: float, lon: float) -> str:
+        return mappe.collegamento(float(lat), float(lon))
+
+    def copia(self, testo: str) -> None:
+        from PyQt6.QtGui import QGuiApplication
+
+        QGuiApplication.clipboard().setText(str(testo))
+
+    def apri(self, indirizzo: str) -> None:
+        """Telefono (tel:), sito o posta con le app predefinite."""
+        from ..sistema import avvia
+
+        indirizzo = str(indirizzo).strip()
+        if indirizzo and not indirizzo.startswith(("http://", "https://", "tel:", "mailto:")):
+            indirizzo = "https://" + indirizzo
+        if indirizzo:
+            avvia(["xdg-open", indirizzo])
+
     # ── Percorso e guida ────────────────────────────────────────────────────
-    def percorso(self, da: dict, a: dict, mezzo: str) -> dict:
-        p = mappe.percorso(dict(da), dict(a), str(mezzo))
-        self._percorso = p if p.get("ok") else {}
+    def percorso(self, da: dict, a: dict, mezzo: str, opzioni=None, tappe=None) -> dict:
+        p = mappe.percorso(dict(da), dict(a), str(mezzo), dict(opzioni or {}), [dict(t) for t in (tappe or [])])
+        self.scegliPercorso(p)
         return p
+
+    def scegliPercorso(self, p: dict) -> None:
+        """Il percorso da seguire (anche un'alternativa scelta nell'elenco)."""
+        self._percorso = dict(p) if p and p.get("ok") else {}
+        self._strade = []
+        if self._percorso and self._percorso.get("mezzo") != "mezzi":
+            forma, mezzo = self._percorso.get("forma", []), self._percorso.get("mezzo", "auto")
+            # limiti di velocità e nomi delle strade: arrivano dopo, senza far aspettare
+            self._pool.submit(lambda: setattr(self, "_strade", mappe.strade(forma, mezzo)))
 
     def guida(self, lat: float, lon: float, indice: int = 0) -> dict:
         if not self._percorso:
             return {"ok": False}
-        return mappe.guida(self._percorso, float(lat), float(lon), int(indice))
+        g = mappe.guida(self._percorso, float(lat), float(lon), int(indice))
+        if g.get("ok"):
+            tratto = next((x for x in self._strade if x["inizio"] <= g["indice"] <= x["fine"]), None)
+            g["limite"] = tratto["limite"] if tratto else 0
+            g["via"] = tratto["via"] if tratto else ""
+            manovre = self._percorso.get("manovre", [])
+            k = next((i for i, m in enumerate(manovre) if m["inizio"] == g["manovra"]["inizio"]), -1)
+            g["dopo"] = manovre[k + 1] if 0 <= k < len(manovre) - 1 else None
+        return g
+
+    # ── Mappe senza rete ────────────────────────────────────────────────────
+    def scaricaZona(self, lat0: float, lon0: float, lat1: float, lon1: float) -> dict:
+        """Scarica i dati della zona visibile (fino allo zoom 14): poi la mappa si vede anche senza rete."""
+        if self._scarica["attivo"]:
+            return self._scarica
+        elenco = mappe.tessere_zona(float(lat0), float(lon0), float(lat1), float(lon1))
+        if len(elenco) > 3000:
+            return {"ok": False, "messaggio": "Zona troppo grande: avvicinati un po'"}
+        self._scarica = {"attivo": True, "fatte": 0, "totale": len(elenco)}
+
+        def lavora():
+            for (z, x, y) in elenco:
+                try:
+                    disegno._dati_da_disco(z, x, y)
+                except Exception:  # noqa: BLE001
+                    pass
+                self._scarica["fatte"] += 1
+            self._scarica["attivo"] = False
+
+        self._pool.submit(lavora)
+        return self._scarica
+
+    def statoScarica(self) -> dict:
+        return dict(self._scarica)
+
+    def spazioMappe(self) -> str:
+        cartella = disegno._cache()
+        byte = sum(f.stat().st_size for f in cartella.rglob("*") if f.is_file())
+        return f"{byte / 1048576:.0f} MB"
+
+    def cancellaMappe(self) -> None:
+        shutil.rmtree(disegno._cache(), ignore_errors=True)
 
     def parla(self, testo: str) -> None:
         """Indicazioni a voce (se c'è la sintesi vocale del sistema)."""

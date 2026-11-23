@@ -308,7 +308,7 @@ def _disegna(strati: dict, z: int, dz: int, sx: int, sy: int, c: dict):
 
     def scrivi(testo, punto, extent, dimensione, colore, peso=QFont.Weight.Normal, corsivo=False):
         if not testo:
-            return
+            return False
         s, ox, oy = trasforma(extent)
         x0, y0 = punto[0] * s + ox, punto[1] * s + oy
         font = QFont(branding.get("FONT_UI", "Inter") or "Inter")
@@ -320,9 +320,9 @@ def _disegna(strati: dict, z: int, dz: int, sx: int, sy: int, c: dict):
         r = QRectF(x0 - larghezza / 2, y0 - altezza / 2, larghezza, altezza)
         # dentro la tessera (niente nomi tagliati a metà) e senza sovrapporsi
         if r.left() < 2 or r.top() < 2 or r.right() > LATO - 2 or r.bottom() > LATO - 2:
-            return
+            return False
         if any(r.intersects(o) for o in occupati):
-            return
+            return False
         occupati.append(r.adjusted(-4, -2, 4, 2))
         cammino = QPainterPath()
         cammino.addText(QPointF(r.left(), r.top() + m.ascent()), font, testo)
@@ -332,6 +332,7 @@ def _disegna(strati: dict, z: int, dz: int, sx: int, sy: int, c: dict):
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(QColor(colore))
         p.drawPath(cammino)
+        return True
 
     def centro(geom):
         punti = [pt for parte in geom for pt in parte]
@@ -355,26 +356,92 @@ def _disegna(strati: dict, z: int, dz: int, sx: int, sy: int, c: dict):
                 scrivi(_nome(o["attr"]), pt, st["extent"], dimensioni[k] + (1 if z >= 15 else 0), c["testo"],
                        QFont.Weight.DemiBold if k in ("city", "town") else QFont.Weight.Medium)
 
+    # nomi delle strade lungo la strada (il tratto dritto più lungo, sempre leggibile)
     if z >= 15:
         st = strati.get("transportation_name")
         if st:
-            for o in st["oggetti"]:
-                if o["attr"].get("class") in ("motorway", "trunk", "primary", "secondary", "tertiary", "minor"):
-                    pt = centro(o["geom"])
-                    if pt:
-                        scrivi(_nome(o["attr"]), pt, st["extent"], 9.5, c["testo"])
+            import math as _m
+
+            from PyQt6.QtGui import QTransform
+
+            s_, ox_, oy_ = trasforma(st["extent"])
+            font = QFont(branding.get("FONT_UI", "Inter") or "Inter")
+            font.setPixelSize(9 if z < 17 else 10)
+            font.setWeight(QFont.Weight.Medium)
+            mf = QFontMetricsF(font)
+            importanti = ("motorway", "trunk", "primary", "secondary", "tertiary", "minor", "service")
+            for o in sorted(st["oggetti"], key=lambda o: importanti.index(o["attr"].get("class")) if o["attr"].get("class") in importanti else 99):
+                if o["attr"].get("class") not in importanti or not dentro(o, st["extent"]):
+                    continue
+                nome = _nome(o["attr"])
+                if not nome:
+                    continue
+                largo = mf.horizontalAdvance(nome)
+                migliore = None
+                for parte in o["geom"]:
+                    for (x1, y1), (x2, y2) in zip(parte, parte[1:]):
+                        ax, ay, bx, by = x1 * s_ + ox_, y1 * s_ + oy_, x2 * s_ + ox_, y2 * s_ + oy_
+                        lung = _m.hypot(bx - ax, by - ay)
+                        if lung > largo + 8 and (migliore is None or lung > migliore[0]):
+                            migliore = (lung, ax, ay, bx, by)
+                if not migliore:
+                    continue
+                _l, ax, ay, bx, by = migliore
+                mx, my = (ax + bx) / 2, (ay + by) / 2
+                angolo = _m.degrees(_m.atan2(by - ay, bx - ax))
+                if angolo > 90:
+                    angolo -= 180
+                elif angolo < -90:
+                    angolo += 180
+                raggio = largo / 2 + 4
+                riquadro = QRectF(mx - raggio, my - raggio * 0.5 - 5, 2 * raggio, raggio + 10) if abs(angolo) > 30 \
+                    else QRectF(mx - raggio, my - 7, 2 * raggio, 14)
+                if riquadro.left() < 0 or riquadro.top() < 0 or riquadro.right() > LATO or riquadro.bottom() > LATO:
+                    continue
+                if any(riquadro.intersects(x) for x in occupati):
+                    continue
+                occupati.append(riquadro)
+                cammino = QPainterPath()
+                cammino.addText(QPointF(-largo / 2, mf.ascent() / 2 - 1), font, nome)
+                cammino = QTransform().translate(mx, my).rotate(angolo).map(cammino)
+                p.setPen(QPen(QColor(c["testo_alone"]), 2.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
+                p.setBrush(Qt.BrushStyle.NoBrush)
+                p.drawPath(cammino)
+                p.setPen(Qt.PenStyle.NoPen)
+                p.setBrush(QColor(c["testo"]))
+                p.drawPath(cammino)
     st = strati.get("water_name")
     if st:
         for o in st["oggetti"]:
             pt = centro(o["geom"])
             if pt:
                 scrivi(_nome(o["attr"]), pt, st["extent"], 11, c["testo_acqua"], QFont.Weight.Medium, True)
+    # luoghi: un pallino colorato per tipo e il nome accanto
     if z >= 16:
         st = strati.get("poi")
         if st:
-            for o in sorted(st["oggetti"], key=lambda o: o["attr"].get("rank", 99))[:60]:
+            colori_poi = {"food": "#F97316", "restaurant": "#F97316", "fast_food": "#F97316", "cafe": "#B45309",
+                          "bar": "#B45309", "shop": "#8B5CF6", "grocery": "#8B5CF6", "hospital": "#EF4444",
+                          "pharmacy": "#16A34A", "fuel": "#0EA5E9", "parking": "#3B82F6", "lodging": "#EC4899",
+                          "museum": "#A16207", "attraction": "#A16207", "school": "#64748B", "bank": "#0F766E",
+                          "bus": "#2563EB", "railway": "#2563EB", "place_of_worship": "#78716C", "park": "#16A34A"}
+            s_, ox_, oy_ = trasforma(st["extent"])
+            for o in sorted(st["oggetti"], key=lambda o: o["attr"].get("rank", 99)):
+                if o["attr"].get("rank", 99) > (25 if z >= 17 else 10) or not dentro(o, st["extent"]):
+                    continue
                 pt = centro(o["geom"])
-                if pt and o["attr"].get("rank", 99) <= (20 if z >= 17 else 8):
-                    scrivi(_nome(o["attr"]), pt, st["extent"], 9, c["poi"])
+                nome = _nome(o["attr"])
+                if not pt or not nome or (o["attr"].get("class") in ("bus", "railway") and z < 17):
+                    continue
+                x0, y0 = pt[0] * s_ + ox_, pt[1] * s_ + oy_
+                if not (6 < x0 < LATO - 6 and 6 < y0 < LATO - 6):
+                    continue
+                colore = colori_poi.get(o["attr"].get("class", ""), c["poi"])
+                # il pallino solo se il nome trova posto accanto (niente puntini senza nome)
+                if scrivi(nome, (pt[0] + (6 + len(nome) * 2.6) / s_, pt[1]), st["extent"], 9, colore):
+                    occupati.append(QRectF(x0 - 5, y0 - 5, 10, 10))
+                    p.setPen(QPen(QColor("#FFFFFF"), 1.2))
+                    p.setBrush(QColor(colore))
+                    p.drawEllipse(QPointF(x0, y0), 4.2, 4.2)
     p.end()
     return img
