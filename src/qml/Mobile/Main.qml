@@ -187,7 +187,7 @@ Window {
         else if (a.schermata === "conversazione") { appInterna = "messaggi"; var c = ponte.chiama0("conversazioni"); if (c.length) messaggiApp.apri(c[0].numero) }
         else if (a.schermata === "contatti") appInterna = "contatti"
         else if (a.schermata === "dove") appInterna = "dove"
-        else if (["calcolatrice", "note", "file", "foto", "musica", "fotocamera", "store", "vicina"].indexOf(a.schermata) >= 0) appInterna = a.schermata
+        else if (["calcolatrice", "note", "file", "foto", "musica", "fotocamera", "store", "vicina", "mappe"].indexOf(a.schermata) >= 0) appInterna = a.schermata
         else if (a.schermata === "store-app" || a.schermata === "store-raccolta" || a.schermata === "store-mie" || a.schermata === "store-scarica") appInterna = "store"
         else if (a.schermata === "foto-account" || a.schermata === "foto-google" || a.schermata === "foto-casa" || a.schermata === "foto-una") appInterna = "foto"
         else if (a.schermata === "segreteria") { appInterna = "telefono"; telefonoApp.scheda = "segreteria" }
@@ -211,7 +211,7 @@ Window {
     }
     // --foto=PERCORSO: salva una foto della schermata ed esce (prova automatica)
     Timer {
-        interval: (ponte.chiama0("avvio").schermata || "").indexOf("store") === 0 ? 12000 : 2500   // lo Store aspetta il catalogo
+        interval: /^(store|mappe)/.test(ponte.chiama0("avvio").schermata || "") ? 15000 : 2500   // Store e Mappe aspettano i dati
         running: ponte.chiama0("avvio").foto !== undefined
         onTriggered: tel.contentItem.grabToImage(function (r) { r.saveToFile(ponte.chiama0("avvio").foto); Qt.quit() })
     }
@@ -334,6 +334,7 @@ Window {
     PaginaApp { nome: "fotocamera"; source: "Fotocamera.qml" }
     PaginaApp { nome: "store"; source: "Store.qml" }
     PaginaApp { nome: "vicina"; source: "Vicina.qml" }
+    PaginaApp { nome: "mappe"; source: "Mappe.qml" }
 
     // Sotto le tendine: lo sfondo «sfocato» (le sue sfumature) con una velatura, che copre la Home
     Rectangle {

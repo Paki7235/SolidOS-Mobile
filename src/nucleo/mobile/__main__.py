@@ -76,6 +76,7 @@ IN_ARRIVO = {
     "messaggi": {"id": "interno:messaggi", "nome": T("Messaggi"), "icona": "nucleo-messaggi", "categorie": ["Chat"]},
     "contatti": {"id": "interno:contatti", "nome": T("Contatti"), "icona": "nucleo-contatti", "categorie": ["ContactManagement"]},
     "dove": {"id": "interno:dove", "nome": T("Dov'è"), "icona": "nucleo-dove", "categorie": ["Utility"]},
+    "mappe": {"id": "interno:mappe", "nome": T("Mappe"), "icona": "nucleo-mappe", "categorie": ["Maps", "Utility"]},
     "impostazioni": {"id": "interno:impostazioni", "nome": T("Impostazioni"), "icona": "nucleo-impostazioni", "categorie": ["Settings"]},
     "fotocamera": {"id": "interno:fotocamera", "nome": T("Fotocamera"), "icona": "nucleo-fotocamera", "categorie": ["Photography"]},
     "foto": {"id": "interno:foto", "nome": T("Foto"), "icona": "nucleo-foto", "categorie": ["Graphics", "Photography"]},
@@ -339,7 +340,7 @@ class BackendMobile(Backend):
             a = next((x for x in self.app() if x["id"] == ident), None)
             if a and a["id"] not in nascoste and a not in risultato:
                 risultato.append(a)
-        ordine = ["fotocamera", "foto", "contatti", "note", "file", "dove", "musica", "store", "vicina", "calcolatrice", "impostazioni"]
+        ordine = ["fotocamera", "foto", "contatti", "note", "file", "dove", "mappe", "musica", "store", "vicina", "calcolatrice", "impostazioni"]
         for a in (self._per_id(x) for x in ordine):
             if a and a["id"] not in nascoste and a not in risultato:
                 risultato.append(a)
@@ -1105,6 +1106,16 @@ class BackendMobile(Backend):
 
     def tessere(self, elenco, stile: str = "chiaro") -> dict:
         return self._dove().tessere(elenco, stile)
+
+    # ── Mappe e navigatore (nucleo/mappe: lo stesso codice del PC) ───────
+    def mappe(self, metodo: str, argomenti=None):
+        if not hasattr(self, "_mappe_b"):
+            from ..apps.mappe import BackendMappe
+
+            self._mappe_b = BackendMappe()
+        if str(metodo).startswith("_") or not hasattr(self._mappe_b, metodo):
+            return None
+        return getattr(self._mappe_b, metodo)(*(argomenti or []))
 
     def indicazioni(self, lat: float, lon: float) -> None:
         self._dove().indicazioni(lat, lon)

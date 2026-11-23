@@ -24,6 +24,7 @@ APP = {
     "note": ("#FDE68A", "#F59E0B", "note", "#FFFFFF"),
     "file": ("#7DD3FC", "#2563EB", "file", "#FFFFFF"),
     "dove": ("#5EEAD4", "#0D9488", "dove", "#FFFFFF"),
+    "mappe": ("#86EFAC", "#2563EB", "mappe", "#FFFFFF"),
     "store": ("#C4B5FD", "#7C3AED", "store", "#FFFFFF"),
     "vicina": ("#67E8F9", "#0891B2", "vicina", "#FFFFFF"),
     "calcolatrice": ("#52525B", "#18181B", "calcolatrice", "#FB923C"),
