@@ -1,5 +1,6 @@
-// Centro di controllo (dall'angolo in alto a destra), stile «Vetro»: riquadri di vetro su una
-// griglia di 4 colonne. Connessioni in tondi colorati, il brano in riproduzione, Non disturbare,
+// Centro di controllo (dall'angolo in alto a destra): riquadri su una griglia di 4 colonne.
+// Aurora: vetro, tondi colorati e cursori sfumati. Prisma: tessere a colori pieni, una per
+// connessione, e cursori gialli e corallo. Connessioni in tondi colorati, il brano in riproduzione, Non disturbare,
 // Silenzioso e Risparmio, luminosità e volume verticali da trascinare, i «Momenti» (un tocco
 // prepara il telefono per la notte, il lavoro o per durare di più) e le scorciatoie.
 import QtQuick
@@ -53,20 +54,22 @@ Item {
         id: cur
         property string icona: ""
         property int valore: 50
+        property color alto: "#F5F5F7"      // colore del riempimento in alto e in basso
+        property color basso: "#F5F5F7"
         signal cambia(int v)
         radius: 26
         Rectangle {
             id: pieno
             anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
             height: Math.max(cur.radius * 2, parent.height * cur.valore / 100); radius: cur.radius
-            color: tel.chiaro ? tel.accento : "#F5F5F7"
+            gradient: Gradient { GradientStop { position: 0; color: cur.alto } GradientStop { position: 1; color: cur.basso } }
         }
         Rectangle {   // bordo superiore dritto del riempimento
             anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.bottomMargin: cur.radius
-            height: Math.max(0, pieno.height - cur.radius * 2); color: pieno.color
+            height: Math.max(0, pieno.height - cur.radius * 2); color: cur.basso
         }
         Icona { anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; anchors.bottomMargin: 18
-                nome: cur.icona; lato: 22; tema: tel.chiaro ? "scuro" : "chiaro" }
+                nome: cur.icona; lato: 22; tema: tel.solido ? "chiaro" : "scuro" }
         MouseArea {
             anchors.fill: parent
             function muovi(y) { cur.cambia(Math.max(5, Math.min(100, Math.round((1 - y / height) * 100)))) }
@@ -76,40 +79,73 @@ Item {
     }
 
     // ── Righe 0–1: connessioni e musica ──────────────────────────────────
+    // Prisma: una tessera colorata per ogni connessione
+    Repeater {
+        model: tel.solido ? [
+            { i: "network-wireless-symbolic", t: I18n.t("Wi-Fi"), on: cc.wifiAcceso, c: "#59C3FF", s: false,
+              f: function () { ponte.chiama("wifi", [!cc.wifiAcceso]); ponte.avvia("stato", [], "stato") } },
+            { i: "bluetooth-active-symbolic", t: "Bluetooth", on: cc.st.bluetooth === true, c: "#8B6CFF", s: true,
+              f: function () { ponte.chiama("bluetooth", [!cc.st.bluetooth]); ponte.avvia("stato", [], "stato") } },
+            { i: "network-cellular-symbolic", t: I18n.t("Dati"), on: tel.imp.dati_mobili === true, c: "#C6F432", s: false,
+              f: function () { ponte.avvia("datiMobili", [!tel.imp.dati_mobili], "dati"); tel.imposta("dati_mobili", !tel.imp.dati_mobili) } },
+            { i: "airplane-mode-symbolic", t: I18n.t("Aereo"), on: false, c: "#FFB443", s: false,
+              f: function () { tel.avviso(I18n.t("Modalità aereo: arriva con il telefono vero")) } }] : []
+        Riquadro {
+            id: tc
+            required property var modelData
+            required property int index
+            x: cc.px(index % 2); y: cc.py(Math.floor(index / 2)); width: cc.u; height: cc.alto; radius: 24
+            tinta: modelData.on ? modelData.c : "transparent"
+            readonly property bool bianco: modelData.on && modelData.s
+            onTocco: modelData.f()
+            Icona { x: 12; y: 11; nome: tc.modelData.i; lato: 20; tema: tc.bianco || (!tc.modelData.on && !tel.chiaro) ? "scuro" : "chiaro" }
+            Text { x: 12; anchors.bottom: parent.bottom; anchors.bottomMargin: 10; width: parent.width - 20; elide: Text.ElideRight
+                   text: tc.modelData.t; color: tc.bianco || (!tc.modelData.on && !tel.chiaro) ? "#FFFFFF" : "#141414"
+                   font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Bold
+                   fontSizeMode: Text.HorizontalFit; minimumPixelSize: 9 }
+        }
+    }
     Riquadro {
+        visible: !tel.solido
         x: cc.px(0); y: cc.py(0); width: cc.largo(2); height: cc.altoN(2); radius: 30
         Grid {
             anchors.centerIn: parent
             columns: 2
             columnSpacing: (parent.width - 2 * 54) / 3; rowSpacing: (parent.height - 2 * 54) / 3
-            Tondo { icona: "airplane-mode-symbolic"; colore: "#F59E0B"; onTocco: tel.avviso(I18n.t("Modalità aereo: arriva con il telefono vero")) }
-            Tondo { icona: "network-cellular-symbolic"; colore: tel.pal.successo; acceso: tel.imp.dati_mobili === true
+            Tondo { icona: "airplane-mode-symbolic"; colore: "#FFB14A"; onTocco: tel.avviso(I18n.t("Modalità aereo: arriva con il telefono vero")) }
+            Tondo { icona: "network-cellular-symbolic"; colore: "#14B85A"; acceso: tel.imp.dati_mobili === true
                     onTocco: { ponte.avvia("datiMobili", [!tel.imp.dati_mobili], "dati"); tel.imposta("dati_mobili", !tel.imp.dati_mobili) } }
-            Tondo { icona: "network-wireless-symbolic"; acceso: cc.wifiAcceso
+            Tondo { icona: "network-wireless-symbolic"; colore: "#3B5BFF"; acceso: cc.wifiAcceso
                     onTocco: { ponte.chiama("wifi", [!cc.wifiAcceso]); ponte.avvia("stato", [], "stato") } }
-            Tondo { icona: "bluetooth-active-symbolic"; acceso: cc.st.bluetooth === true
+            Tondo { icona: "bluetooth-active-symbolic"; colore: "#3B5BFF"; acceso: cc.st.bluetooth === true
                     onTocco: { ponte.chiama("bluetooth", [!cc.st.bluetooth]); ponte.avvia("stato", [], "stato") } }
         }
     }
     Riquadro {
         x: cc.px(2); y: cc.py(0); width: cc.largo(2); height: cc.altoN(2); radius: 30
+        id: rqMusica
+        tinta: "#FF6B4A"
+        readonly property color t1: tel.solido ? "#FFFFFF" : tel.pal.testo
         onTocco: { tel.controllo = false; tel.apri({ "id": "interno:musica" }) }
         Rectangle {
-            x: 16; y: 16; width: 50; height: 50; radius: 12
-            gradient: Gradient { GradientStop { position: 0; color: "#4C7DFF" } GradientStop { position: 1; color: "#8B5CF6" } }
+            x: 16; y: 16; width: 50; height: 50; radius: 14
+            gradient: Gradient { GradientStop { position: 0; color: "#FFD36E" } GradientStop { position: 0.5; color: "#FF3D8B" } GradientStop { position: 1; color: "#7B3CFF" } }
             Icona { anchors.centerIn: parent; nome: "linea-musica"; lato: 22; tema: "scuro" }
         }
         Column {
             x: 16; y: 76; width: parent.width - 32
-            Text { width: parent.width; elide: Text.ElideRight; text: I18n.t("Nessun brano"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.DemiBold }
-            Text { text: I18n.t("Musica"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
+            Text { width: parent.width; elide: Text.ElideRight; text: tel.musica.titolo || I18n.t("Nessun brano"); color: rqMusica.t1; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.DemiBold }
+            Text { width: parent.width; elide: Text.ElideRight; text: tel.musica.artista || I18n.t("Musica"); color: rqMusica.t1; opacity: 0.7; font.family: Tema.font; font.pixelSize: tel.px(12) }
         }
         Row {
             anchors.bottom: parent.bottom; anchors.bottomMargin: 14; anchors.horizontalCenter: parent.horizontalCenter
             spacing: 26
-            Icona { nome: "media-skip-backward-symbolic"; lato: 20 }
-            Icona { nome: "media-playback-start-symbolic"; lato: 22 }
-            Icona { nome: "media-skip-forward-symbolic"; lato: 20 }
+            Icona { nome: "media-skip-backward-symbolic"; lato: 20; tema: tel.solido ? "scuro" : ""
+                    MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: tel.comandoMusica("indietro") } }
+            Icona { nome: tel.musica.suona ? "media-playback-pause-symbolic" : "media-playback-start-symbolic"; lato: 22; tema: tel.solido ? "scuro" : ""
+                    MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: tel.comandoMusica("play") } }
+            Icona { nome: "media-skip-forward-symbolic"; lato: 20; tema: tel.solido ? "scuro" : ""
+                    MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: tel.comandoMusica("avanti") } }
         }
     }
 
@@ -145,8 +181,10 @@ Item {
 
     // ── Righe 3–4: cursori e Momenti ─────────────────────────────────────
     Cursore { x: cc.px(0); y: cc.py(3); width: cc.u; height: cc.altoN(2); icona: "display-brightness-symbolic"; valore: cc.luce
+              alto: tel.solido ? "#FFD84A" : "#FFE27A"; basso: tel.solido ? "#FFD84A" : "#FFB14A"
               onCambia: function (v) { cc.luce = v; ponte.chiama("impostaLuminosita", [v]) } }
     Cursore { x: cc.px(1); y: cc.py(3); width: cc.u; height: cc.altoN(2); icona: "audio-volume-high-symbolic"; valore: cc.audio
+              alto: tel.solido ? "#FF6B4A" : "#FF9CC4"; basso: tel.solido ? "#FF6B4A" : "#FF3D8B"
               onCambia: function (v) { cc.audio = v; ponte.chiama("impostaVolume", [v]) } }
     Vetro {
         x: cc.px(2); y: cc.py(3); width: cc.largo(2); height: cc.altoN(2); radius: 26

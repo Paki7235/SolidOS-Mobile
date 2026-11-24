@@ -1,5 +1,6 @@
-// Schermata di blocco: data e ora grandi al centro sullo sfondo del PC, le notifiche in basso
-// in pannelli di vetro, torcia e fotocamera. Si sblocca scorrendo in su dalla barretta: il
+// Schermata di blocco. Aurora: data e ora sottili e grandi al centro, sulla luce colorata.
+// Prisma: fondo viola con forme lime e corallo, l'ora gigante su due righe a sinistra.
+// Sotto: il brano in riproduzione, le notifiche, torcia e fotocamera. Si sblocca scorrendo in su dalla barretta: il
 // contenuto segue il dito.
 import QtQuick
 import SolidUI
@@ -16,6 +17,23 @@ Item {
     // Sblocco che segue il dito: il contenuto sale e sfuma mentre si trascina in su
     property real trascinamento: 0
     readonly property real presenza: Math.max(0, 1 + trascinamento / (height * 0.45))
+    // Vesti Prisma: fondo pieno con le forme; il testo in basso sta sopra la forma lime
+    readonly property bool prisma: tel.solido
+    readonly property color inchiostroBasso: prisma ? "#141414" : "#FFFFFF"
+
+    // ── Fondo delle vesti Prisma ───────────────────────────────────────────
+    Item {
+        anchors.fill: parent; clip: true; visible: blocco.prisma
+        Rectangle { anchors.fill: parent; color: tel.veste === "notte" ? "#141414" : "#8B6CFF" }
+        Rectangle { // corallo a destra
+            width: blocco.width * 0.67; height: width; radius: width / 2; color: "#FF6B4A"
+            x: blocco.width - width * 0.7; y: blocco.height * 0.36
+        }
+        Rectangle { // lime in basso a sinistra
+            width: blocco.width * 1.33; height: width; radius: width / 2; color: "#C6F432"
+            x: -blocco.width * 0.46; y: blocco.height - width * 0.62
+        }
+    }
     Translate { id: spinta; y: blocco.trascinamento * 0.8 }
     NumberAnimation { id: ritorno; target: blocco; property: "trascinamento"; to: 0; duration: tel.tEntrata; easing.type: Easing.OutQuint }
     SequentialAnimation {
@@ -44,38 +62,47 @@ Item {
         }
     }
 
-    // Data e ora grandi al centro
+    // Data e ora: al centro e sottili (Aurora), a sinistra e giganti su due righe (Prisma)
     Column {
         id: orologio
         transform: spinta; opacity: blocco.presenza
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: Math.round(Math.min(86, blocco.height * 0.1))
+        x: blocco.prisma ? 26 : (blocco.width - width) / 2
+        y: Math.round(Math.min(blocco.prisma ? 78 : 92, blocco.height * 0.1))
         spacing: 0
         Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: tel.giorno()
-            color: tel.chiaro ? "#1D1D1F" : "#FFFFFF"; opacity: 0.9
-            font.family: Tema.font; font.pixelSize: tel.px(19); font.weight: Font.DemiBold
+            anchors.horizontalCenter: blocco.prisma ? undefined : parent.horizontalCenter
+            text: blocco.prisma ? tel.adesso.toLocaleDateString(Qt.locale("it_IT"), "ddd d MMM") : tel.giorno()
+            color: "#FFFFFF"; opacity: blocco.prisma ? 1 : 0.85
+            font.family: Tema.font; font.pixelSize: tel.px(blocco.prisma ? 18 : 17); font.weight: blocco.prisma ? Font.Bold : Font.Medium
         }
         Text {
+            visible: !blocco.prisma
             anchors.horizontalCenter: parent.horizontalCenter
             text: tel.ora()
-            color: tel.chiaro ? "#1D1D1F" : "#FFFFFF"
-            font.family: tel.fontOra; font.pixelSize: Math.min(104, Math.round(blocco.width * 0.26)); font.weight: Font.DemiBold
-            font.letterSpacing: -4
+            color: "#FFFFFF"
+            font.family: tel.fontOra; font.pixelSize: Math.min(128, Math.round(blocco.width * 0.33)); font.weight: Font.ExtraLight
+            font.letterSpacing: -7
+        }
+        Text {
+            visible: blocco.prisma
+            topPadding: 8
+            text: Qt.formatTime(tel.adesso, "HH") + "\n" + Qt.formatTime(tel.adesso, "mm")
+            color: "#FFFFFF"; lineHeight: 0.8
+            font.family: tel.fontOra; font.pixelSize: Math.min(170, Math.round(blocco.width * 0.43)); font.weight: Font.Black
+            font.letterSpacing: -8
         }
         Row {
             id: pillole
-            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.horizontalCenter: blocco.prisma ? undefined : parent.horizontalCenter
             spacing: 6
             visible: tel.imp.non_disturbare === true
-            Icona { anchors.verticalCenter: parent.verticalCenter; nome: "weather-clear-night-symbolic"; lato: 14; tema: tel.chiaro ? "chiaro" : "scuro" }
-            Text { text: I18n.t("Non disturbare"); color: tel.chiaro ? "#1D1D1F" : "#FFFFFF"; opacity: 0.85; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Medium }
+            Icona { anchors.verticalCenter: parent.verticalCenter; nome: "weather-clear-night-symbolic"; lato: 14; tema: "scuro" }
+            Text { text: I18n.t("Non disturbare"); color: "#FFFFFF"; opacity: 0.85; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Medium }
         }
         // Widget della schermata di blocco (scelti dalla galleria dei widget)
         Row {
             id: widgetBlocco
-            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.horizontalCenter: blocco.prisma ? undefined : parent.horizontalCenter
             topPadding: 8; spacing: 8
             visible: (tel.imp.widget_blocco || []).length > 0
             property var meteo: ({})
@@ -110,6 +137,26 @@ Item {
         width: parent.width - 28
         spacing: 8
         visible: !blocco.chiedeCodice && !blocco.chiedeSolidId
+        // Il brano in riproduzione
+        Vetro {
+            visible: !!tel.musica.titolo && !tel.messaggioRemoto
+            width: parent.width; height: 80; radius: 28
+            tinta: "#FF6B4A"
+            Rectangle {
+                x: 14; anchors.verticalCenter: parent.verticalCenter; width: 52; height: 52; radius: 14
+                gradient: Gradient { GradientStop { position: 0; color: "#FFD36E" } GradientStop { position: 0.5; color: "#FF3D8B" } GradientStop { position: 1; color: "#7B3CFF" } }
+            }
+            Column {
+                x: 80; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 80 - 60
+                Text { width: parent.width; elide: Text.ElideRight; text: tel.musica.titolo || ""; color: blocco.prisma ? "#FFFFFF" : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
+                Text { width: parent.width; elide: Text.ElideRight; text: tel.musica.artista || I18n.t("In riproduzione"); color: blocco.prisma ? "#D9FFFFFF" : tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
+            }
+            Icona {
+                anchors.right: parent.right; anchors.rightMargin: 20; anchors.verticalCenter: parent.verticalCenter
+                nome: tel.musica.suona ? "linea-pausa" : "linea-play"; lato: 26; tema: "scuro"
+                MouseArea { anchors.fill: parent; anchors.margins: -12; onClicked: tel.comandoMusica("play") }
+            }
+        }
         // Messaggio del proprietario mandato da «Dov'è»
         Vetro {
             visible: tel.messaggioRemoto !== ""
@@ -151,7 +198,7 @@ Item {
             visible: tel.elencoNotifiche.length > mostrate && !tel.messaggioRemoto
             anchors.horizontalCenter: parent.horizontalCenter
             text: I18n.t("e altre") + " " + (tel.elencoNotifiche.length - mostrate)
-            color: tel.chiaro ? "#1D1D1F" : "#FFFFFF"; opacity: 0.8; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Medium
+            color: blocco.inchiostroBasso; opacity: 0.8; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Medium
         }
     }
 
@@ -166,8 +213,9 @@ Item {
             model: [{ i: "torcia", t: I18n.t("Torcia") }, { i: "camera-photo-symbolic", t: I18n.t("Fotocamera") }]
             Vetro {
                 required property var modelData
-                width: 52; height: 52; radius: 26
-                Icona { anchors.centerIn: parent; nome: parent.modelData.i; lato: 21 }
+                width: 54; height: 54; radius: blocco.prisma ? 19 : 27
+                tinta: "#FFFFFF"
+                Icona { anchors.centerIn: parent; nome: parent.modelData.i; lato: 21; tema: blocco.prisma ? "chiaro" : "scuro" }
                 MouseArea { anchors.fill: parent; onClicked: tel.avviso(parent.modelData.t + ": " + I18n.t("arriva con il telefono vero")) }
             }
         }
@@ -181,14 +229,14 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom; anchors.bottomMargin: 22
             text: I18n.t("Scorri in su per entrare")
-            color: tel.chiaro ? "#1D1D1F" : "#FFFFFF"; opacity: 0.75
+            color: blocco.inchiostroBasso; opacity: 0.75
             font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Medium
         }
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom; anchors.bottomMargin: 8
             width: 134; height: 5; radius: 3
-            color: tel.chiaro ? "#1D1D1F" : "#FFFFFF"
+            color: blocco.inchiostroBasso
         }
         visible: !blocco.chiedeCodice
         // Lo spostamento si ricorda mentre il dito si muove: al rilascio Qt lo azzera

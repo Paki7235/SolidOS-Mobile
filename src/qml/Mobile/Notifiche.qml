@@ -1,5 +1,6 @@
-// Notifiche (dall'angolo in alto a sinistra): data e ora grandi al centro, poi «Notifiche»
-// con «Non disturbare» e «Cancella», e le schede di vetro. Le notifiche arrivano dalle app,
+// Notifiche (dall'angolo in alto a sinistra): data e ora come nel blocco della veste (sottili al
+// centro in Aurora, piene a sinistra in Prisma), poi «Notifiche» con «Non disturbare» e
+// «Cancella», e le schede. Le notifiche arrivano dalle app,
 // dagli SMS e dalle chiamate perse.
 import QtQuick
 import SolidUI
@@ -11,12 +12,13 @@ Item {
     // ── Data e ora ───────────────────────────────────────────────────────
     Column {
         id: orologio
-        anchors.horizontalCenter: parent.horizontalCenter
+        x: tel.solido ? 18 : (nt.width - width) / 2
         y: 56
-        Text { anchors.horizontalCenter: parent.horizontalCenter; text: tel.giorno(); color: tel.chiaro ? "#1D1D1F" : "#FFFFFF"; opacity: 0.9
-               font.family: Tema.font; font.pixelSize: tel.px(17); font.weight: Font.DemiBold }
-        Text { anchors.horizontalCenter: parent.horizontalCenter; text: tel.ora(); color: tel.chiaro ? "#1D1D1F" : "#FFFFFF"
-               font.family: tel.fontOra; font.pixelSize: Math.min(80, Math.round(nt.width * 0.2)); font.weight: Font.DemiBold; font.letterSpacing: -3 }
+        Text { anchors.horizontalCenter: tel.solido ? undefined : parent.horizontalCenter; text: tel.giorno(); color: tel.chiaro ? "#141414" : "#FFFFFF"; opacity: 0.85
+               font.family: Tema.font; font.pixelSize: tel.px(17); font.weight: tel.solido ? Font.Bold : Font.Medium }
+        Text { anchors.horizontalCenter: tel.solido ? undefined : parent.horizontalCenter; text: tel.ora(); color: tel.chiaro ? "#141414" : "#FFFFFF"
+               font.family: tel.fontOra; font.pixelSize: Math.min(88, Math.round(nt.width * 0.22))
+               font.weight: tel.solido ? Font.Black : Font.ExtraLight; font.letterSpacing: tel.solido ? -4 : -5 }
     }
 
     // ── Titolo e comandi ─────────────────────────────────────────────────
@@ -24,7 +26,8 @@ Item {
         id: testata
         x: 16; anchors.top: orologio.bottom; anchors.topMargin: 14
         width: parent.width - 32; height: 34
-        Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.t("Notifiche"); color: tel.chiaro ? "#1D1D1F" : "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(20); font.weight: Font.Bold }
+        Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.t("Notifiche"); color: tel.chiaro ? "#141414" : "#FFFFFF"; font.family: Tema.font
+               font.pixelSize: tel.px(tel.solido ? 24 : 20); font.weight: tel.solido ? Font.Black : Font.Bold; font.letterSpacing: tel.solido ? -0.6 : 0 }
         Row {
             anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
             spacing: 8

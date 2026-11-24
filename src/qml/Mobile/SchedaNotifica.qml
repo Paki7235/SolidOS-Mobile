@@ -24,7 +24,9 @@ Vetro {
         tel.chiudiNotifica(scheda.n.id)
     }
 
-    Icona { x: 14; y: 14; nome: scheda.n.icona || "dialog-information"; lato: 38 }
+    // Le icone di SolidOS nella finitura scelta (Piene nelle vesti Prisma); il Vetro qui resta Gemma
+    Icona { x: 14; y: 14; lato: 38; tema: "nessuno"
+            nome: { var i = scheda.n.icona || "dialog-information"; return i.indexOf("nucleo-") === 0 && tel.stileIcone === "piene" ? "piene-" + i : i } }
     Column {
         id: contenuto
         x: 64; y: 13
