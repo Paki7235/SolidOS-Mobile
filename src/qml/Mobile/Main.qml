@@ -31,7 +31,7 @@ Window {
     readonly property bool solido: veste !== "aurora"      // pannelli pieni invece del vetro
     // Finitura delle icone: Gemme, Piene o Vetro (se non scelta, quella della veste)
     readonly property string stileIcone: ["gemme", "piene", "vetro"].indexOf(imp.stile_icone) >= 0 ? imp.stile_icone
-                                         : (solido ? "piene" : "gemme")
+                                         : "gemme"     // le icone classiche in tutte le vesti
     function scegliVeste(v) {
         imposta("veste", v)
         imposta("sfondo", "")

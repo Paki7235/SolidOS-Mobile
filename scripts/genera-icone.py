@@ -240,7 +240,16 @@ def scrivi(percorso, corpo):
         f.write(f'<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">\n{corpo}\n</svg>\n')
 
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from icone_classiche import CLASSICHE  # noqa: E402
+
+
 def gemma(nome):
+    if nome in CLASSICHE:   # disegno classico, ognuno con il suo fondo
+        # ritagliata nella forma della tessera (Mappe e Note disegnano fino al bordo)
+        return (f'<defs><clipPath id="forma"><path d="{SQ}"/></clipPath></defs>'
+                f'<g transform="translate(3 3) scale(0.94)"><g clip-path="url(#forma)">{CLASSICHE[nome]()}</g></g>')
+
     c1, c2, p, s, a = GEMME_COL[nome]
     d = DISEGNI[nome](p, s, a, c2)
     return f'''<defs>

@@ -1,13 +1,3 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
-<defs>
- <linearGradient id="f" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0" stop-color="#4FE6C4"/><stop offset="1" stop-color="#168BB0"/></linearGradient>
- <linearGradient id="l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.38"/><stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>
-</defs>
-<g transform="translate(3 3) scale(0.94)">
- <path d="M50 0C90 0 100 10 100 50S90 100 50 100 0 90 0 50 10 0 50 0Z" fill="url(#f)"/>
- <g transform="translate(0 2.2)" opacity="0.18"><path d="M18 28 39 21v52l-21 7Z" fill="#000000"/><path d="M39 21l22 7v52l-22-7Z" fill="#000000"/><path d="M61 28l21-7v52l-21 7Z" fill="#000000"/><path d="M61 30c-7 0-12 5-12 11 0 8 12 19 12 19s12-11 12-19c0-6-5-11-12-11Z" fill="#000000"/><circle cx="61" cy="41" r="4.5" fill="#000000"/></g>
- <path d="M18 28 39 21v52l-21 7Z" fill="#FFFFFF" fill-opacity="0.60"/><path d="M39 21l22 7v52l-22-7Z" fill="#FFFFFF"/><path d="M61 28l21-7v52l-21 7Z" fill="#FFFFFF" fill-opacity="0.60"/><path d="M61 30c-7 0-12 5-12 11 0 8 12 19 12 19s12-11 12-19c0-6-5-11-12-11Z" fill="#FF4F5E"/><circle cx="61" cy="41" r="4.5" fill="#FFFFFF"/>
- <path d="M50 0C90 0 100 10 100 50S90 100 50 100 0 90 0 50 10 0 50 0Z" fill="url(#l)"/>
- <path d="M50 0C90 0 100 10 100 50S90 100 50 100 0 90 0 50 10 0 50 0Z" fill="none" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="1.4"/>
-</g>
+<defs><clipPath id="forma"><path d="M50 0C90 0 100 10 100 50S90 100 50 100 0 90 0 50 10 0 50 0Z"/></clipPath></defs><g transform="translate(3 3) scale(0.94)"><g clip-path="url(#forma)"><defs><linearGradient id="g9" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E6F2D9"/><stop offset="1" stop-color="#CFE5BD"/></linearGradient></defs><path d="M50 0C90 0 100 10 100 50S90 100 50 100 0 90 0 50 10 0 50 0Z" fill="url(#g9)"/><path d="M0 66 C30 56 60 70 100 54 V100 H0Z" fill="#BDE0F7"/><path d="M-5 40 L105 70" stroke="#FFFFFF" stroke-width="9"/><path d="M58 -5 L40 105" stroke="#FFD54F" stroke-width="8"/><path d="M58 -5 L40 105" stroke="#F5B400" stroke-width="2"/><path d="M22 84 C30 70 44 66 50 52" fill="none" stroke="#2F7CF6" stroke-width="5" stroke-linecap="round"/><path d="M62 18c-9 0-15 6-15 14 0 10 15 24 15 24s15-14 15-24c0-8-6-14-15-14Z" fill="#FF3B30"/><circle cx="62" cy="32" r="5.5" fill="#FFFFFF"/></g></g>
 </svg>

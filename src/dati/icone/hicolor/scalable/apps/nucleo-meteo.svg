@@ -1,13 +1,3 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
-<defs>
- <linearGradient id="f" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0" stop-color="#5DBBFF"/><stop offset="1" stop-color="#2C62F2"/></linearGradient>
- <linearGradient id="l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.38"/><stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>
-</defs>
-<g transform="translate(3 3) scale(0.94)">
- <path d="M50 0C90 0 100 10 100 50S90 100 50 100 0 90 0 50 10 0 50 0Z" fill="url(#f)"/>
- <g transform="translate(0 2.2)" opacity="0.18"><circle cx="60" cy="40" r="16" fill="#000000"/><g fill="#000000"><circle cx="38" cy="62" r="13"/><circle cx="54" cy="56" r="16"/><circle cx="69" cy="64" r="11"/><rect x="26" y="62" width="54" height="14" rx="7"/></g></g>
- <circle cx="60" cy="40" r="16" fill="#FFD34D"/><g fill="#FFFFFF"><circle cx="38" cy="62" r="13"/><circle cx="54" cy="56" r="16"/><circle cx="69" cy="64" r="11"/><rect x="26" y="62" width="54" height="14" rx="7"/></g>
- <path d="M50 0C90 0 100 10 100 50S90 100 50 100 0 90 0 50 10 0 50 0Z" fill="url(#l)"/>
- <path d="M50 0C90 0 100 10 100 50S90 100 50 100 0 90 0 50 10 0 50 0Z" fill="none" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="1.4"/>
-</g>
+<defs><clipPath id="forma"><path d="M50 0C90 0 100 10 100 50S90 100 50 100 0 90 0 50 10 0 50 0Z"/></clipPath></defs><g transform="translate(3 3) scale(0.94)"><g clip-path="url(#forma)"><defs><linearGradient id="g23" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4FB3FF"/><stop offset="1" stop-color="#1F6FF0"/></linearGradient></defs><path d="M50 0C90 0 100 10 100 50S90 100 50 100 0 90 0 50 10 0 50 0Z" fill="url(#g23)"/><defs><linearGradient id="g22" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE36B"/><stop offset="1" stop-color="#FFB800"/></linearGradient></defs><circle cx="62" cy="38" r="17" fill="url(#g22)"/><g fill="#FFFFFF"><circle cx="38" cy="62" r="13"/><circle cx="55" cy="56" r="17"/><circle cx="71" cy="65" r="11"/><rect x="26" y="62" width="56" height="14" rx="7"/></g></g></g>
 </svg>
