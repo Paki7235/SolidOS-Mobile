@@ -122,9 +122,59 @@ def calcolatrice(p, s, a, c):
             f'<path d="M66.5 60v13M60 66.5h13" fill="none" stroke="{c}" stroke-width="4" stroke-linecap="round"/>')
 
 
+def calendario(p, s, a, c):
+    return (f'<rect x="20" y="24" width="60" height="56" rx="12" fill="{p}"/>'
+            f'<path d="M20 36a12 12 0 0 1 12-12h36a12 12 0 0 1 12 12v6H20Z" fill="{a}"/>'
+            f'<rect x="34" y="16" width="6" height="16" rx="3" fill="{s}"/><rect x="60" y="16" width="6" height="16" rx="3" fill="{s}"/>'
+            + "".join(f'<rect x="{30 + 15 * (i % 3)}" y="{50 + 13 * (i // 3)}" width="9" height="8" rx="2" fill="{s}" fill-opacity="0.45"/>' for i in range(6)))
+
+
+def promemoria(p, s, a, c):
+    righe = ""
+    for i, y in enumerate((30, 50, 70)):
+        righe += (f'<circle cx="30" cy="{y}" r="7" fill="{a if i == 0 else "none"}" stroke="{p}" stroke-width="4"/>'
+                  f'<rect x="44" y="{y - 3}" width="{36 if i else 30}" height="6" rx="3" fill="{p if i else s}"/>')
+    return righe
+
+
+def meteo(p, s, a, c):
+    return (f'<circle cx="60" cy="40" r="16" fill="{a}"/>'
+            f'<g fill="{p}"><circle cx="38" cy="62" r="13"/><circle cx="54" cy="56" r="16"/><circle cx="69" cy="64" r="11"/>'
+            f'<rect x="26" y="62" width="54" height="14" rx="7"/></g>')
+
+
+def orologio(p, s, a, c):
+    return (f'<circle cx="50" cy="50" r="32" fill="{p}"/>'
+            f'<path d="M50 50V30M50 50l13 9" fill="none" stroke="{c}" stroke-width="5.5" stroke-linecap="round"/>'
+            f'<circle cx="50" cy="50" r="4.5" fill="{a}"/>')
+
+
+def mail(p, s, a, c):
+    return (f'<rect x="16" y="28" width="68" height="46" rx="10" fill="{p}"/>'
+            f'<path d="M20 34l30 22 30-22" fill="none" stroke="{c}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>')
+
+
+def web(p, s, a, c):
+    return (f'<circle cx="50" cy="50" r="32" fill="{p}"/>'
+            f'<path d="M18 50h64M50 18c-10 10-14 21-14 32s4 22 14 32M50 18c10 10 14 21 14 32s-4 22-14 32" fill="none" stroke="{c}" stroke-width="4"/>')
+
+
+def password(p, s, a, c):
+    return (f'<circle cx="36" cy="50" r="16" fill="{p}"/><circle cx="36" cy="50" r="6" fill="{c}"/>'
+            f'<path d="M50 46h32v9h-7v8h-8v-8H50Z" fill="{p}"/>')
+
+
+def registratore(p, s, a, c):
+    altezze = (16, 30, 44, 26, 52, 34, 20)
+    return "".join(f'<rect x="{19 + i * 9.5}" y="{50 - h / 2}" width="6" height="{h}" rx="3" fill="{a if i == 4 else p}"/>'
+                   for i, h in enumerate(altezze))
+
+
 DISEGNI = dict(telefono=telefono, messaggi=messaggi, contatti=contatti, foto=foto, fotocamera=fotocamera,
                musica=musica, mappe=mappe, note=note, file=file, dove=dove, impostazioni=impostazioni,
-               store=store, vicina=vicina, calcolatrice=calcolatrice, videochiamate=videochiamate)
+               store=store, vicina=vicina, calcolatrice=calcolatrice, videochiamate=videochiamate,
+               calendario=calendario, promemoria=promemoria, meteo=meteo, orologio=orologio, mail=mail, web=web,
+               password=password, registratore=registratore)
 
 W, W5 = "#FFFFFF", "#FFFFFF8C"
 K, K4 = "#141414", "#14141459"
@@ -145,6 +195,14 @@ GEMME_COL = {
     "vicina": ("#5EE6FF", "#0A8FC2", W, W5, W),
     "calcolatrice": ("#3A3A44", "#121216", W, "#FFFFFF40", "#FF8A2F"),
     "videochiamate": ("#5CF0A8", "#0F9F6E", W, W5, "#0F9F6E"),
+    "calendario": ("#FFFFFF", "#E8E8EE", "#FFFFFF", "#9CA3AF", "#EF4444"),
+    "promemoria": ("#FFFFFF", "#E8E8EE", "#3B82F6", "#F59E0B", "#3B82F6"),
+    "meteo": ("#5DBBFF", "#2C62F2", W, W5, "#FFD34D"),
+    "orologio": ("#2D2D36", "#0C0C10", W, W5, "#FF7A2F"),
+    "mail": ("#66A6FF", "#1D5BF0", W, W5, W),
+    "web": ("#5EE6FF", "#2563EB", W, W5, W),
+    "password": ("#FFC46B", "#E8780C", W, W5, W),
+    "registratore": ("#3A3A44", "#121216", W, W5, "#FF4F5E"),
 }
 # Piene: (fondo, principale, secondario, accento)
 PIENE_COL = {
@@ -163,6 +221,14 @@ PIENE_COL = {
     "vicina": ("#59C3FF", K, K4, W),
     "calcolatrice": ("#FFB443", K, K4, W),
     "videochiamate": ("#3EE0B0", K, K4, "#3EE0B0"),
+    "calendario": ("#FFFFFF", "#FFFFFF", K, "#FF6B4A"),
+    "promemoria": ("#FFFFFF", K, "#FFD84A", "#8B6CFF"),
+    "meteo": ("#59C3FF", W, K4, "#FFD84A"),
+    "orologio": ("#141414", W, K4, "#FF6B4A"),
+    "mail": ("#59C3FF", K, K4, K),
+    "web": ("#3EE0B0", K, K4, K),
+    "password": ("#FFB443", K, K4, K),
+    "registratore": ("#FF6B4A", K, K4, W),
 }
 
 

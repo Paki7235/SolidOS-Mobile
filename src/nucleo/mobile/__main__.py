@@ -88,6 +88,15 @@ IN_ARRIVO = {
     "calcolatrice": {"id": "interno:calcolatrice", "nome": T("Calcolatrice"), "icona": "nucleo-calcolatrice", "categorie": ["Calculator", "Utility"]},
     "store": {"id": "interno:store", "nome": T("Store"), "icona": "nucleo-store", "categorie": ["System"]},
     "vicina": {"id": "interno:vicina", "nome": T("Vicina"), "icona": "nucleo-vicina", "categorie": ["Network", "FileTransfer"]},
+    # App che ci sono anche sul PC: stessa logica (nucleo/apps), schermate da telefono
+    "calendario": {"id": "interno:calendario", "nome": T("Calendario"), "icona": "nucleo-calendario", "categorie": ["Office", "Calendar"]},
+    "promemoria": {"id": "interno:promemoria", "nome": T("Promemoria"), "icona": "nucleo-promemoria", "categorie": ["Office"]},
+    "meteo": {"id": "interno:meteo", "nome": T("Meteo"), "icona": "nucleo-meteo", "categorie": ["Utility"]},
+    "orologio": {"id": "interno:orologio", "nome": T("Orologio"), "icona": "nucleo-orologio", "categorie": ["Utility", "Clock"]},
+    "mail": {"id": "interno:mail", "nome": T("Mail"), "icona": "nucleo-mail", "categorie": ["Network", "Email"]},
+    "web": {"id": "interno:web", "nome": T("Web"), "icona": "nucleo-web", "categorie": ["Network", "WebBrowser"]},
+    "password": {"id": "interno:password", "nome": T("Password"), "icona": "nucleo-password", "categorie": ["System", "Security"]},
+    "registratore": {"id": "interno:registratore", "nome": T("Registratore"), "icona": "nucleo-registratore", "categorie": ["Audio"]},
 }
 
 
@@ -347,7 +356,8 @@ class BackendMobile(Backend):
             a = next((x for x in self.app() if x["id"] == ident), None)
             if a and a["id"] not in nascoste and a not in risultato:
                 risultato.append(a)
-        ordine = ["fotocamera", "foto", "contatti", "videochiamate", "note", "file", "dove", "mappe", "musica", "store", "vicina", "calcolatrice", "impostazioni"]
+        ordine = ["fotocamera", "foto", "calendario", "meteo", "orologio", "mail", "web", "note", "promemoria", "contatti",
+                  "videochiamate", "file", "dove", "mappe", "musica", "store", "password", "registratore", "vicina", "calcolatrice", "impostazioni"]
         for a in (self._per_id(x) for x in ordine):
             if a and a["id"] not in nascoste and a not in risultato:
                 risultato.append(a)
@@ -1087,13 +1097,14 @@ class BackendMobile(Backend):
         from . import telefonia
 
         if telefonia.DEMO:
-            return {"ok": True, "dispositivi": [
+            tolti = self.__dict__.setdefault("_demo_tolti", set())
+            return {"ok": True, "dispositivi": [d for d in [
                 {"id": "a", "nome": "Portatile di Pasquale", "tipo": "portatile", "icona": "computer-laptop", "modello": "Lenovo ThinkPad",
                  "questo": False, "stato": "adesso · 76% · in carica", "posizione": True, "lat": 41.8986, "lon": 12.4769, "precisione": 60,
                  "fonte": "wifi", "quandoPosizione": "adesso", "bloccato": False, "trova": True},
                 {"id": "b", "nome": "Telefono di Pasquale", "tipo": "telefono", "icona": "phone", "modello": "Huawei P10 Lite",
                  "questo": True, "stato": "Questo telefono · 82%", "posizione": True, "lat": 41.9028, "lon": 12.4964, "precisione": 15,
-                 "fonte": "gps", "quandoPosizione": "adesso", "bloccato": False, "trova": True}]}
+                 "fonte": "gps", "quandoPosizione": "adesso", "bloccato": False, "trova": True}] if d["id"] not in tolti]}
         r = self._dove().dispositivi()
         for d in r.get("dispositivi", []):
             if d.get("questo"):
@@ -1107,6 +1118,15 @@ class BackendMobile(Backend):
             return {"ok": True, "id": 1}
         return self._dove().comando(dispositivo, tipo, messaggio)
 
+    def doveRimuovi(self, dispositivo: str) -> dict:
+        """Toglie un dispositivo dal Solid ID (non compare più in Dov'è)."""
+        from . import telefonia
+
+        if telefonia.DEMO:
+            self.__dict__.setdefault("_demo_tolti", set()).add(dispositivo)
+            return {"ok": True, "messaggio": T("Dispositivo rimosso dal Solid ID")}
+        return self._dove().rimuovi(dispositivo)
+
     def doveStatoComando(self, ident: int) -> str:
         from . import telefonia
 
@@ -1114,6 +1134,74 @@ class BackendMobile(Backend):
 
     def tessere(self, elenco, stile: str = "chiaro") -> dict:
         return self._dove().tessere(elenco, stile)
+
+    def copiaTesto(self, testo: str) -> None:
+        from PyQt6.QtGui import QGuiApplication
+
+        QGuiApplication.clipboard().setText(str(testo))
+
+    # ── Sveglie e timer dell'Orologio: suonano anche ad app chiusa ───────────
+    def controllaOrologio(self) -> dict:
+        """Chiamato ogni 10 secondi dall'interfaccia: fa suonare la sveglia dell'ora o il timer finito."""
+        import datetime
+
+        from .. import orologio, suoni
+
+        adesso = datetime.datetime.now()
+        risultato = {}
+        t = orologio.timer()
+        if t.get("attivo") and not t.get("inPausa") and t.get("resto", 1) <= 0:
+            orologio.ferma_timer()
+            risultato = {"suona": "timer", "titolo": T("Timer"), "testo": t.get("etichetta") or T("Il tempo è finito")}
+        else:
+            minuto = adesso.strftime("%H:%M")
+            gia = self.__dict__.setdefault("_sveglie_suonate", set())
+            for sv in orologio.sveglie():
+                chiave = sv["id"] + adesso.strftime("%Y%m%d%H%M")
+                giorni = sv.get("giorni") or []
+                if sv.get("attiva") and sv.get("ora") == minuto and chiave not in gia and (not giorni or adesso.weekday() in giorni):
+                    gia.add(chiave)
+                    if not giorni:
+                        orologio.attiva_sveglia(sv["id"], False)   # «una volta»: poi si spegne
+                    risultato = {"suona": "sveglia", "titolo": T("Sveglia") + " " + sv["ora"], "testo": sv.get("etichetta") or T("Sveglia")}
+                    break
+        if risultato:
+            self.__dict__["_squillo"] = suoni.suona(4)
+            self.centro.aggiungi(T("Orologio"), risultato["titolo"], risultato["testo"], "nucleo-orologio", "orologio")
+        return risultato
+
+    def fermaSquillo(self) -> None:
+        p = self.__dict__.pop("_squillo", None)
+        if p and p.poll() is None:
+            import os
+            import signal
+
+            try:
+                os.killpg(p.pid, signal.SIGTERM)
+            except OSError:
+                pass
+
+    # ── App del PC sul telefono: lo stesso backend (nucleo/apps), chiamato per nome ──
+    _APP_PC = {"calendario": "BackendCalendario", "promemoria": "BackendPromemoria", "meteo": "BackendMeteo",
+               "orologio": "BackendOrologio", "mail": "BackendMail", "web": "BackendWeb", "password": "BackendPassword",
+               "registratore": "BackendRegistratore", "contatti": "BackendContatti"}
+
+    def appPc(self, nome: str, metodo: str, argomenti=None):
+        """appPc("meteo", "previsioni", [lat, lon, nome]) → BackendMeteo().previsioni(...)."""
+        if nome not in self._APP_PC or str(metodo).startswith("_"):
+            return None
+        cache = self.__dict__.setdefault("_app_pc", {})
+        if nome not in cache:
+            import importlib
+
+            classe = getattr(importlib.import_module(f"..apps.{nome}", __package__), self._APP_PC[nome])
+            b = classe()
+            b.emetti = lambda evento, dati=None, _n=nome: self.emetti(_n + ":" + evento, dati)   # eventi → QML
+            cache[nome] = b
+        b = cache[nome]
+        if not hasattr(b, metodo):
+            return None
+        return getattr(b, metodo)(*(argomenti or []))
 
     # ── Videochiamate (nucleo/chiamate: lo stesso codice del PC) ─────────
     def videochiamate(self, metodo: str, argomenti=None):

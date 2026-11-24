@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+<defs>
+ <linearGradient id="f" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E8E8EE"/></linearGradient>
+ <linearGradient id="l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.38"/><stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>
+</defs>
+<g transform="translate(3 3) scale(0.94)">
+ <path d="M50 0C90 0 100 10 100 50S90 100 50 100 0 90 0 50 10 0 50 0Z" fill="url(#f)"/>
+ <g transform="translate(0 2.2)" opacity="0.18"><rect x="20" y="24" width="60" height="56" rx="12" fill="#000000"/><path d="M20 36a12 12 0 0 1 12-12h36a12 12 0 0 1 12 12v6H20Z" fill="#000000"/><rect x="34" y="16" width="6" height="16" rx="3" fill="#000000"/><rect x="60" y="16" width="6" height="16" rx="3" fill="#000000"/><rect x="30" y="50" width="9" height="8" rx="2" fill="#000000" fill-opacity="0.45"/><rect x="45" y="50" width="9" height="8" rx="2" fill="#000000" fill-opacity="0.45"/><rect x="60" y="50" width="9" height="8" rx="2" fill="#000000" fill-opacity="0.45"/><rect x="30" y="63" width="9" height="8" rx="2" fill="#000000" fill-opacity="0.45"/><rect x="45" y="63" width="9" height="8" rx="2" fill="#000000" fill-opacity="0.45"/><rect x="60" y="63" width="9" height="8" rx="2" fill="#000000" fill-opacity="0.45"/></g>
+ <rect x="20" y="24" width="60" height="56" rx="12" fill="#FFFFFF"/><path d="M20 36a12 12 0 0 1 12-12h36a12 12 0 0 1 12 12v6H20Z" fill="#EF4444"/><rect x="34" y="16" width="6" height="16" rx="3" fill="#9CA3AF"/><rect x="60" y="16" width="6" height="16" rx="3" fill="#9CA3AF"/><rect x="30" y="50" width="9" height="8" rx="2" fill="#9CA3AF" fill-opacity="0.45"/><rect x="45" y="50" width="9" height="8" rx="2" fill="#9CA3AF" fill-opacity="0.45"/><rect x="60" y="50" width="9" height="8" rx="2" fill="#9CA3AF" fill-opacity="0.45"/><rect x="30" y="63" width="9" height="8" rx="2" fill="#9CA3AF" fill-opacity="0.45"/><rect x="45" y="63" width="9" height="8" rx="2" fill="#9CA3AF" fill-opacity="0.45"/><rect x="60" y="63" width="9" height="8" rx="2" fill="#9CA3AF" fill-opacity="0.45"/>
+ <path d="M50 0C90 0 100 10 100 50S90 100 50 100 0 90 0 50 10 0 50 0Z" fill="url(#l)"/>
+ <path d="M50 0C90 0 100 10 100 50S90 100 50 100 0 90 0 50 10 0 50 0Z" fill="none" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="1.4"/>
+</g>
+</svg>

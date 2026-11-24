@@ -68,7 +68,15 @@ Rectangle {
             if (s === "eseguito") {
                 tel.avviso(({ suona: I18n.t("Il dispositivo sta suonando"), perso: I18n.t("Modalità smarrito attiva"), cancella: I18n.t("Il telefono si sta cancellando") })[app.comandoTipo] || I18n.t("Dispositivo bloccato"))
                 app.comandoId = 0
-            } else if (app.tentativi > 40) app.comandoId = 0
+                ponte.avvia("doveDispositivi", [], "dove-elenco")
+            } else if (s === "errore") {
+                tel.avviso(I18n.t("Il dispositivo non ha potuto eseguire il comando"))
+                app.comandoId = 0
+            } else if (app.tentativi > 40) {
+                // Dopo 2 minuti smette di aspettare: il comando resta e parte quando il dispositivo si collega
+                tel.avviso(I18n.t("Il dispositivo non è collegato: lo farà appena si collega a Internet"))
+                app.comandoId = 0
+            }
         }
     }
 
@@ -253,9 +261,23 @@ Rectangle {
                 text: I18n.t("È il telefono che hai in mano: da qui puoi far suonare o bloccare gli altri dispositivi.")
                 color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12)
             }
-            Text {
+            // Comando in corso: si vede finché il dispositivo non risponde
+            Rectangle {
                 visible: app.comandoId > 0
-                text: I18n.t("In attesa di risposta dal dispositivo…"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13)
+                width: parent.width; height: 46; radius: 14; color: tel.solido ? "#FFB443" : Qt.rgba(1, 0.7, 0.26, 0.18)
+                Row {
+                    x: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 10
+                    BusyIndicator { width: 22; height: 22; running: parent.parent.visible; anchors.verticalCenter: parent.verticalCenter }
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: (app.comandoTipo === "suona" ? I18n.t("Faccio suonare") : I18n.t("Blocco in corso")) + "… " + I18n.t("in attesa del dispositivo")
+                           color: tel.solido ? "#141414" : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+                }
+            }
+            // Togli dal Solid ID (chiede conferma)
+            Rectangle {
+                visible: !!app.dispositivo && !app.dispositivo.questo
+                width: parent.width; height: 48; radius: 14; color: app.sezione; border.width: tel.solido ? 0 : 1; border.color: tel.pal.bordo
+                Text { anchors.centerIn: parent; text: I18n.t("Togli dal Solid ID"); color: tel.rosso; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
+                MouseArea { anchors.fill: parent; onClicked: rimuoviDlg.open() }
             }
         }
     }
@@ -279,6 +301,38 @@ Rectangle {
                 spacing: 10; anchors.right: parent.right
                 Pulsante { text: I18n.t("Annulla"); onClicked: bloccaDlg.close() }
                 Pulsante { text: I18n.t("Attiva"); pericoloso: true; onClicked: { app.comando(app.dispositivo && app.dispositivo.tipo === "telefono" ? "perso" : "blocca", messaggio.text); bloccaDlg.close() } }
+            }
+        }
+    }
+
+    // ── Togli dal Solid ID ───────────────────────────────────────────────
+    Popup {
+        id: rimuoviDlg
+        anchors.centerIn: parent
+        width: parent.width - 40; modal: true; padding: 18
+        background: Rectangle { radius: 20; color: app.sezione }
+        Column {
+            width: parent.width; spacing: 12
+            Text { width: parent.width; wrapMode: Text.Wrap; text: I18n.t("Togliere") + " «" + (app.dispositivo ? app.dispositivo.nome : "") + "»?"; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(17); font.weight: Font.Bold }
+            Text { width: parent.width; wrapMode: Text.Wrap; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13)
+                   text: I18n.t("Non lo vedrai più in Dov'è e non potrai farlo suonare o bloccarlo. Se su quel dispositivo accedi di nuovo con il Solid ID, torna nell'elenco.") }
+            Row {
+                spacing: 10; anchors.right: parent.right
+                Pulsante { text: I18n.t("Annulla"); onClicked: rimuoviDlg.close() }
+                Pulsante {
+                    text: I18n.t("Togli"); pericoloso: true
+                    onClicked: {
+                        var r = ponte.chiama("doveRimuovi", [app.dispositivo.id])
+                        rimuoviDlg.close()
+                        tel.avviso(r.messaggio || (r.ok ? I18n.t("Dispositivo rimosso dal Solid ID") : I18n.t("Non è stato possibile toglierlo")))
+                        if (r.ok) {
+                            var via = app.dispositivo.id
+                            app.dispositivi = app.dispositivi.filter(function (d) { return d.id !== via })
+                            app.scelto = ""
+                            ponte.avvia("doveDispositivi", [], "dove-elenco")
+                        }
+                    }
+                }
             }
         }
     }

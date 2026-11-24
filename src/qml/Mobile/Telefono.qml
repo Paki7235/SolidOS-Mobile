@@ -90,24 +90,15 @@ Rectangle {
         MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: nuovoContatto.open() }
     }
 
-    // ── Avviso SIM ────────────────────────────────────────────────────────
-    Rectangle {
-        visible: app.modem.messaggio !== undefined && app.modem.messaggio !== ""
-        x: 16; y: 144; width: parent.width - 32; height: 40; radius: 12
-        color: tel.chiaro ? "#fff4e5" : "#3a2a12"
-        Row {
-            anchors.centerIn: parent; spacing: 8
-            Icona { nome: "dialog-warning-symbolic"; lato: 18; anchors.verticalCenter: parent.verticalCenter }
-            Text { text: app.modem.messaggio || ""; color: tel.chiaro ? "#8a4b00" : "#ffcf8a"; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
-        }
-    }
+    // Senza SIM non c'è più un banner fisso: lo dice la barra di stato e, se si prova a chiamare
+    // senza SIM né chiamate via Internet, un avviso al momento della chiamata.
 
     // ── Elenchi (Preferiti, Recenti, Contatti) ────────────────────────────
     ListView {
         id: elenco
         visible: app.scheda !== "tastierino" && app.scheda !== "segreteria"
         anchors.left: parent.left; anchors.right: parent.right
-        anchors.top: parent.top; anchors.topMargin: app.modem.messaggio ? 192 : 146
+        anchors.top: parent.top; anchors.topMargin: 146
         anchors.bottom: schede.top
         clip: true
         model: app.scheda === "recenti" ? app.registro.filter(function (v) { return !app.soloPerse || v.tipo === "persa" })

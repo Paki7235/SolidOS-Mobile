@@ -113,10 +113,15 @@ Rectangle {
             delegate: Item {
                 id: voce
                 required property var modelData
-                width: elenco.width; height: 44
-                // Solo il nome, come la rubrica dell'iPhone
-                Text { anchors.verticalCenter: parent.verticalCenter; width: parent.width; elide: Text.ElideRight; text: voce.modelData.nome; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.Medium }
-                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: app.linea }
+                width: elenco.width; height: 60
+                // Tondo colorato con le iniziali, nome e numero (come nell'app Contatti del PC)
+                Avatar { anchors.verticalCenter: parent.verticalCenter; lato: 42; nome: voce.modelData.nome }
+                Column {
+                    x: 54; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 60
+                    Text { width: parent.width; elide: Text.ElideRight; text: voce.modelData.nome; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold }
+                    Text { visible: text !== ""; width: parent.width; elide: Text.ElideRight; text: voce.modelData.azienda || voce.modelData.numero || ""; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
+                }
+                Rectangle { x: 54; anchors.bottom: parent.bottom; width: parent.width - 54; height: 1; color: app.linea }
                 MouseArea { anchors.fill: parent; onClicked: app.apri(voce.modelData) }
             }
             Text {
@@ -140,20 +145,21 @@ Rectangle {
             visible: schedaContatto.vista
             width: parent.width; height: 440
             gradient: Gradient {
-                GradientStop { position: 0; color: tel.solido ? "#FF6B4A" : "#8B6CFF" }
-                GradientStop { position: 0.6; color: tel.solido ? "#FF6B4A" : "#3B82F6" }
+                // il colore del contatto (lo stesso del suo tondo)
+                GradientStop { position: 0; color: copiaColori.coppie[copiaColori.indice][0] }
+                GradientStop { position: 0.6; color: copiaColori.coppie[copiaColori.indice][1] }
                 GradientStop { position: 1; color: tel.pal.sfondo }
             }
             Avatar { id: copiaColori; visible: false; nome: app.scelto && app.scelto.nome ? app.scelto.nome : "" }
         }
         Text {
-            x: 18; y: 60; text: "‹ " + I18n.t("Contatti"); color: schedaContatto.vista ? "#FFFFFF" : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
+            x: 18; y: 60; text: "‹ " + I18n.t("Contatti"); color: schedaContatto.vista ? (copiaColori.scuro ? "#141414" : "#FFFFFF") : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(16)
             MouseArea { anchors.fill: parent; anchors.margins: -10; onClicked: { app.scelto = null; app.modifica = false } }
         }
         Text {
             anchors.right: parent.right; anchors.rightMargin: 20; y: 60
             text: app.modifica ? I18n.t("Salva") : I18n.t("Modifica")
-            color: schedaContatto.vista ? "#FFFFFF" : tel.accento; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold
+            color: schedaContatto.vista ? (copiaColori.scuro ? "#141414" : "#FFFFFF") : tel.accento; font.family: Tema.font; font.pixelSize: tel.px(16); font.weight: Font.DemiBold
             MouseArea {
                 anchors.fill: parent; anchors.margins: -10
                 onClicked: {
@@ -174,11 +180,11 @@ Rectangle {
                 visible: !app.modifica
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: 118; height: 118; radius: 59; color: "#38FFFFFF"
-                Text { anchors.centerIn: parent; text: copiaColori.iniziali; color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: 44; font.weight: Font.DemiBold }
+                Text { anchors.centerIn: parent; text: copiaColori.iniziali; color: copiaColori.scuro ? "#141414" : "#FFFFFF"; font.family: Tema.font; font.pixelSize: 44; font.weight: Font.DemiBold }
             }
             Item { width: 1; height: 4 }
             Text { visible: !app.modifica; anchors.horizontalCenter: parent.horizontalCenter; width: app.width - 40; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
-                   text: app.scelto ? app.scelto.nome : ""; color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(30); font.weight: Font.Bold }
+                   text: app.scelto ? app.scelto.nome : ""; color: copiaColori.scuro ? "#141414" : "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(30); font.weight: Font.Bold }
             Text { visible: !app.modifica && text !== ""; anchors.horizontalCenter: parent.horizontalCenter; width: app.width - 40; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
                    text: app.scelto ? (app.io ? I18n.t("La mia scheda") : (app.scelto.azienda || app.scelto.note || (app.scelto.preferito ? "★ " + I18n.t("Preferito") : ""))) : ""; color: "#D9FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.Medium }
         }
@@ -189,28 +195,28 @@ Rectangle {
             y: 338
             spacing: 8
             Repeater {
-                model: [{ t: I18n.t("messaggio"), i: "mail-message-new-symbolic" }, { t: I18n.t("chiama"), i: "call-start-symbolic" },
-                        { t: I18n.t("video"), i: "camera-photo-symbolic" }, { t: I18n.t("mail"), i: "document-send-symbolic" }]
+                model: [{ t: I18n.t("messaggio"), i: "linea-messaggi" }, { t: I18n.t("chiama"), i: "linea-telefono" },
+                        { t: I18n.t("video"), i: "linea-video" }, { t: I18n.t("mail"), i: "linea-busta" }]
                 Rectangle {
                     id: azione
                     required property var modelData
                     required property int index
-                    readonly property bool attiva: index < 2 || !!(index === 3 && app.scelto && app.scelto.email)
-                    width: (app.width - 32 - 24) / 4; height: 62; radius: 14
-                    color: "#2EFFFFFF"
+                    readonly property bool attiva: index < 2 || !!(index >= 2 && app.scelto && app.scelto.email)
+                    width: (app.width - 32 - 24) / 4; height: 66; radius: 20
+                    color: copiaColori.scuro ? "#26000000" : "#33FFFFFF"
                     opacity: attiva ? 1 : 0.45
                     Column {
                         anchors.centerIn: parent; spacing: 4
-                        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: azione.modelData.i; lato: 21; tema: "scuro" }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: azione.modelData.t; color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(11.5); font.weight: Font.Medium }
+                        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: azione.modelData.i; lato: 22; colore: copiaColori.scuro ? "#141414" : "#FFFFFF" }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: azione.modelData.t; color: copiaColori.scuro ? "#141414" : "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(11.5); font.weight: Font.Medium }
                     }
                     MouseArea {
                         anchors.fill: parent
                         onClicked: {
                             if (azione.index === 0) { tel.appInterna = "messaggi"; messaggiApp.apri(app.scelto.numero) }
                             else if (azione.index === 1) tel.chiama(app.scelto.numero)
-                            else if (azione.index === 2) tel.avviso(I18n.t("Le videochiamate arrivano più avanti"))
-                            else if (app.scelto.email) Qt.openUrlExternally("mailto:" + app.scelto.email)
+                            else if (azione.index === 2) { if (app.scelto.email) { tel.appInterna = "videochiamate"; if (tel.videochiamateApp) tel.videochiamateApp.chiamaEmail(app.scelto.email, true) } else tel.avviso(I18n.t("Aggiungi la sua email per videochiamarlo")) }
+                            else if (app.scelto.email) tel.appInterna = "mail"
                         }
                     }
                 }

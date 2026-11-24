@@ -138,6 +138,9 @@ Window {
     function chiudiNotifica(id) { ponte.chiama("chiudiNotifica", [id]); aggiornaNotifiche(); if (banner && banner.id === id) banner = null }
     function nonDisturbare(si) { ponte.chiama("nonDisturbare", [si]); imp = ponte.chiama0("impostazioni") }
     Timer { interval: 20000; running: true; repeat: true; onTriggered: ponte.avvia("controllaSms", [], "sms") }
+    // Sveglie e timer dell'Orologio (suonano anche con l'app chiusa)
+    property var squillo: null
+    Timer { interval: 10000; running: true; repeat: true; onTriggered: ponte.avvia("controllaOrologio", [], "orologio-controlla") }
     Timer { id: fineBanner; onTriggered: tel.banner = null }
 
     function chiama(numero) {
@@ -160,6 +163,7 @@ Window {
         }
         function onCompletato(id, r) {
             if (id === "stato") tel.stato = r
+            else if (id === "orologio-controlla") { if (r && r.suona) tel.squillo = r }
             else if (id === "attivazione") tel.attivazione = r || ""
             else if (id === "blocco-remoto") {
                 if (r.cancella && !tel.inizializzando) { tel.inizializzando = true; fineInizializza.start() }
@@ -222,7 +226,8 @@ Window {
         else if (a.schermata === "dove") appInterna = "dove"
         else if (a.schermata === "musica-ascolto") appInterna = "musica"
         else if (a.schermata === "fotocamera-prova" || a.schermata === "fotocamera-video") appInterna = "fotocamera"
-        else if (["calcolatrice", "note", "file", "foto", "musica", "fotocamera", "store", "vicina", "mappe", "videochiamate"].indexOf(a.schermata) >= 0) appInterna = a.schermata
+        else if (["calcolatrice", "note", "file", "foto", "musica", "fotocamera", "store", "vicina", "mappe", "videochiamate",
+                  "calendario", "promemoria", "meteo", "orologio", "mail", "web", "password", "registratore"].indexOf(a.schermata) >= 0) appInterna = a.schermata
         else if (a.schermata === "store-app" || a.schermata === "store-raccolta" || a.schermata === "store-mie" || a.schermata === "store-scarica") appInterna = "store"
         else if (a.schermata === "foto-account" || a.schermata === "foto-google" || a.schermata === "foto-casa" || a.schermata === "foto-una") appInterna = "foto"
         else if (a.schermata === "segreteria") { appInterna = "telefono"; telefonoApp.scheda = "segreteria" }
@@ -371,6 +376,15 @@ Window {
     PaginaApp { nome: "vicina"; source: "Vicina.qml" }
     PaginaApp { nome: "mappe"; source: "Mappe.qml" }
     PaginaApp { nome: "videochiamate"; source: "Videochiamate.qml" }
+    // App che ci sono anche sul PC (stesso backend, schermate da telefono)
+    PaginaApp { nome: "calendario"; source: "Calendario.qml" }
+    PaginaApp { nome: "promemoria"; source: "Promemoria.qml" }
+    PaginaApp { nome: "meteo"; source: "Meteo.qml" }
+    PaginaApp { nome: "orologio"; source: "Orologio.qml"; resta: true }
+    PaginaApp { nome: "mail"; source: "Mail.qml" }
+    PaginaApp { nome: "web"; source: "Web.qml" }
+    PaginaApp { nome: "password"; source: "Password.qml" }
+    PaginaApp { nome: "registratore"; source: "Registratore.qml"; resta: true }
 
     // Sotto le tendine: lo sfondo «sfocato» (le sue sfumature) con una velatura, che copre la Home
     Rectangle {
@@ -440,6 +454,27 @@ Window {
     }
 
     BarraStato { anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; z: 60 }
+    // Sveglia o timer che suona: riquadro in alto con «Ferma»
+    Rectangle {
+        visible: tel.squillo !== null
+        z: 95
+        x: 12; y: 50; width: parent.width - 24; height: 96; radius: 28
+        color: tel.solido ? "#141414" : "#F21C1A26"
+        border.width: tel.solido ? 0 : 1; border.color: "#33FFFFFF"
+        Rectangle { x: 16; anchors.verticalCenter: parent.verticalCenter; width: 52; height: 52; radius: 26; color: "#FFB443"
+                    Icona { anchors.centerIn: parent; nome: tel.squillo && tel.squillo.suona === "timer" ? "linea-clessidra" : "linea-sveglia"; lato: 26; colore: "#141414" } }
+        Column {
+            x: 80; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 80 - 120
+            Text { width: parent.width; elide: Text.ElideRight; text: tel.squillo ? tel.squillo.titolo : ""; color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: 17; font.weight: Font.Bold }
+            Text { width: parent.width; elide: Text.ElideRight; text: tel.squillo ? tel.squillo.testo : ""; color: "#B3FFFFFF"; font.family: Tema.font; font.pixelSize: 14 }
+        }
+        Rectangle {
+            anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter
+            width: 92; height: 48; radius: 24; color: "#FFB443"
+            Text { anchors.centerIn: parent; text: I18n.t("Ferma"); color: "#141414"; font.family: Tema.font; font.pixelSize: 16; font.weight: Font.Bold }
+            MouseArea { anchors.fill: parent; onClicked: { ponte.chiama0("fermaSquillo"); tel.squillo = null } }
+        }
+    }
 
     // ── Banner: la notifica appena arrivata scende dall'alto (non sul blocco: lì c'è l'elenco) ──
     SchedaNotifica {
