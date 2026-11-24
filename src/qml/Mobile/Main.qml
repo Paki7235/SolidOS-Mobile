@@ -38,6 +38,8 @@ Window {
         imposta("stile_icone", "")
     }
     readonly property bool chiaro: veste === "prisma"
+    // Barra di stato e barretta: bianche sopra la Fotocamera e sul blocco pieno di Prisma
+    readonly property color inchiostroSopra: appInterna === "fotocamera" || (schermata === "blocco" && solido) ? "#FFFFFF" : pal.testo
     // Tasto della chiamata: lime con la cornetta scura (Prisma), verde con la cornetta bianca (Aurora)
     readonly property color coloreChiama: solido ? "#C6F432" : "#22C55E"
     readonly property string temaChiama: solido ? "chiaro" : "scuro"
@@ -219,6 +221,7 @@ Window {
         else if (a.schermata === "contatti") appInterna = "contatti"
         else if (a.schermata === "dove") appInterna = "dove"
         else if (a.schermata === "musica-ascolto") appInterna = "musica"
+        else if (a.schermata === "fotocamera-prova" || a.schermata === "fotocamera-video") appInterna = "fotocamera"
         else if (["calcolatrice", "note", "file", "foto", "musica", "fotocamera", "store", "vicina", "mappe", "videochiamate"].indexOf(a.schermata) >= 0) appInterna = a.schermata
         else if (a.schermata === "store-app" || a.schermata === "store-raccolta" || a.schermata === "store-mie" || a.schermata === "store-scarica") appInterna = "store"
         else if (a.schermata === "foto-account" || a.schermata === "foto-google" || a.schermata === "foto-casa" || a.schermata === "foto-una") appInterna = "foto"
@@ -474,7 +477,7 @@ Window {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom; anchors.bottomMargin: 8
             width: 134; height: 5; radius: 3
-            color: tel.pal.testo
+            color: tel.appInterna === "fotocamera" ? "#FFFFFF" : tel.pal.testo
         }
         DragHandler {
             target: null

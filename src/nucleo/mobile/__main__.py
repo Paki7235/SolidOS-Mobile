@@ -1311,6 +1311,12 @@ class BackendMobile(Backend):
     def nuovaFoto(self) -> str:
         return strumenti.nuova_foto()
 
+    def nuovoVideo(self) -> str:
+        return strumenti.nuovo_video()
+
+    def ritagliaQuadrato(self, percorso: str) -> bool:
+        return strumenti.ritaglia_quadrato(percorso)
+
     def sfondoFoto(self, percorso: str) -> dict:
         self.imposta("sfondo", percorso)
         return {"ok": True, "messaggio": T("Sfondo cambiato")}

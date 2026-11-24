@@ -17,7 +17,7 @@ Item {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: tel.ora()
-            color: tel.pal.testo
+            color: tel.inchiostroSopra
             font.family: Tema.font; font.pixelSize: 15; font.weight: Font.DemiBold
         }
         // Chiamata ridotta: una pillola verde con la durata, si tocca per tornare alla chiamata
@@ -45,15 +45,15 @@ Item {
             Rectangle {
                 width: 24; height: 13; radius: 4
                 color: "transparent"
-                border.color: Qt.rgba(tel.pal.testo.r, tel.pal.testo.g, tel.pal.testo.b, 0.5); border.width: 1.2
+                border.color: Qt.rgba(tel.inchiostroSopra.r, tel.inchiostroSopra.g, tel.inchiostroSopra.b, 0.5); border.width: 1.2
                 Rectangle {
                     x: 2; y: 2; height: parent.height - 4; radius: 2
                     width: Math.max(2, (parent.width - 4) * barra.bat.livello / 100)
                     color: barra.bat.livello <= 20 && !barra.bat.carica ? tel.rosso
-                           : (barra.bat.carica && barra.bat.livello < 100 ? tel.pal.successo : tel.pal.testo)
+                           : (barra.bat.carica && barra.bat.livello < 100 ? tel.pal.successo : tel.inchiostroSopra)
                 }
             }
-            Rectangle { x: 25; anchors.verticalCenter: parent.verticalCenter; width: 2; height: 5; radius: 1; color: Qt.rgba(tel.pal.testo.r, tel.pal.testo.g, tel.pal.testo.b, 0.5) }
+            Rectangle { x: 25; anchors.verticalCenter: parent.verticalCenter; width: 2; height: 5; radius: 1; color: Qt.rgba(tel.inchiostroSopra.r, tel.inchiostroSopra.g, tel.inchiostroSopra.b, 0.5) }
         }
     }
 }

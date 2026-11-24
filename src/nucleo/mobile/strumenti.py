@@ -836,6 +836,22 @@ def nuova_foto() -> str:
     return str(cartella_foto() / time.strftime("IMG_%Y%m%d_%H%M%S.jpg"))
 
 
+def nuovo_video() -> str:
+    return str(cartella_foto() / time.strftime("VID_%Y%m%d_%H%M%S.mp4"))
+
+
+def ritaglia_quadrato(percorso: str) -> bool:
+    """Formato «Quadrato» della Fotocamera: taglia la foto al centro (lato = il più corto)."""
+    from PyQt6.QtGui import QImage
+
+    img = QImage(percorso)
+    if img.isNull():
+        return False
+    lato = min(img.width(), img.height())
+    quadrata = img.copy((img.width() - lato) // 2, (img.height() - lato) // 2, lato, lato)
+    return quadrata.save(percorso, quality=94)
+
+
 # ── Musica ───────────────────────────────────────────────────────────────────
 def musica() -> list:
     radice = cartella_utente("MUSIC", "Musica")
