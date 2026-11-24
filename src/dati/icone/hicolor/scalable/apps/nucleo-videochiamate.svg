@@ -5,8 +5,8 @@
 </defs>
 <g transform="translate(3 3) scale(0.94)">
  <path d="M50 0C90 0 100 10 100 50S90 100 50 100 0 90 0 50 10 0 50 0Z" fill="url(#f)"/>
- <g transform="translate(0 2.2)" opacity="0.18"><rect x="13" y="29" width="52" height="42" rx="13" fill="#000000"/><path d="M69 45.5 84.5 34.5a2.5 2.5 0 0 1 4 2v27a2.5 2.5 0 0 1-4 2L69 54.5Z" fill="#000000"/><circle cx="25" cy="40" r="4" fill="#000000"/></g>
- <rect x="13" y="29" width="52" height="42" rx="13" fill="#FFFFFF"/><path d="M69 45.5 84.5 34.5a2.5 2.5 0 0 1 4 2v27a2.5 2.5 0 0 1-4 2L69 54.5Z" fill="#FFFFFF" fill-opacity="0.55"/><circle cx="25" cy="40" r="4" fill="#0F9F6E"/>
+ <g transform="translate(0 2.2)" opacity="0.18"><rect x="12" y="29" width="50" height="42" rx="12" fill="#000000"/><path d="M66 45 82.5 34.3c2.2-1.4 5 .2 5 2.8v25.8c0 2.6-2.8 4.2-5 2.8L66 55Z" fill="#000000"/><circle cx="37" cy="50" r="11" fill="#000000"/><circle cx="37" cy="50" r="4.6" fill="#000000"/><circle cx="21.5" cy="38" r="3.4" fill="#000000"/></g>
+ <rect x="12" y="29" width="50" height="42" rx="12" fill="#FFFFFF"/><path d="M66 45 82.5 34.3c2.2-1.4 5 .2 5 2.8v25.8c0 2.6-2.8 4.2-5 2.8L66 55Z" fill="#FFFFFF"/><circle cx="37" cy="50" r="11" fill="#0F9F6E"/><circle cx="37" cy="50" r="4.6" fill="#FFFFFF" fill-opacity="0.55"/><circle cx="21.5" cy="38" r="3.4" fill="#FF5A5F"/>
  <path d="M50 0C90 0 100 10 100 50S90 100 50 100 0 90 0 50 10 0 50 0Z" fill="url(#l)"/>
  <path d="M50 0C90 0 100 10 100 50S90 100 50 100 0 90 0 50 10 0 50 0Z" fill="none" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="1.4"/>
 </g>

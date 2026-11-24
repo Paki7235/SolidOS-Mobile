@@ -108,9 +108,10 @@ def vicina(p, s, a, c):
 
 
 def videochiamate(p, s, a, c):
-    return (f'<rect x="13" y="29" width="52" height="42" rx="13" fill="{p}"/>'
-            f'<path d="M69 45.5 84.5 34.5a2.5 2.5 0 0 1 4 2v27a2.5 2.5 0 0 1-4 2L69 54.5Z" fill="{s}"/>'
-            f'<circle cx="25" cy="40" r="4" fill="{a}"/>')
+    return (f'<rect x="12" y="29" width="50" height="42" rx="12" fill="{p}"/>'
+            f'<path d="M66 45 82.5 34.3c2.2-1.4 5 .2 5 2.8v25.8c0 2.6-2.8 4.2-5 2.8L66 55Z" fill="{p}"/>'
+            f'<circle cx="37" cy="50" r="11" fill="{c}"/><circle cx="37" cy="50" r="4.6" fill="{s}"/>'
+            f'<circle cx="21.5" cy="38" r="3.4" fill="#FF5A5F"/>')
 
 
 def calcolatrice(p, s, a, c):
