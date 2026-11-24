@@ -1,4 +1,5 @@
-// Barra per scrivere un messaggio, con il tasto Invia.
+// Barra per scrivere un messaggio, con il tasto Invia (pieno nel colore di sistema).
+// Nelle vesti Prisma il campo è una pillola bianca senza bordo.
 import QtQuick
 import QtQuick.Controls
 import SolidUI
@@ -9,12 +10,13 @@ Rectangle {
     signal invia(string testo)
     height: Math.min(140, campo.implicitHeight + 26) + (tel.imp.navigazione === "tasti" ? 44 : 22)
     color: tel.pal.sfondo
-    Rectangle { width: parent.width; height: 1; color: tel.pal.bordo }
+    Rectangle { width: parent.width; height: 1; color: tel.pal.bordo; visible: !tel.solido }
     Rectangle {
         x: 12; y: 8
-        width: parent.width - 70; height: Math.min(130, campo.implicitHeight + 10)
-        radius: 20
-        color: "transparent"
+        width: parent.width - 74; height: Math.min(130, campo.implicitHeight + 12)
+        radius: 22
+        color: tel.solido ? tel.pal.superficie : "transparent"
+        border.width: tel.solido ? 0 : 1
         border.color: campo.activeFocus ? tel.pal.testo2 : tel.pal.bordo
         TextArea {
             id: campo
@@ -27,9 +29,9 @@ Rectangle {
     }
     TastoTondo {
         anchors.right: parent.right; anchors.rightMargin: 12; y: 10
-        lato: 40; icona: "go-up-symbolic"
-        pieno: campo.text.trim() !== ""
-        opacity: pieno ? 1 : 0.6
+        lato: 44; icona: "linea-invia"
+        pieno: true
+        opacity: campo.text.trim() !== "" ? 1 : 0.45
         onTocco: if (campo.text.trim()) { barra.invia(campo.text); campo.text = "" }
     }
 }

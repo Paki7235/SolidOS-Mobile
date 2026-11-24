@@ -115,7 +115,7 @@ Rectangle {
         Rectangle {
             anchors.left: parent.left; anchors.right: parent.right
             height: 110
-            color: app.sezione
+            color: tel.solido ? tel.pal.sfondo : app.sezione
             z: 2
             TastoTondo {
                 x: 16; y: 58; lato: 40; icona: "go-previous-symbolic"
@@ -123,15 +123,16 @@ Rectangle {
             }
             Column {
                 anchors.horizontalCenter: parent.horizontalCenter; y: 54
-                Avatar { anchors.horizontalCenter: parent.horizontalCenter; lato: 34; nome: app.aperta ? app.aperta.nome : "" }
+                Avatar { anchors.horizontalCenter: parent.horizontalCenter; lato: 38; nome: app.aperta ? app.aperta.nome : "" }
                 Text { anchors.horizontalCenter: parent.horizontalCenter; text: app.aperta ? app.aperta.nome : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
             }
             TastoTondo {
                 anchors.right: parent.right; anchors.rightMargin: 16; y: 58
                 lato: 40; icona: "call-start-symbolic"
+                color: tel.coloreChiama; temaIcona: tel.temaChiama
                 onTocco: tel.chiama(app.aperta.numero)
             }
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: app.linea }
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: app.linea; visible: !tel.solido }
         }
         ListView {
             id: chat
@@ -152,23 +153,35 @@ Rectangle {
                     x: msg.modelData.mio ? parent.width - width - 14 : 14
                     width: Math.min(testoMsg.implicitWidth + 28, chat.width * 0.76)
                     height: testoMsg.implicitHeight + ora.implicitHeight + 18
-                    radius: 18
-                    color: msg.modelData.mio ? tel.pal.pieno : tel.pal.superficie2
+                    radius: 22
+                    // Le mie: viola (in Aurora sfuma verso il rosa); le altre: bianche in Prisma
+                    readonly property color fine: msg.modelData.mio ? (tel.solido ? tel.pal.pieno : "#C84BD8") : color
+                    color: msg.modelData.mio ? tel.pal.pieno : (tel.solido ? tel.pal.superficie : tel.pal.superficie2)
+                    gradient: msg.modelData.mio && !tel.solido ? sfuma : null
+                    Gradient { id: sfuma; orientation: Gradient.Horizontal; GradientStop { position: 0; color: tel.pal.pieno } GradientStop { position: 1; color: "#C84BD8" } }
+                    // l'angolo verso chi scrive è meno tondo, come una nuvoletta
+                    Rectangle {
+                        width: 16; height: 16; radius: 5
+                        anchors.bottom: parent.bottom
+                        x: msg.modelData.mio ? parent.width - width : 0
+                        color: nuvola.fine
+                    }
                     Text {
                         id: testoMsg
-                        x: 14; y: 8
+                        x: 14; y: 9; z: 1
                         width: Math.min(implicitWidth, chat.width * 0.76 - 28)
                         wrapMode: Text.Wrap
                         text: msg.modelData.testo
-                        color: msg.modelData.mio ? tel.pal.suPieno : tel.pal.testo
+                        color: msg.modelData.mio ? "#FFFFFF" : tel.pal.testo
                         font.family: Tema.font; font.pixelSize: tel.px(16)
                     }
                     Text {
                         id: ora
+                        z: 1
                         anchors.right: parent.right; anchors.rightMargin: 12
                         anchors.top: testoMsg.bottom; anchors.topMargin: 2
                         text: msg.modelData.testoQuando
-                        color: msg.modelData.mio ? (tel.chiaro ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.5)) : tel.pal.testo2
+                        color: msg.modelData.mio ? Qt.rgba(1, 1, 1, 0.65) : tel.pal.testo2
                         font.family: Tema.font; font.pixelSize: tel.px(10)
                     }
                 }

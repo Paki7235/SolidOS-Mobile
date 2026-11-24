@@ -30,7 +30,10 @@ Rectangle {
     }
     function tempo(ms) { var s = Math.floor(ms / 1000); return Math.floor(s / 60) + ":" + ("0" + s % 60).slice(-2) }
     onVisibleChanged: if (visible) aggiorna()
-    Component.onCompleted: { aggiorna(); if (tel.branoDaSuonare) { suonaFile(tel.branoDaSuonare); tel.branoDaSuonare = "" } }
+    Component.onCompleted: {
+        aggiorna(); if (tel.branoDaSuonare) { suonaFile(tel.branoDaSuonare); tel.branoDaSuonare = "" }
+        if (ponte.chiama0("avvio").schermata === "musica-ascolto" && brani.length) { attuale = 0; grande = true }   // anteprima
+    }
     // Per il widget Musica della Home: cosa suona e i comandi dal widget
     Binding { target: tel; property: "musica"; value: ({ titolo: app.brano ? app.brano.titolo : "", artista: app.brano ? (app.brano.artista || "") : "", suona: app.suona }) }
     Connections {
@@ -102,38 +105,55 @@ Rectangle {
     // ══ Mini lettore ═════════════════════════════════════════════════════
     Rectangle {
         visible: app.brano !== null && !app.grande
-        x: 12; width: parent.width - 24; height: 70; radius: 24
+        id: mini
+        x: 12; width: parent.width - 24; height: 70; radius: 26
         anchors.bottom: parent.bottom; anchors.bottomMargin: 32
-        color: app.sezione
-        border.width: 1; border.color: tel.pal.bordo
+        color: tel.solido ? Qt.hsla(app.tono, 0.7, 0.6, 1) : app.sezione
+        border.width: tel.solido ? 0 : 1; border.color: tel.pal.bordo
+        readonly property color t1: tel.solido ? "#FFFFFF" : tel.pal.testo
         Column {
             x: 16; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 120; spacing: 2
-            Text { width: parent.width; elide: Text.ElideRight; text: app.brano ? app.brano.titolo : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
-            Text { width: parent.width; elide: Text.ElideRight; text: app.brano ? app.brano.artista : ""; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12) }
+            Text { width: parent.width; elide: Text.ElideRight; text: app.brano ? app.brano.titolo : ""; color: mini.t1; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
+            Text { width: parent.width; elide: Text.ElideRight; text: app.brano ? app.brano.artista : ""; color: mini.t1; opacity: 0.7; font.family: Tema.font; font.pixelSize: tel.px(12) }
         }
         MouseArea { anchors.fill: parent; onClicked: app.grande = true }
         Row {
             anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter
             spacing: 18
-            TastoTondo { lato: 42; pieno: true; icona: app.suona ? "media-playback-pause-symbolic" : "media-playback-start-symbolic"; onTocco: app.playPausa() }
-            TastoTondo { lato: 42; icona: "media-skip-forward-symbolic"; color: "transparent"; onTocco: app.suonaIndice(app.attuale + 1) }
+            TastoTondo { lato: 42; pieno: !tel.solido; color: tel.solido ? "#FFFFFF" : tel.accento; temaIcona: tel.solido ? "chiaro" : "scuro"; icona: app.suona ? "media-playback-pause-symbolic" : "media-playback-start-symbolic"; onTocco: app.playPausa() }
+            TastoTondo { lato: 42; icona: "media-skip-forward-symbolic"; color: "transparent"; temaIcona: tel.solido ? "scuro" : ""; onTocco: app.suonaIndice(app.attuale + 1) }
         }
     }
 
+    // Colore della copertina del brano: le vesti lo usano come fondo di «In ascolto»
+    readonly property real tono: ((0.62 + Math.max(0, attuale) * 0.11) % 1)
     // ══ In ascolto ═══════════════════════════════════════════════════════
+    // Aurora: dalla copertina si scende verso la notte. Prisma: il colore della copertina, pieno.
     Rectangle {
+        id: ascolto
         anchors.fill: parent
         visible: app.grande && app.brano !== null
-        color: app.color
+        color: Qt.hsla(app.tono, 0.7, 0.6, 1)
+        gradient: tel.solido ? null : notteMusica
+        Gradient {
+            id: notteMusica
+            GradientStop { position: 0; color: Qt.hsla(app.tono, 0.75, 0.55, 1) }
+            GradientStop { position: 0.55; color: Qt.hsla((app.tono + 0.08) % 1, 0.6, 0.28, 1) }
+            GradientStop { position: 1; color: "#120A2E" }
+        }
         MouseArea { anchors.fill: parent }
-        TastoTondo { x: 18; y: 58; lato: 40; icona: "go-up-symbolic"; rotation: 180; onTocco: app.grande = false }
+        TastoTondo { x: 18; y: 58; lato: 40; icona: "go-up-symbolic"; rotation: 180; color: "#33FFFFFF"; temaIcona: "scuro"; onTocco: app.grande = false }
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter; y: 120
-            width: parent.width - 80; height: width; radius: 28
+            width: parent.width - 80; height: width; radius: 32
+            border.width: 1; border.color: "#33FFFFFF"
             // Copertina: sfumatura colorata con un'onda di barrette che si muove mentre suona
+            // In Prisma la copertina prende il colore opposto al fondo, così si stacca
+            id: copertinaGrande
+            readonly property real tonoCopertina: tel.solido ? (app.tono + 0.5) % 1 : app.tono
             gradient: Gradient {
-                GradientStop { position: 0; color: Qt.hsla((0.62 + app.attuale * 0.11) % 1, 0.65, 0.58, 1) }
-                GradientStop { position: 1; color: Qt.hsla((0.72 + app.attuale * 0.11) % 1, 0.6, 0.4, 1) }
+                GradientStop { position: 0; color: Qt.hsla(copertinaGrande.tonoCopertina, tel.solido ? 0.85 : 0.65, tel.solido ? 0.62 : 0.58, 1) }
+                GradientStop { position: 1; color: Qt.hsla((copertinaGrande.tonoCopertina + 0.1) % 1, tel.solido ? 0.85 : 0.6, tel.solido ? 0.55 : 0.4, 1) }
             }
             Icona { x: 22; y: 22; nome: "linea-musica"; lato: 34; tema: "scuro" }
             Row {
@@ -159,26 +179,26 @@ Rectangle {
         Column {
             x: 40; width: parent.width - 80; y: 140 + parent.width - 80
             spacing: 6
-            Text { width: parent.width; elide: Text.ElideRight; text: app.brano ? app.brano.titolo : ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(24); font.weight: Font.DemiBold }
-            Text { width: parent.width; elide: Text.ElideRight; text: app.brano ? app.brano.artista : ""; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(16) }
+            Text { width: parent.width; elide: Text.ElideRight; text: app.brano ? app.brano.titolo : ""; color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(26); font.weight: tel.solido ? Font.Black : Font.Bold; font.letterSpacing: -0.6 }
+            Text { width: parent.width; elide: Text.ElideRight; text: app.brano ? app.brano.artista : ""; color: "#CCFFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(17) }
             Item { width: 1; height: 10 }
             // Avanzamento (si può toccare per spostarsi)
             Rectangle {
-                width: parent.width; height: 6; radius: 3; color: tel.pal.traccia
-                Rectangle { width: app.durata > 0 ? parent.width * app.posizione / app.durata : 0; height: 6; radius: 3; color: tel.accento }
+                width: parent.width; height: 6; radius: 3; color: "#40FFFFFF"
+                Rectangle { width: app.durata > 0 ? parent.width * app.posizione / app.durata : 0; height: 6; radius: 3; color: "#FFFFFF" }
                 MouseArea { anchors.fill: parent; anchors.margins: -12; onClicked: function (m) { if (app.durata > 0) app.lettore.position = app.durata * Math.max(0, Math.min(1, (m.x - 12) / parent.width)) } }
             }
             Item {
                 width: parent.width; height: 18
-                Text { text: app.tempo(app.posizione); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(11) }
-                Text { anchors.right: parent.right; text: app.tempo(app.durata); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(11) }
+                Text { text: app.tempo(app.posizione); color: "#B3FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(11) }
+                Text { anchors.right: parent.right; text: app.tempo(app.durata); color: "#B3FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(11) }
             }
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 36
-                TastoTondo { anchors.verticalCenter: parent.verticalCenter; lato: 56; icona: "media-skip-backward-symbolic"; color: "transparent"; onTocco: app.posizione > 3000 ? app.lettore.position = 0 : app.suonaIndice(app.attuale - 1) }
-                TastoTondo { anchors.verticalCenter: parent.verticalCenter; lato: 76; pieno: true; icona: app.suona ? "media-playback-pause-symbolic" : "media-playback-start-symbolic"; onTocco: app.playPausa() }
-                TastoTondo { anchors.verticalCenter: parent.verticalCenter; lato: 56; icona: "media-skip-forward-symbolic"; color: "transparent"; onTocco: app.suonaIndice(app.attuale + 1) }
+                TastoTondo { anchors.verticalCenter: parent.verticalCenter; lato: 56; icona: "media-skip-backward-symbolic"; color: "transparent"; temaIcona: "scuro"; onTocco: app.posizione > 3000 ? app.lettore.position = 0 : app.suonaIndice(app.attuale - 1) }
+                TastoTondo { anchors.verticalCenter: parent.verticalCenter; lato: 76; color: "#FFFFFF"; temaIcona: "chiaro"; icona: app.suona ? "media-playback-pause-symbolic" : "media-playback-start-symbolic"; onTocco: app.playPausa() }
+                TastoTondo { anchors.verticalCenter: parent.verticalCenter; lato: 56; icona: "media-skip-forward-symbolic"; color: "transparent"; temaIcona: "scuro"; onTocco: app.suonaIndice(app.attuale + 1) }
             }
         }
     }

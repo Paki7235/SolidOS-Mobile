@@ -202,11 +202,12 @@ Rectangle {
                     id: tastoT
                     required property var modelData
                     width: 78; height: 78; radius: 39
-                    color: tasto.pressed ? Qt.lighter(tel.pal.superficie2, 1.6) : tel.pal.superficie2
+                    readonly property color base: tel.solido ? tel.pal.superficie : tel.pal.superficie2
+                    color: tasto.pressed ? (tel.solido ? "#C6F432" : Qt.lighter(base, 1.6)) : base
                     Behavior on color { ColorAnimation { duration: tel.tVeloce } }
                     Column {
                         anchors.centerIn: parent
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: tastoT.modelData[0]; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 34; font.weight: Font.Normal }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: tastoT.modelData[0]; color: tel.solido && tasto.pressed ? "#141414" : tel.pal.testo; font.family: Tema.font; font.pixelSize: 34; font.weight: tel.solido ? Font.Bold : Font.Light }
                         Text { anchors.horizontalCenter: parent.horizontalCenter; text: tastoT.modelData[1] || " "; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 1.6 }
                     }
                     MouseArea {
@@ -224,10 +225,10 @@ Rectangle {
             Item { width: 78; height: 78 }
             Rectangle {
                 width: 78; height: 78; radius: 39
-                color: tel.pal.successo
+                color: tel.coloreChiama
                 scale: toccoChiama.pressed ? 0.93 : 1
                 Behavior on scale { NumberAnimation { duration: tel.tVeloce } }
-                Icona { anchors.centerIn: parent; nome: "call-start-symbolic"; lato: 32; tema: "scuro" }
+                Icona { anchors.centerIn: parent; nome: "call-start-symbolic"; lato: 32; tema: tel.temaChiama }
                 MouseArea { id: toccoChiama; anchors.fill: parent; onClicked: if (app.numero) app.chiama(app.numero) }
             }
             Item {
@@ -262,12 +263,12 @@ Rectangle {
             onEditingFinished: tel.imposta("segreteria", text.trim())
         }
         Rectangle {
-            width: parent.width; height: 50; radius: 25; color: tel.pal.successo
+            width: parent.width; height: 50; radius: 25; color: tel.coloreChiama
             opacity: campoSegreteria.text.trim() ? 1 : 0.4
             Row {
                 anchors.centerIn: parent; spacing: 8
-                Icona { anchors.verticalCenter: parent.verticalCenter; nome: "call-start-symbolic"; lato: 18; tema: "scuro" }
-                Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.t("Chiama la segreteria"); color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
+                Icona { anchors.verticalCenter: parent.verticalCenter; nome: "call-start-symbolic"; lato: 18; tema: tel.temaChiama }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.t("Chiama la segreteria"); color: tel.solido ? "#141414" : "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
             }
             MouseArea { anchors.fill: parent; enabled: campoSegreteria.text.trim() !== ""; onClicked: { tel.imposta("segreteria", campoSegreteria.text.trim()); app.chiama(campoSegreteria.text.trim()) } }
         }
@@ -296,11 +297,18 @@ Rectangle {
                     id: voceTab
                     required property var modelData
                     width: (app.width - 20) / 5; height: 52
+                    readonly property bool attiva: app.scheda === voceTab.modelData.s
+                    // Scheda attiva: una pillola colorata dietro l'icona
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter; y: 1
+                        width: 54; height: 30; radius: 15; visible: voceTab.attiva
+                        color: tel.solido ? "#C6F432" : Qt.rgba(tel.accento.r, tel.accento.g, tel.accento.b, 0.28)
+                    }
                     Column {
                         anchors.centerIn: parent; spacing: 3
-                        opacity: app.scheda === voceTab.modelData.s ? 1 : 0.5
-                        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: voceTab.modelData.i; lato: 24 }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: voceTab.modelData.t; color: app.scheda === voceTab.modelData.s ? tel.accento : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(10.5); font.weight: Font.DemiBold }
+                        opacity: voceTab.attiva ? 1 : 0.55
+                        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: voceTab.modelData.i; lato: 24; tema: voceTab.attiva && tel.solido ? "chiaro" : "" }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: voceTab.modelData.t; color: voceTab.attiva && !tel.solido ? tel.accento : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(10.5); font.weight: voceTab.attiva ? Font.Bold : Font.DemiBold }
                     }
                     Rectangle {
                         visible: voceTab.modelData.s === "recenti" && app.perse > 0

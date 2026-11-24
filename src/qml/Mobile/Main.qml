@@ -38,6 +38,9 @@ Window {
         imposta("stile_icone", "")
     }
     readonly property bool chiaro: veste === "prisma"
+    // Tasto della chiamata: lime con la cornetta scura (Prisma), verde con la cornetta bianca (Aurora)
+    readonly property color coloreChiama: solido ? "#C6F432" : "#22C55E"
+    readonly property string temaChiama: solido ? "chiaro" : "scuro"
     readonly property real k: [0.9, 1.0, 1.15][imp.testo] || 1.0
     // Accento blu di SolidOS (lo stesso del PC); chi ne ha scelto un altro in Personalizza lo tiene
     readonly property color accento: (!imp.accento || imp.accento === "#3F7CF5" || imp.accento === "#FF3B30" || imp.accento === "#4C7DFF")
@@ -212,6 +215,7 @@ Window {
         else if (a.schermata === "conversazione") { appInterna = "messaggi"; var c = ponte.chiama0("conversazioni"); if (c.length) messaggiApp.apri(c[0].numero) }
         else if (a.schermata === "contatti") appInterna = "contatti"
         else if (a.schermata === "dove") appInterna = "dove"
+        else if (a.schermata === "musica-ascolto") appInterna = "musica"
         else if (["calcolatrice", "note", "file", "foto", "musica", "fotocamera", "store", "vicina", "mappe", "videochiamate"].indexOf(a.schermata) >= 0) appInterna = a.schermata
         else if (a.schermata === "store-app" || a.schermata === "store-raccolta" || a.schermata === "store-mie" || a.schermata === "store-scarica") appInterna = "store"
         else if (a.schermata === "foto-account" || a.schermata === "foto-google" || a.schermata === "foto-casa" || a.schermata === "foto-una") appInterna = "foto"

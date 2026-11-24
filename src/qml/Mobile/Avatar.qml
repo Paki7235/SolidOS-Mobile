@@ -1,5 +1,5 @@
-// Tondo di una persona: iniziali bianche su una sfumatura colorata (sempre la stessa per
-// lo stesso nome), puntino blu se ci sono novità
+// Tondo di una persona: iniziali su un colore (sempre lo stesso per lo stesso nome), puntino
+// se ci sono novità. Aurora: sfumature vive. Prisma: colori pieni (iniziali scure sul lime e sul giallo).
 import QtQuick
 import SolidUI
 
@@ -9,8 +9,12 @@ Rectangle {
     property bool nuovo: false
     property int lato: 48
     width: lato; height: lato; radius: lato / 2
-    readonly property var coppie: [["#4C7DFF", "#2F5FD0"], ["#8B5CF6", "#6D28D9"], ["#30A46C", "#14866D"], ["#F59E0B", "#EA580C"],
-                                   ["#E5484D", "#BE123C"], ["#0EA5E9", "#2563EB"], ["#14B8A6", "#0F766E"], ["#EC4899", "#9333EA"]]
+    readonly property var coppie: tel.solido
+        ? [["#FF6B4A", "#FF6B4A"], ["#8B6CFF", "#8B6CFF"], ["#59C3FF", "#59C3FF"], ["#C6F432", "#C6F432"],
+           ["#FFB443", "#FFB443"], ["#3EE0B0", "#3EE0B0"], ["#FF74A6", "#FF74A6"], ["#FFD84A", "#FFD84A"]]
+        : [["#66A6FF", "#3443F5"], ["#B994FF", "#6232F5"], ["#4BE38E", "#0E9B57"], ["#FFC46B", "#F27A1A"],
+           ["#FF8172", "#E5304B"], ["#5EE6FF", "#0A8FC2"], ["#33E7BA", "#0C9A82"], ["#FF74A6", "#DE1B67"]]
+    readonly property bool scuro: tel.solido && [3, 4, 5, 7].indexOf(indice) >= 0   // iniziali scure sui colori chiari
     readonly property int indice: { var h = 0; for (var i = 0; i < nome.length; i++) h = (h * 31 + nome.charCodeAt(i)) % 997; return h % coppie.length }
     gradient: Gradient {
         GradientStop { position: 0; color: av.coppie[av.indice][0] }
@@ -21,7 +25,7 @@ Rectangle {
         if (!p.length) return "#"
         return (p[0].charAt(0) + (p.length > 1 ? p[1].charAt(0) : "")).toUpperCase()
     }
-    Text { anchors.centerIn: parent; text: av.iniziali; color: "#ffffff"; font.family: Tema.font; font.weight: Font.DemiBold; font.pixelSize: Math.max(13, Math.round(av.lato * 0.36)) }
+    Text { anchors.centerIn: parent; text: av.iniziali; color: av.scuro ? "#141414" : "#ffffff"; font.family: Tema.font; font.weight: tel.solido ? Font.ExtraBold : Font.DemiBold; font.pixelSize: Math.max(13, Math.round(av.lato * 0.36)) }
     Rectangle {
         visible: av.nuovo
         anchors.right: parent.right; anchors.top: parent.top; anchors.rightMargin: -1; anchors.topMargin: -1
