@@ -2,11 +2,14 @@
 // (come se fosse sfocato), con sopra una velatura grafite o bianca e un bordo sottile.
 // Funziona anche senza scheda video (telefoni vecchi, telefono virtuale).
 // «sfocato: false» = pannello pieno, per quando sotto non c'è lo sfondo (dentro le app).
+// Nelle vesti Prisma e Prisma Notte il pannello è pieno: bianco, grafite o del colore «tinta».
 import QtQuick
 
 Rectangle {
     id: v
     property bool sfocato: true
+    property color tinta: "transparent"      // colore pieno nelle vesti Prisma (widget colorati)
+    readonly property bool pieno: tel.solido
     radius: tel.r3
     // Posizione sullo schermo (frazioni dell'altezza), aggiornata quando il pannello compare
     property real alto: 0
@@ -22,8 +25,8 @@ Rectangle {
     onHeightChanged: misura()
     onYChanged: misura()
     Timer { id: ritardo; interval: 450; onTriggered: v.misura() }
-    gradient: v.sfocato ? sfumatura : null
-    color: v.sfocato ? "transparent" : tel.pal.superficie
+    gradient: v.sfocato && !v.pieno ? sfumatura : null
+    color: v.pieno ? (v.tinta.a > 0 ? v.tinta : tel.pal.superficie) : (v.sfocato ? "transparent" : tel.pal.superficie)
     Gradient {
         id: sfumatura
         GradientStop { position: 0.0; color: tel.coloreSfondo(v.alto) }
@@ -34,7 +37,8 @@ Rectangle {
     Rectangle {
         anchors.fill: parent
         radius: v.radius
-        color: v.sfocato ? tel.pal.vetro : "transparent"
+        visible: !v.pieno || (!tel.chiaro && v.tinta.a === 0)
+        color: v.sfocato && !v.pieno ? tel.pal.vetro : "transparent"
         border.width: 1
         border.color: v.sfocato ? tel.pal.vetroBordo : tel.pal.bordo
     }

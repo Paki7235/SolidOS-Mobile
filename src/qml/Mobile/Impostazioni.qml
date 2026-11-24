@@ -221,7 +221,7 @@ Rectangle {
                     Riga { icona: "audio-volume-high-symbolic"; titolo: I18n.t("Suoni e vibrazione"); onScelta: imp.apri("suoni") }
                     Riga { icona: "preferences-system-notifications-symbolic"; titolo: I18n.t("Notifiche"); valore: tel.imp.non_disturbare ? I18n.t("Non disturbare") : ""; onScelta: imp.apri("notifiche") }
                     Riga { icona: "display-brightness-symbolic"; titolo: I18n.t("Schermo"); onScelta: imp.apri("schermo") }
-                    Riga { icona: "preferences-desktop-wallpaper-symbolic"; titolo: I18n.t("Personalizza"); ultima: true; onScelta: tel.personalizza = true }
+                    Riga { icona: "preferences-desktop-wallpaper-symbolic"; titolo: I18n.t("Aspetto"); ultima: true; onScelta: tel.personalizza = true }
                 }
                 Gruppo {
                     Riga { icona: "battery-good-symbolic"; titolo: I18n.t("Batteria"); valore: (imp.batteria.livello || 0) + "%"; onScelta: imp.apri("batteria") }
@@ -421,9 +421,9 @@ Rectangle {
                 }
                 Titoletto { text: I18n.t("Aspetto") }
                 Gruppo {
-                    Riga { titolo: I18n.t("Tema scuro"); interruttore: true; acceso: !tel.chiaro; freccia: false; onCambiato: function (si) { tel.imposta("tema", si ? "scuro" : "chiaro") } }
+                    Riga { titolo: I18n.t("Veste"); valore: ({ aurora: "Aurora", prisma: "Prisma", notte: "Prisma Notte", auto: I18n.t("Automatica") })[tel.vesteScelta]; onScelta: tel.personalizza = true }
                     Riga { titolo: I18n.t("Grandezza del testo"); valore: [I18n.t("Piccolo"), I18n.t("Normale"), I18n.t("Grande")][tel.imp.testo]; onScelta: tel.imposta("testo", (tel.imp.testo + 1) % 3) }
-                    Riga { titolo: I18n.t("Personalizza"); ultima: true; onScelta: tel.personalizza = true }
+                    Riga { titolo: I18n.t("Icone, colore e sfondo"); ultima: true; onScelta: tel.personalizza = true }
                 }
                 Titoletto { text: I18n.t("Blocco") }
                 Gruppo {

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="2340" viewBox="0 0 1080 2340">
+ <!-- SolidOS · Aurora: luce colorata su fondo viola notte -->
+ <defs>
+  <radialGradient id="v" cx="150" cy="320" r="950" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#7B3CFF" stop-opacity="1"/><stop offset="0.55" stop-color="#7B3CFF" stop-opacity="0.45"/><stop offset="1" stop-color="#7B3CFF" stop-opacity="0"/></radialGradient>
+  <radialGradient id="r" cx="1080" cy="960" r="820" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FF3D8B" stop-opacity="0.95"/><stop offset="0.55" stop-color="#FF3D8B" stop-opacity="0.4"/><stop offset="1" stop-color="#FF3D8B" stop-opacity="0"/></radialGradient>
+  <radialGradient id="c" cx="220" cy="2200" r="1050" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#00C2FF" stop-opacity="0.95"/><stop offset="0.55" stop-color="#00C2FF" stop-opacity="0.4"/><stop offset="1" stop-color="#00C2FF" stop-opacity="0"/></radialGradient>
+  <radialGradient id="a" cx="1000" cy="1850" r="560" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFB14A" stop-opacity="0.65"/><stop offset="1" stop-color="#FFB14A" stop-opacity="0"/></radialGradient>
+ </defs>
+ <rect width="1080" height="2340" fill="#120A2E"/>
+ <rect width="1080" height="2340" fill="url(#v)"/>
+ <rect width="1080" height="2340" fill="url(#r)"/>
+ <rect width="1080" height="2340" fill="url(#c)"/>
+ <rect width="1080" height="2340" fill="url(#a)"/>
+</svg>

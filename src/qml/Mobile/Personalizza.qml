@@ -1,5 +1,6 @@
-// Personalizza: tema, grandezza del testo, colore, sfondo, orologio del blocco,
-// grandezza delle icone e navigazione. Ogni scelta si salva e cambia subito il telefono.
+// Aspetto: la veste (Aurora, Prisma, Prisma Notte o automatica), le icone (Gemme, Piene,
+// Vetro), il colore, lo sfondo, il testo, l'orologio del blocco e la navigazione.
+// Ogni scelta si salva e cambia subito il telefono.
 import QtQuick
 import QtQuick.Controls
 import SolidUI
@@ -39,7 +40,7 @@ Rectangle {
     }
 
     TitoloApp {
-        testo: I18n.t("Personalizza")
+        testo: I18n.t("Aspetto")
         TastoTondo { icona: "go-up-symbolic"; rotation: 180; onTocco: tel.personalizza = false }
     }
 
@@ -52,10 +53,77 @@ Rectangle {
             id: elenco
             x: 14; width: pers.width - 28
             spacing: 10
+            // Veste: un'anteprima piccola di ogni Home
             Sezione {
-                titolo: I18n.t("Tema")
-                Scelta { testo: I18n.t("Scuro"); attiva: !tel.chiaro; onScelta: tel.imposta("tema", "scuro") }
-                Scelta { testo: I18n.t("Chiaro"); attiva: tel.chiaro; onScelta: tel.imposta("tema", "chiaro") }
+                titolo: I18n.t("Veste")
+                Repeater {
+                    model: [{ k: "aurora", t: "Aurora" }, { k: "prisma", t: "Prisma" }, { k: "notte", t: "Prisma Notte" }]
+                    Item {
+                        id: vs
+                        required property var modelData
+                        readonly property bool attiva: tel.vesteScelta === modelData.k
+                        width: (elenco.width - 32 - 16) / 3; height: 196
+                        Rectangle {
+                            id: mini
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: 88; height: 164; radius: 18; clip: true
+                            border.width: vs.attiva ? 3 : 1; border.color: vs.attiva ? tel.accento : tel.pal.bordo
+                            Image {
+                                anchors.fill: parent; anchors.margins: vs.attiva ? 3 : 1
+                                source: ponte.chiama("sfondo", [({ aurora: "viva", prisma: "carta", notte: "inchiostro" })[vs.modelData.k], false])
+                                fillMode: Image.PreserveAspectCrop; sourceSize.height: 330
+                            }
+                            // due widget e le icone, come nella Home
+                            Grid {
+                                x: 9; y: 16; columns: 2; spacing: 5
+                                Rectangle { width: 32; height: 30; radius: 8; color: vs.modelData.k === "aurora" ? "#3DFFFFFF" : "#8B6CFF" }
+                                Rectangle { width: 32; height: 30; radius: 8; color: vs.modelData.k === "aurora" ? "#3DFFFFFF" : "#FF6B4A" }
+                            }
+                            Rectangle { x: 9; y: 51; width: 69; height: 16; radius: 6; color: vs.modelData.k === "aurora" ? "#3DFFFFFF" : (vs.modelData.k === "prisma" ? "#141414" : "#1C1C21") }
+                            Grid {
+                                x: 10; y: 78; columns: 4; spacing: 3
+                                Repeater {
+                                    model: ["foto", "mappe", "note", "file", "dove", "store", "musica", "impostazioni"]
+                                    Icona { required property string modelData; lato: 15; tema: "nessuno"
+                                            nome: (vs.modelData.k === "aurora" ? "" : "piene-") + "nucleo-" + modelData }
+                                }
+                            }
+                        }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; text: vs.modelData.t; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: vs.attiva ? Font.Bold : Font.Medium }
+                        MouseArea { anchors.fill: parent; onClicked: tel.scegliVeste(vs.modelData.k) }
+                    }
+                }
+                Scelta { testo: I18n.t("Automatica: Prisma di giorno, Aurora la sera"); attiva: tel.vesteScelta === "auto"; onScelta: tel.scegliVeste("auto") }
+            }
+            // Finitura delle icone: Gemme, Piene, Vetro
+            Sezione {
+                titolo: I18n.t("Icone")
+                Repeater {
+                    model: [{ k: "gemme", t: I18n.t("Gemme") }, { k: "piene", t: I18n.t("Piene") }, { k: "vetro", t: I18n.t("Vetro") }]
+                    Rectangle {
+                        id: prova
+                        required property var modelData
+                        readonly property bool attiva: tel.stileIcone === modelData.k
+                        width: (elenco.width - 32 - 16) / 3; height: 132; radius: 16; clip: true
+                        color: "transparent"
+                        border.width: attiva ? 3 : 0; border.color: tel.accento
+                        Image {
+                            anchors.fill: parent; anchors.margins: prova.attiva ? 3 : 0
+                            source: tel.sfondo; fillMode: Image.PreserveAspectCrop
+                            sourceSize.height: 260
+                        }
+                        Grid {
+                            anchors.centerIn: parent; anchors.verticalCenterOffset: -8
+                            columns: 2; spacing: 8
+                            Repeater {
+                                model: ["telefono", "messaggi", "foto", "note"]
+                                IconaApp { required property string modelData; app: ({ icona: "nucleo-" + modelData, nome: "" }); conNome: false; lato: 36; stileForzato: prova.modelData.k; width: 40; enabled: false }
+                            }
+                        }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; anchors.bottomMargin: 8; text: prova.modelData.t; color: tel.chiaro ? "#141414" : "#FFFFFF"; style: tel.chiaro ? Text.Normal : Text.Raised; styleColor: "#66000000"; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+                        MouseArea { anchors.fill: parent; onClicked: tel.imposta("stile_icone", prova.modelData.k) }
+                    }
+                }
             }
             Sezione {
                 titolo: I18n.t("Grandezza del testo")
@@ -67,7 +135,7 @@ Rectangle {
             Sezione {
                 titolo: I18n.t("Colore")
                 Repeater {
-                    model: ["#4C7DFF", "#8B5CF6", "#12B886", "#FF7A3D", "#E8467C", "#6B7385"]
+                    model: ["#8B6CFF", "#FF3D8B", "#FF6B4A", "#FFB443", "#7CC00F", "#12B886", "#3B8BFF", "#6B7385"]
                     Rectangle {
                         required property string modelData
                         width: 38; height: 38; radius: 19
@@ -81,13 +149,13 @@ Rectangle {
             Sezione {
                 titolo: I18n.t("Sfondo")
                 Repeater {
-                    model: ["notte", "alba", "oceano", "aurora", "grafite"]
+                    model: tel.sfondi
                     Rectangle {
                         required property string modelData
                         width: 56; height: 96; radius: 12
                         color: "transparent"
                         border.width: 3
-                        border.color: tel.nomeSfondo === modelData && !(tel.imp.sfondo || "").startsWith("/") ? tel.accento : "transparent"
+                        border.color: tel.nomeSfondo === modelData && !(tel.imp.sfondo || "").startsWith("/") ? tel.accento : tel.pal.bordo
                         clip: true
                         // Anteprima: lo stesso sfondo disegnato del telefono, in piccolo
                         // Anteprima: lo stesso sfondo del PC, in piccolo
@@ -109,40 +177,10 @@ Rectangle {
                 }
             }
             Sezione {
-                titolo: I18n.t("Icone")
+                titolo: I18n.t("Grandezza delle icone")
                 Repeater {
                     model: [I18n.t("Piccole"), I18n.t("Normali"), I18n.t("Grandi")]
                     Scelta { required property string modelData; required property int index; testo: modelData; attiva: (tel.imp.icone === undefined ? 1 : tel.imp.icone) === index; onScelta: tel.imposta("icone", index) }
-                }
-            }
-            // Stile delle icone: Colori, Scure, Tinta (colore del tema)
-            Sezione {
-                titolo: I18n.t("Stile delle icone")
-                Repeater {
-                    model: [{ k: "vetro", t: I18n.t("Vetro") }, { k: "colori", t: I18n.t("Colori") }, { k: "scure", t: I18n.t("Scure") }, { k: "tinta", t: I18n.t("Tinta") }]
-                    Rectangle {
-                        id: prova
-                        required property var modelData
-                        readonly property bool attiva: (tel.imp.stile_icone || "vetro") === modelData.k
-                        width: (elenco.width - 32 - 24) / 4; height: 132; radius: 16; clip: true
-                        color: "transparent"
-                        border.width: attiva ? 3 : 0; border.color: tel.accento
-                        Image {
-                            anchors.fill: parent; anchors.margins: prova.attiva ? 3 : 0
-                            source: ponte.chiama("sfondo", [tel.nomeSfondo, tel.chiaro]); fillMode: Image.PreserveAspectCrop
-                            sourceSize.height: 260
-                        }
-                        Grid {
-                            anchors.centerIn: parent; anchors.verticalCenterOffset: -8
-                            columns: 2; spacing: 8
-                            Repeater {
-                                model: ["telefono", "messaggi", "foto", "note"]
-                                IconaApp { required property string modelData; app: ({ icona: "nucleo-" + modelData, nome: "" }); conNome: false; lato: 28; stileForzato: prova.modelData.k; width: 34; enabled: false }
-                            }
-                        }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; anchors.bottomMargin: 8; text: prova.modelData.t; color: "#FFFFFF"; style: Text.Raised; styleColor: "#66000000"; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
-                        MouseArea { anchors.fill: parent; onClicked: tel.imposta("stile_icone", prova.modelData.k) }
-                    }
                 }
             }
             Sezione {

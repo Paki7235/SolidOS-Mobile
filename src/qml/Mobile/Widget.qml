@@ -14,6 +14,13 @@ Item {
     width: misura === "piccolo" ? cella : cella * 2 + 14
     height: misura === "grande" ? alto * 2 + 14 : alto
     readonly property bool largo: misura !== "piccolo"
+    // Vesti Prisma: ogni widget ha il suo colore pieno; il testo è bianco o scuro di conseguenza
+    readonly property var tinte: ({ oggi: "#FF6B4A", batterie: "#141414", musica: "#8B6CFF", note: "#FFD84A", orologio: "#141414" })
+    readonly property color tinta: tel.solido && tinte[tipo] ? tinte[tipo] : "transparent"
+    readonly property bool suScuro: tel.solido && tinte[tipo] ? tipo !== "note" : !tel.chiaro
+    readonly property color t1: suScuro ? "#FFFFFF" : "#141414"
+    readonly property color t2: suScuro ? "#BFFFFFFF" : "#99141414"
+    readonly property string temaIcone: suScuro ? "scuro" : "chiaro"
     readonly property var nomi: ({ oggi: I18n.t("Calendario"), batterie: I18n.t("Batterie"), meteo: I18n.t("Meteo"), musica: I18n.t("Musica"),
                                    foto: I18n.t("Foto"), note: I18n.t("Note"), orologio: I18n.t("Orologio"), app: I18n.t("App") })
     // Dati (si aggiornano ogni pochi minuti)
@@ -54,22 +61,22 @@ Item {
     // ── Oggi / Calendario ───────────────────────────────────────────────
     Vetro {
         visible: w.tipo === "oggi"
-        anchors.fill: parent; radius: 24
+        anchors.fill: parent; radius: 24; tinta: w.tinta
         Column {
             x: 16; y: 14; width: (w.largo ? parent.width / 2 : parent.width) - 32
-            Text { text: tel.adesso.toLocaleDateString(Qt.locale("it_IT"), "dddd").toUpperCase(); color: "#FF6B6B"; font.family: Tema.font; font.pixelSize: tel.px(12); font.weight: Font.Bold; font.letterSpacing: 0.4 }
-            Text { text: Qt.formatDate(tel.adesso, "d"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 50; font.weight: Font.Light; font.letterSpacing: -2 }
+            Text { text: tel.adesso.toLocaleDateString(Qt.locale("it_IT"), "dddd").toUpperCase(); color: tel.solido ? "#FFE0D8" : "#FF6B6B"; font.family: Tema.font; font.pixelSize: tel.px(12); font.weight: Font.Bold; font.letterSpacing: 0.4 }
+            Text { text: Qt.formatDate(tel.adesso, "d"); color: w.t1; font.family: Tema.font; font.pixelSize: 50; font.weight: Font.Light; font.letterSpacing: -2 }
         }
         Item {
             x: w.largo ? parent.width / 2 : 16; width: (w.largo ? parent.width / 2 : parent.width) - 32
             anchors.bottom: parent.bottom; anchors.bottomMargin: 14; height: colOggi.height
-            Rectangle { width: 3; height: parent.height; radius: 2; color: "#8B5CF6" }
+            Rectangle { width: 3; height: parent.height; radius: 2; color: tel.solido ? "#FFFFFF" : "#FF74A6" }
             Column {
                 id: colOggi
                 x: 10; width: parent.width - 10
-                Text { width: parent.width; elide: Text.ElideRight; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold
+                Text { width: parent.width; elide: Text.ElideRight; color: w.t1; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold
                        text: w.notifiche > 0 ? (tel.elencoNotifiche[0].titolo || "") : tel.adesso.toLocaleDateString(Qt.locale("it_IT"), "MMMM yyyy") }
-                Text { width: parent.width; elide: Text.ElideRight; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12)
+                Text { width: parent.width; elide: Text.ElideRight; color: w.t2; font.family: Tema.font; font.pixelSize: tel.px(12)
                        text: w.notifiche > 1 ? "+" + (w.notifiche - 1) + " " + I18n.t("notifiche") : (w.notifiche === 1 ? (tel.elencoNotifiche[0].app || "") : I18n.t("Nessun impegno")) }
             }
         }
@@ -79,8 +86,8 @@ Item {
     // ── Batterie ───────────────────────────────────────────────────────
     Vetro {
         visible: w.tipo === "batterie"
-        anchors.fill: parent; radius: 24
-        Text { x: 16; y: 14; text: I18n.t("Batterie"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+        anchors.fill: parent; radius: 24; tinta: w.tinta
+        Text { x: 16; y: 14; text: I18n.t("Batterie"); color: w.t2; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.verticalCenter: parent.verticalCenter; anchors.verticalCenterOffset: 10
@@ -95,8 +102,8 @@ Item {
                         Canvas {
                             anchors.fill: parent
                             property real l: parent.parent.modelData.l
-                            property color c: l <= 20 ? tel.rosso : (l < 50 ? "#F59E0B" : tel.pal.successo)
-                            property color f: tel.pal.traccia
+                            property color c: l <= 20 ? tel.rosso : (l < 50 ? "#FFB443" : (tel.solido ? "#C6F432" : "#4BE38E"))
+                            property color f: w.suScuro ? "#2EFFFFFF" : "#14000000"
                             onLChanged: requestPaint()
                             onFChanged: requestPaint()
                             onPaint: {
@@ -105,10 +112,10 @@ Item {
                                 g.strokeStyle = c; g.beginPath(); g.arc(28, 28, 24, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * l / 100); g.stroke()
                             }
                         }
-                        Icona { anchors.centerIn: parent; nome: parent.parent.modelData.i; lato: 20 }
+                        Icona { anchors.centerIn: parent; nome: parent.parent.modelData.i; lato: 20; tema: w.temaIcone }
                     }
-                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.modelData.l + "%"; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
-                    Text { visible: w.misura === "grande"; anchors.horizontalCenter: parent.horizontalCenter; text: parent.modelData.n; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(11) }
+                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.modelData.l + "%"; color: w.t1; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
+                    Text { visible: w.misura === "grande"; anchors.horizontalCenter: parent.horizontalCenter; text: parent.modelData.n; color: w.t2; font.family: Tema.font; font.pixelSize: tel.px(11) }
                 }
             }
         }
@@ -120,9 +127,10 @@ Item {
         visible: w.tipo === "meteo"
         anchors.fill: parent; radius: 24; clip: true
         gradient: Gradient {
-            GradientStop { position: 0; color: (tel.adesso.getHours() >= 19 || tel.adesso.getHours() < 6) ? "#3B4A8C" : "#4A8BFF" }
-            GradientStop { position: 1; color: (tel.adesso.getHours() >= 19 || tel.adesso.getHours() < 6) ? "#1E2552" : "#2753C9" }
+            GradientStop { position: 0; color: tel.solido ? "#8B6CFF" : ((tel.adesso.getHours() >= 19 || tel.adesso.getHours() < 6) ? "#3B4A8C" : "#4A8BFF") }
+            GradientStop { position: 1; color: tel.solido ? "#8B6CFF" : ((tel.adesso.getHours() >= 19 || tel.adesso.getHours() < 6) ? "#1E2552" : "#2753C9") }
         }
+        Rectangle { visible: tel.solido; x: parent.width - width * 0.72; y: -height * 0.28; width: 120; height: 120; radius: 60; color: "#C6F432" }
         Column {
             x: 16; y: 14; width: parent.width - 32
             Text { width: parent.width; elide: Text.ElideRight; text: (w.meteo.citta || I18n.t("Meteo")) + " ➤"; color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.DemiBold }
@@ -162,7 +170,7 @@ Item {
     // ── Musica ─────────────────────────────────────────────────────────
     Vetro {
         visible: w.tipo === "musica"
-        anchors.fill: parent; radius: 24
+        anchors.fill: parent; radius: 24; tinta: w.tinta
         Rectangle {
             id: copertina
             x: 14; y: 14
@@ -177,8 +185,8 @@ Item {
             y: w.misura === "grande" ? copertina.height + 24 : (w.largo ? 0 : 16)
             anchors.verticalCenter: w.misura === "medio" ? parent.verticalCenter : undefined
             width: parent.width - x - 16; spacing: 2
-            Text { width: parent.width; elide: Text.ElideRight; text: w.brano.titolo || I18n.t("Musica"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
-            Text { width: parent.width; elide: Text.ElideRight; text: w.brano.titolo ? (w.brano.artista || w.brano.app || I18n.t("In riproduzione")) : I18n.t("Tocca per scegliere un brano"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12); wrapMode: Text.Wrap; maximumLineCount: 2 }
+            Text { width: parent.width; elide: Text.ElideRight; text: w.brano.titolo || I18n.t("Musica"); color: w.t1; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
+            Text { width: parent.width; elide: Text.ElideRight; text: w.brano.titolo ? (w.brano.artista || w.brano.app || I18n.t("In riproduzione")) : I18n.t("Tocca per scegliere un brano"); color: w.t2; font.family: Tema.font; font.pixelSize: tel.px(12); wrapMode: Text.Wrap; maximumLineCount: 2 }
             Item { width: 1; height: 8 }
             Row {
                 spacing: 22
@@ -186,7 +194,7 @@ Item {
                     model: [{ i: "linea-indietro", c: "indietro" }, { i: w.brano.suona ? "linea-pausa" : "linea-play", c: "play" }, { i: "linea-avanti", c: "avanti" }]
                     Icona {
                         required property var modelData
-                        nome: modelData.i; lato: 22
+                        nome: modelData.i; lato: 22; tema: w.temaIcone
                         MouseArea { anchors.fill: parent; anchors.margins: -10; enabled: !w.anteprima && !tel.modificaHome && !!w.brano.titolo
                                      onClicked: tel.musica.titolo ? tel.comandoMusica(parent.modelData.c) : ponte.chiama("mprisComando", [parent.modelData.c]) }
                     }
@@ -214,7 +222,7 @@ Item {
     // ── Note: l'ultima nota ──────────────────────────────────────────────
     Vetro {
         visible: w.tipo === "note"
-        anchors.fill: parent; radius: 24
+        anchors.fill: parent; radius: 24; tinta: w.tinta
         Row {
             x: 16; y: 14; spacing: 6
             Rectangle { width: 10; height: 10; radius: 5; color: "#F59E0B"; anchors.verticalCenter: parent.verticalCenter }
@@ -222,8 +230,8 @@ Item {
         }
         Column {
             x: 16; y: 40; width: parent.width - 32
-            Text { width: parent.width; elide: Text.ElideRight; text: w.nota.titolo || I18n.t("Nessuna nota"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
-            Text { width: parent.width; wrapMode: Text.Wrap; maximumLineCount: w.misura === "grande" ? 12 : 4; elide: Text.ElideRight; text: w.nota.anteprima || ""; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12.5) }
+            Text { width: parent.width; elide: Text.ElideRight; text: w.nota.titolo || I18n.t("Nessuna nota"); color: w.t1; font.family: Tema.font; font.pixelSize: tel.px(15); font.weight: Font.DemiBold }
+            Text { width: parent.width; wrapMode: Text.Wrap; maximumLineCount: w.misura === "grande" ? 12 : 4; elide: Text.ElideRight; text: w.nota.anteprima || ""; color: w.t2; font.family: Tema.font; font.pixelSize: tel.px(12.5) }
         }
         MouseArea { anchors.fill: parent; enabled: !w.anteprima && !tel.modificaHome; onPressAndHold: tel.modificaHome = true; onClicked: tel.appInterna = "note" }
     }
@@ -231,7 +239,7 @@ Item {
     // ── App: le app dello Store (e le altre) a portata di dito ────────────
     Vetro {
         visible: w.tipo === "app"
-        anchors.fill: parent; radius: 24
+        anchors.fill: parent; radius: 24; tinta: w.tinta
         readonly property var scelte: { var t = ponte.chiama0("app"); var est = t.filter(function (a) { return a.id.indexOf("interno:") !== 0 }); return (est.length ? est : t).slice(0, w.misura === "piccolo" ? 4 : (w.misura === "medio" ? 8 : 16)) }
         Grid {
             anchors.centerIn: parent
@@ -246,11 +254,11 @@ Item {
     // ── Orologio ─────────────────────────────────────────────────────────
     Vetro {
         visible: w.tipo === "orologio"
-        anchors.fill: parent; radius: 24
+        anchors.fill: parent; radius: 24; tinta: w.tinta
         Column {
             x: 16; y: 14
-            Text { text: Qt.formatTime(tel.adesso, "HH:mm"); color: tel.pal.testo; font.family: tel.fontOra; font.pixelSize: w.largo ? 50 : 42; font.weight: Font.Light; font.letterSpacing: -1 }
-            Text { text: tel.adesso.toLocaleDateString(Qt.locale("it_IT"), "ddd d MMMM"); color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(12.5) }
+            Text { text: Qt.formatTime(tel.adesso, "HH:mm"); color: w.t1; font.family: tel.fontOra; font.pixelSize: w.largo ? 50 : 42; font.weight: Font.Light; font.letterSpacing: -1 }
+            Text { text: tel.adesso.toLocaleDateString(Qt.locale("it_IT"), "ddd d MMMM"); color: w.t2; font.family: Tema.font; font.pixelSize: tel.px(12.5) }
         }
         Column {
             visible: w.largo || w.misura === "grande"
@@ -262,8 +270,8 @@ Item {
                 Row {
                     required property var modelData
                     spacing: 10
-                    Text { width: 82; text: parent.modelData.citta; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(13) }
-                    Text { text: parent.modelData.ora; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.DemiBold }
+                    Text { width: 82; text: parent.modelData.citta; color: w.t2; font.family: Tema.font; font.pixelSize: tel.px(13) }
+                    Text { text: parent.modelData.ora; color: w.t1; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.DemiBold }
                 }
             }
         }

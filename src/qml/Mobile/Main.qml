@@ -21,28 +21,44 @@ Window {
     property var imp: ponte.chiama0("impostazioni")
     function imposta(chiave, valore) { imp = ponte.chiama("imposta", [chiave, valore]) }
 
-    // ── Tema «Vetro»: i colori, lo sfondo e il carattere del PC, con pannelli di vetro sfocato ──
-    readonly property bool chiaro: imp.tema === "chiaro"
+    // ── Vesti di SolidOS (Impostazioni › Aspetto) ──────────────────────────
+    // Aurora: luce colorata e vetro. Prisma: colori pieni su carta. Prisma Notte: colori pieni
+    // sul nero. Automatico: Prisma di giorno, Aurora la sera. Cambia sfondo, colori e icone.
+    readonly property string vesteScelta: ["aurora", "prisma", "notte", "auto"].indexOf(imp.veste) >= 0 ? imp.veste
+                                          : (imp.tema === "chiaro" ? "prisma" : "aurora")
+    readonly property string veste: vesteScelta !== "auto" ? vesteScelta
+                                    : (adesso.getHours() >= 7 && adesso.getHours() < 19 ? "prisma" : "aurora")
+    readonly property bool solido: veste !== "aurora"      // pannelli pieni invece del vetro
+    // Finitura delle icone: Gemme, Piene o Vetro (se non scelta, quella della veste)
+    readonly property string stileIcone: ["gemme", "piene", "vetro"].indexOf(imp.stile_icone) >= 0 ? imp.stile_icone
+                                         : (solido ? "piene" : "gemme")
+    function scegliVeste(v) {
+        imposta("veste", v)
+        imposta("sfondo", "")
+        imposta("stile_icone", "")
+    }
+    readonly property bool chiaro: veste === "prisma"
     readonly property real k: [0.9, 1.0, 1.15][imp.testo] || 1.0
     // Accento blu di SolidOS (lo stesso del PC); chi ne ha scelto un altro in Personalizza lo tiene
-    readonly property color accento: (!imp.accento || imp.accento === "#3F7CF5" || imp.accento === "#FF3B30")
-                                     ? (chiaro ? "#2F5FD0" : "#4C7DFF") : imp.accento
+    readonly property color accento: (!imp.accento || imp.accento === "#3F7CF5" || imp.accento === "#FF3B30" || imp.accento === "#4C7DFF")
+                                     ? (chiaro ? "#6B4EFF" : "#8B6CFF") : imp.accento
     readonly property color rosso: "#E5484D"
     // Colori del design (vedi docs/DESIGN.md), uguali a quelli del PC
     readonly property QtObject pal: QtObject {
-        readonly property color sfondo: tel.chiaro ? "#F2F2F7" : "#1E1F24"        // fondo delle app
-        readonly property color superficie: tel.chiaro ? "#FFFFFF" : "#26272D"    // schede, righe
-        readonly property color superficie2: tel.chiaro ? "#E9E9EE" : "#2F3037"   // campi, pulsanti, tondi
-        readonly property color bordo: tel.chiaro ? "#E5E5EA" : "#3A3B42"
-        readonly property color testo: tel.chiaro ? "#1D1D1F" : "#F5F5F7"
+        readonly property color sfondo: tel.chiaro ? "#F4F1EA" : (tel.solido ? "#0E0E11" : "#16131F")   // fondo delle app
+        readonly property color superficie: tel.chiaro ? "#FFFFFF" : (tel.solido ? "#1C1C21" : "#221E2E")   // schede, righe
+        readonly property color superficie2: tel.chiaro ? "#EAE6DD" : (tel.solido ? "#2A2A31" : "#2E2940")  // campi, pulsanti, tondi
+        readonly property color bordo: tel.chiaro ? "#E2DDD2" : (tel.solido ? "#2E2E35" : "#3A3450")
+        readonly property color testo: tel.chiaro ? "#141414" : "#F5F5F7"
         readonly property color testo2: tel.chiaro ? "#6E6E73" : "#A1A1AA"
         readonly property color testo3: tel.chiaro ? "#A1A1AA" : "#71717A"
         // Vetro: velatura sopra lo sfondo sfocato (blocco, Home, tendine)
-        readonly property color vetro: tel.chiaro ? Qt.rgba(0.98, 0.98, 0.99, 0.62) : Qt.rgba(0.11, 0.114, 0.133, 0.58)
-        readonly property color vetroBordo: tel.chiaro ? Qt.rgba(0, 0, 0, 0.07) : Qt.rgba(1, 1, 1, 0.10)
+        // Aurora: vetro smerigliato chiaro sopra la luce colorata
+        readonly property color vetro: tel.chiaro ? Qt.rgba(0.98, 0.98, 0.99, 0.62) : (tel.solido ? Qt.rgba(0.11, 0.114, 0.133, 0.58) : Qt.rgba(1, 1, 1, 0.14))
+        readonly property color vetroBordo: tel.chiaro ? Qt.rgba(0, 0, 0, 0.07) : (tel.solido ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(1, 1, 1, 0.24))
         readonly property color traccia: tel.chiaro ? Qt.rgba(0, 0, 0, 0.06) : Qt.rgba(1, 1, 1, 0.10)
         readonly property color velo: tel.chiaro ? Qt.rgba(0.95, 0.95, 0.97, 0.30) : Qt.rgba(0.04, 0.05, 0.08, 0.38)
-        readonly property color tessera: tel.chiaro ? "#FFFFFF" : "#26272D"
+        readonly property color tessera: tel.chiaro ? "#FFFFFF" : (tel.solido ? "#1C1C21" : "#221E2E")
         readonly property color pieno: tel.accento
         readonly property color suPieno: "#FFFFFF"
         readonly property color successo: "#30A46C"
@@ -66,7 +82,10 @@ Window {
     readonly property string fontMono: Tema.font
     readonly property string fontOra: (!imp.orologio || ["League Spartan", "Doto", "Space Grotesk", "Space Mono"].indexOf(imp.orologio) >= 0) ? Tema.font : imp.orologio
     // Sfondo del PC (colline): file SVG e la sua versione chiara
-    readonly property string nomeSfondo: ["notte", "alba", "oceano", "aurora", "grafite"].indexOf(imp.sfondo) >= 0 ? imp.sfondo : "notte"
+    // Sfondo: quello della veste (viva, carta, inchiostro) o uno scelto in Aspetto
+    readonly property var sfondi: ["viva", "carta", "inchiostro", "notte", "alba", "oceano", "aurora", "grafite"]
+    readonly property string nomeSfondo: sfondi.indexOf(imp.sfondo) >= 0 ? imp.sfondo
+                                         : ({ aurora: "viva", prisma: "carta", notte: "inchiostro" })[veste]
     readonly property string sfondo: (imp.sfondo || "").charAt(0) === "/" ? "file://" + imp.sfondo
                                      : ponte.chiama("sfondo", [nomeSfondo, chiaro])
     // Colori dello sfondo dall'alto in basso: i pannelli di vetro ne prendono la sfumatura
@@ -171,6 +190,8 @@ Window {
         ponte.avvia("bloccoAttivazione", [], "attivazione")   // telefono di un altro Solid ID?
         var a = ponte.chiama0("avvio")
         if (a.tema) imp = Object.assign({}, imp, { tema: a.tema })
+        if (a.veste) imp = Object.assign({}, imp, { veste: a.veste })
+        if (a.icone) imp = Object.assign({}, imp, { stile_icone: a.icone })
         if (!a.schermata || a.schermata === "blocco") return
         if (a.schermata === "bloccato") { messaggioRemoto = I18n.t("Se lo trovi chiama il 333 123 4567. Grazie!"); return }
         if (a.schermata === "perso") { messaggioRemoto = I18n.t("Se lo trovi chiama il 333 123 4567. Grazie!"); perso = true; return }

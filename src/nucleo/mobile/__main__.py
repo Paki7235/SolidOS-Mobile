@@ -26,13 +26,14 @@ PREDEFINITE = {
     "nascoste_home": [],        # app tolte dalla Home (restano nella Libreria)
     "citta_meteo": "",          # vuota = la posizione del telefono
     "widget_blocco": [],        # widget sotto l'orologio della schermata di blocco (meteo, batterie, oggi, musica)
-    "stile_icone": "vetro",     # vetro | colori | scure | tinta
+    "veste": "",               # aurora | prisma | notte | auto (vuota = quella del tema)
+    "stile_icone": "",          # gemme | piene | vetro (vuota = quella della veste)
     "app_automatiche": True,    # Store: scarica da sola le app prese con lo stesso Solid ID sul PC           # tastiera sullo schermo quando si tocca un campo di testo
     "riduci_movimento": False,   # Accessibilità: animazioni istantanee
     "tema": "scuro",          # scuro | chiaro
     "testo": 1,               # 0 piccolo, 1 normale, 2 grande
-    "accento": "#4C7DFF",
-    "sfondo": "notte",        # notte | alba | oceano | aurora | grafite, o una foto
+    "accento": "",            # vuoto = il viola di SolidOS
+    "sfondo": "",             # vuoto = quello della veste; viva | carta | inchiostro | notte | alba | oceano | aurora | grafite, o una foto
     "orologio": "Inter",
     "icone": 1,               # 0 piccole, 1 normali, 2 grandi
     "navigazione": "gesti",   # gesti | tasti
@@ -294,6 +295,10 @@ class BackendMobile(Backend):
                 risultato["schermata"] = a.split("=", 1)[1]
             elif a.startswith("--tema="):
                 risultato["tema"] = a.split("=", 1)[1]
+            elif a.startswith("--veste="):     # aurora | prisma | notte | auto
+                risultato["veste"] = a.split("=", 1)[1]
+            elif a.startswith("--icone="):     # gemme | piene | vetro
+                risultato["icone"] = a.split("=", 1)[1]
             elif a.startswith("--foto="):
                 risultato["foto"] = a.split("=", 1)[1]
             elif a.startswith("--dimensione="):   # es. 427x757 (schermo del telefono virtuale)
@@ -771,13 +776,14 @@ class BackendMobile(Backend):
 
     def sfondo(self, nome: str, chiaro: bool) -> str:
         """Indirizzo dello sfondo del PC (colline) per la schermata del telefono."""
-        nome = nome if nome in ("notte", "alba", "oceano", "aurora", "grafite") else "notte"
-        file = f"{nome}-chiaro.svg" if chiaro else f"{nome}.svg"
+        nome = nome if nome in ("viva", "carta", "inchiostro", "notte", "alba", "oceano", "aurora", "grafite") else "viva"
         from ..qmlapp import CARTELLA_QML
 
-        for base in (CARTELLA_QML.parent / "sfondi", CARTELLA_QML.parent / "dati" / "sfondi"):
-            if (base / file).is_file():
-                return (base / file).as_uri()
+        # Gli sfondi delle vesti (viva, carta, inchiostro) non hanno la versione chiara
+        for file in ([f"{nome}-chiaro.svg"] if chiaro else []) + [f"{nome}.svg"]:
+            for base in (CARTELLA_QML.parent / "sfondi", CARTELLA_QML.parent / "dati" / "sfondi"):
+                if (base / file).is_file():
+                    return (base / file).as_uri()
         return ""
 
     def coloriSfondo(self, indirizzo: str, proporzione: float) -> list:

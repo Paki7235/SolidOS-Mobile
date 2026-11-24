@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="2340" viewBox="0 0 1080 2340">
+ <!-- SolidOS · Prisma Notte: nero con una luce viola in alto -->
+ <defs><radialGradient id="v" cx="1080" cy="0" r="900" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8B6CFF" stop-opacity="0.45"/><stop offset="1" stop-color="#8B6CFF" stop-opacity="0"/></radialGradient></defs>
+ <rect width="1080" height="2340" fill="#0E0E11"/>
+ <rect width="1080" height="2340" fill="url(#v)"/>
+</svg>
