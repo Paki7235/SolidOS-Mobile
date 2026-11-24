@@ -46,26 +46,46 @@ Rectangle {
         Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap; text: I18n.t("Su questo telefono la fotocamera non è ancora supportata dal sistema."); color: Qt.rgba(1, 1, 1, 0.7); font.family: Tema.font; font.pixelSize: tel.px(14) }
     }
 
-    // Comandi
+    // Comandi: in basso, su una sfumatura scura. Il tasto di scatto prende il colore della veste
+    // (bianco in Aurora, lime in Prisma); sopra la scelta Foto/Video.
     Rectangle {
         anchors.bottom: parent.bottom
-        width: parent.width; height: 170
-        color: Qt.rgba(0, 0, 0, 0.45)
+        width: parent.width; height: 220
+        gradient: Gradient { GradientStop { position: 0; color: "transparent" } GradientStop { position: 0.35; color: Qt.rgba(0, 0, 0, 0.55) } GradientStop { position: 1; color: Qt.rgba(0, 0, 0, 0.75) } }
+        // Foto · Video
+        Row {
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 34; spacing: 6
+            Repeater {
+                model: [{ k: "foto", t: I18n.t("FOTO") }, { k: "video", t: I18n.t("VIDEO") }]
+                Rectangle {
+                    required property var modelData
+                    readonly property bool attivo: modelData.k === "foto"
+                    width: etMod.implicitWidth + 26; height: 30; radius: 15
+                    color: attivo ? (tel.solido ? "#C6F432" : Qt.rgba(1, 1, 1, 0.22)) : "transparent"
+                    Text { id: etMod; anchors.centerIn: parent; text: parent.modelData.t; color: parent.attivo && tel.solido ? "#141414" : (parent.attivo ? "#FFFFFF" : "#B3FFFFFF")
+                           font.family: Tema.font; font.pixelSize: tel.px(12); font.weight: Font.Bold; font.letterSpacing: 1 }
+                    MouseArea { anchors.fill: parent; onClicked: if (!parent.attivo) tel.avviso(I18n.t("Video: arriva con il telefono vero")) }
+                }
+            }
+        }
         // Ultima foto
         Rectangle {
-            x: 34; anchors.verticalCenter: parent.verticalCenter; anchors.verticalCenterOffset: -10
-            width: 52; height: 52; radius: 10; color: "#222"; clip: true
+            x: 34; anchors.verticalCenter: parent.verticalCenter; anchors.verticalCenterOffset: 30
+            width: 54; height: 54; radius: 16; color: "#222"; clip: true
             border.color: "#ffffff"; border.width: 2
             Image { anchors.fill: parent; anchors.margins: 2; source: app.ultima; fillMode: Image.PreserveAspectCrop; sourceSize.width: 120 }
             MouseArea { anchors.fill: parent; onClicked: tel.appInterna = "foto" }
         }
         // Scatta
         Rectangle {
-            anchors.centerIn: parent; anchors.verticalCenterOffset: -10
-            width: 78; height: 78; radius: 39; color: "transparent"
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.verticalCenter: parent.verticalCenter; anchors.verticalCenterOffset: 30
+            width: 82; height: 82; radius: 41; color: "transparent"
             border.color: "#ffffff"; border.width: 4
             opacity: app.fotocamere.length > 0 ? 1 : 0.4
-            Rectangle { anchors.centerIn: parent; width: 64; height: 64; radius: 32; color: "#ffffff"; scale: tocco.pressed ? 0.9 : 1 }
+            Rectangle { anchors.centerIn: parent; width: 66; height: 66; radius: 33; color: tel.solido ? "#C6F432" : "#ffffff"; scale: tocco.pressed ? 0.88 : 1
+                        Behavior on scale { NumberAnimation { duration: 90 } } }
             MouseArea {
                 id: tocco
                 anchors.fill: parent; enabled: app.fotocamere.length > 0
@@ -75,11 +95,12 @@ Rectangle {
         // Cambia fotocamera
         Rectangle {
             anchors.right: parent.right; anchors.rightMargin: 34
-            anchors.verticalCenter: parent.verticalCenter; anchors.verticalCenterOffset: -10
-            width: 52; height: 52; radius: 26; color: Qt.rgba(1, 1, 1, 0.2)
-            visible: app.fotocamere.length > 1
-            Text { anchors.centerIn: parent; text: "⟲"; color: "#ffffff"; font.pixelSize: 26 }
-            MouseArea { anchors.fill: parent; onClicked: app.scelta++ }
+            anchors.verticalCenter: parent.verticalCenter; anchors.verticalCenterOffset: 30
+            width: 54; height: 54; radius: 27; color: Qt.rgba(1, 1, 1, 0.2)
+            border.width: 1; border.color: "#40FFFFFF"
+            opacity: app.fotocamere.length > 1 ? 1 : 0.4
+            Icona { anchors.centerIn: parent; nome: "linea-freccia-giro"; lato: 24; tema: "scuro" }
+            MouseArea { anchors.fill: parent; enabled: app.fotocamere.length > 1; onClicked: app.scelta++ }
         }
     }
 }

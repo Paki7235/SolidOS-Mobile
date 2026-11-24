@@ -120,13 +120,14 @@ Item {
                 border.color: Qt.rgba(tel.accento.r, tel.accento.g, tel.accento.b, 0.5)
             }
             Rectangle {
-                width: modelData.scelto ? 46 : 38; height: width; radius: width / 2
+                // Segnaposto pieno nel colore del dispositivo, con il bordo bianco
+                width: modelData.scelto ? 48 : 40; height: width; radius: width / 2
                 x: -width / 2; y: -height / 2
-                color: "#FFFFFF"
-                border.color: modelData.scelto ? tel.accento : "#33000000"
-                border.width: modelData.scelto ? 3 : 1
+                color: tel.coloreDispositivo(modelData.tipo)
+                border.color: "#FFFFFF"
+                border.width: modelData.scelto ? 4 : 3
                 Behavior on width { NumberAnimation { duration: 120 } }
-                IconaDispositivo { anchors.centerIn: parent; tipo: modelData.tipo || "computer"; icona: modelData.icona; lato: parent.width * 0.55 }
+                IconaDispositivo { anchors.centerIn: parent; tipo: modelData.tipo || "computer"; icona: modelData.icona; lato: parent.width * 0.5; colore: tel.inchiostroDispositivo(modelData.tipo) }
                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: mappa.segnapostoScelto(modelData.id) }
             }
             Rectangle {

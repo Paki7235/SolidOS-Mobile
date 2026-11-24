@@ -41,6 +41,9 @@ Window {
     // Tasto della chiamata: lime con la cornetta scura (Prisma), verde con la cornetta bianca (Aurora)
     readonly property color coloreChiama: solido ? "#C6F432" : "#22C55E"
     readonly property string temaChiama: solido ? "chiaro" : "scuro"
+    // Colore di un dispositivo (Dov'è, Vicina): telefono lime o verde, computer azzurro o blu
+    function coloreDispositivo(tipo) { return tipo === "telefono" ? (solido ? "#C6F432" : "#22C55E") : (solido ? "#59C3FF" : "#3B82F6") }
+    function inchiostroDispositivo(tipo) { return solido ? "#141414" : "#FFFFFF" }
     readonly property real k: [0.9, 1.0, 1.15][imp.testo] || 1.0
     // Accento blu di SolidOS (lo stesso del PC); chi ne ha scelto un altro in Personalizza lo tiene
     readonly property color accento: (!imp.accento || imp.accento === "#3F7CF5" || imp.accento === "#FF3B30" || imp.accento === "#4C7DFF")

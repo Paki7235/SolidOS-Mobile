@@ -207,10 +207,11 @@ Rectangle {
             MouseArea { anchors.fill: parent; onClicked: { app.modoCerca = "luogo"; app.risultati = []; campo.text = "" } }
         }
         Rectangle {
-            width: parent.width; height: 48
-            radius: 24
-            color: tel.chiaro ? "#F2FFFFFF" : "#EB1E293B"
-            border.color: tel.pal.bordo
+            width: parent.width; height: 50
+            radius: 25
+            color: tel.solido ? tel.pal.superficie : (tel.chiaro ? "#F2FFFFFF" : "#E6221E33")
+            border.width: tel.solido ? 0 : 1
+            border.color: tel.solido ? "transparent" : "#3DFFFFFF"
             Row {
                 anchors.fill: parent; anchors.leftMargin: 16; spacing: 10
                 Simbolo { anchors.verticalCenter: parent.verticalCenter; nome: "cerca"; lato: 19; colore: tel.pal.testo2 }
@@ -236,15 +237,22 @@ Rectangle {
             clip: true
             model: app.categorie
             delegate: Rectangle {
-                width: tCat.implicitWidth + 26; height: 34; radius: 17
-                color: app.categoria === modelData.id ? tel.accento : (tel.chiaro ? "#F2FFFFFF" : "#EB1E293B")
-                border.color: tel.pal.bordo
+                id: cat
+                required property var modelData
+                required property int index
+                // ogni categoria ha il suo colore (in Prisma pieno quando è scelta)
+                readonly property color tinta: ["#FF6B4A", "#8B6CFF", "#59C3FF", "#FFB443", "#3EE0B0", "#FF74A6"][index % 6]
+                readonly property bool scelta: app.categoria === modelData.id
+                width: tCat.implicitWidth + 26; height: 36; radius: 18
+                color: scelta ? (tel.solido ? tinta : tel.accento) : (tel.solido ? tel.pal.superficie : (tel.chiaro ? "#F2FFFFFF" : "#E6221E33"))
+                border.width: tel.solido ? 0 : 1
+                border.color: tel.solido ? "transparent" : "#3DFFFFFF"
                 Row {
                     id: tCat; anchors.centerIn: parent; spacing: 6
-                    Simbolo { anchors.verticalCenter: parent.verticalCenter; nome: modelData.simbolo; lato: 15; colore: app.categoria === modelData.id ? "#FFFFFF" : tel.accento }
-                    Text { anchors.verticalCenter: parent.verticalCenter; text: modelData.nome; color: app.categoria === modelData.id ? "white" : tel.pal.testo; font.family: Tema.font; font.pixelSize: 13 }
+                    Simbolo { anchors.verticalCenter: parent.verticalCenter; nome: cat.modelData.simbolo; lato: 15; colore: cat.scelta ? "#FFFFFF" : (tel.solido ? cat.tinta : tel.accento) }
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: cat.modelData.nome; color: cat.scelta ? "white" : tel.pal.testo; font.family: Tema.font; font.pixelSize: 13; font.weight: Font.DemiBold }
                 }
-                MouseArea { anchors.fill: parent; onClicked: app.cercaCategoria(modelData) }
+                MouseArea { anchors.fill: parent; onClicked: app.cercaCategoria(cat.modelData) }
             }
         }
         Rectangle {
@@ -493,8 +501,8 @@ Rectangle {
                         visible: !!app.percorso && !app.calcolo && app.mezzo !== "mezzi"
                         spacing: 10
                         Rectangle {
-                            width: (colFoglio.width - 10) * 0.6; height: 50; radius: 25; color: "#22C55E"
-                            Text { anchors.centerIn: parent; text: I18n.t("Avvia"); color: "white"; font.family: Tema.font; font.pixelSize: 17; font.weight: Font.Bold }
+                            width: (colFoglio.width - 10) * 0.6; height: 50; radius: 25; color: tel.coloreChiama
+                            Text { anchors.centerIn: parent; text: I18n.t("Avvia"); color: tel.solido ? "#141414" : "white"; font.family: Tema.font; font.pixelSize: 17; font.weight: Font.Bold }
                             MouseArea { anchors.fill: parent; onClicked: app.avvia(false) }
                         }
                         Rectangle {

@@ -1,5 +1,7 @@
 // Vicina: manda e ricevi file con PC e telefoni vicini (LocalSend, Quick Share e
 // codice QR per qualsiasi telefono con un browser). Usa lo stesso servizio del PC.
+// In alto il radar: questo telefono al centro, i dispositivi vicini intorno (si toccano per
+// mandare). Aurora: luce viola e azzurra; Prisma: viola pieno con i dispositivi colorati.
 import QtQuick
 import QtQuick.Controls
 import SolidUI
@@ -35,6 +37,80 @@ Rectangle {
             id: contenuto
             width: parent.width; spacing: 8
 
+            // ── Radar ────────────────────────────────────────────────────
+            Rectangle {
+                id: radar
+                x: 16; width: parent.width - 32; height: 262; radius: 30; clip: true
+                color: "#8B6CFF"
+                gradient: tel.solido ? null : luceRadar
+                Gradient { id: luceRadar; GradientStop { position: 0; color: "#7B3CFF" } GradientStop { position: 1; color: "#0A8FC2" } }
+                readonly property real cx: width / 2
+                readonly property real cy: height / 2 + 10
+                // onde che partono dal centro
+                Repeater {
+                    model: 3
+                    Rectangle {
+                        required property int index
+                        property real fase: 0
+                        width: 60 + fase * 300; height: width; radius: width / 2
+                        x: radar.cx - width / 2; y: radar.cy - height / 2
+                        color: "transparent"; border.width: 2
+                        border.color: tel.solido ? "#C6F432" : "#FFFFFF"
+                        opacity: 0.55 * (1 - fase)
+                        SequentialAnimation on fase {
+                            running: app.visible && tel.movimento; loops: Animation.Infinite
+                            PauseAnimation { duration: index * 900 }
+                            NumberAnimation { from: 0; to: 1; duration: 2700; easing.type: Easing.OutQuad }
+                        }
+                    }
+                }
+                // questo telefono
+                Rectangle {
+                    width: 64; height: 64; radius: 32
+                    x: radar.cx - 32; y: radar.cy - 32
+                    color: tel.solido ? "#C6F432" : "#FFFFFF"
+                    IconaDispositivo { anchors.centerIn: parent; tipo: "telefono"; lato: 30; colore: "#141414" }
+                }
+                // i dispositivi vicini, in cerchio
+                Repeater {
+                    model: app.stato.dispositivi.slice(0, 5)
+                    Column {
+                        id: vicino
+                        required property var modelData
+                        required property int index
+                        readonly property real angolo: -Math.PI / 2 + (index + 0.5) * 2 * Math.PI / Math.max(3, Math.min(5, app.stato.dispositivi.length))
+                        x: radar.cx + Math.cos(angolo) * radar.width * 0.34 - width / 2
+                        y: radar.cy + Math.sin(angolo) * 72 - 24
+                        spacing: 4
+                        Rectangle {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: 48; height: 48; radius: 24
+                            color: tel.solido ? (vicino.modelData.tipo === "telefono" ? "#FF6B4A" : "#59C3FF") : Qt.rgba(1, 1, 1, 0.22)
+                            border.width: tel.solido ? 0 : 1; border.color: "#66FFFFFF"
+                            IconaDispositivo { anchors.centerIn: parent; tipo: vicino.modelData.tipo === "telefono" ? "telefono" : "computer"; icona: "computer"; lato: 24
+                                               colore: tel.solido && vicino.modelData.tipo !== "telefono" ? "#141414" : "#FFFFFF" }
+                            MouseArea {
+                                anchors.fill: parent; anchors.margins: -6
+                                onClicked: {
+                                    if (app.file.length === 0) { tel.avviso(I18n.t("Scegli prima cosa mandare da Foto o File")); return }
+                                    var r = ponte.chiama("vicinaInvia", [app.file, vicino.modelData.id])
+                                    tel.avviso(r.messaggio)
+                                    if (r.ok) tel.daCondividere = []
+                                }
+                            }
+                        }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; width: Math.min(implicitWidth, 96); elide: Text.ElideRight
+                               text: vicino.modelData.nome; color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(11); font.weight: Font.DemiBold }
+                    }
+                }
+                Text {
+                    x: 18; y: 14
+                    text: app.stato.dispositivi.length ? (app.file.length ? I18n.t("Tocca un dispositivo per mandare") : app.stato.dispositivi.length + " " + I18n.t("dispositivi vicini"))
+                                                       : I18n.t("Ricerca dei dispositivi vicini…")
+                    color: "#FFFFFF"; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.Bold
+                }
+            }
+
             // ── File da mandare ──────────────────────────────────────────
             Rectangle {
                 visible: app.file.length > 0
@@ -60,7 +136,8 @@ Rectangle {
             // ── Chi mi vede ──────────────────────────────────────────────
             Mono { x: 32; topPadding: 8; text: I18n.t("Chi può mandarti file") }
             Rectangle {
-                x: 16; width: parent.width - 32; height: 48; radius: 24; color: "transparent"; border.width: 1; border.color: tel.pal.bordo
+                x: 16; width: parent.width - 32; height: 48; radius: 24
+                color: tel.solido ? tel.pal.superficie : "transparent"; border.width: tel.solido ? 0 : 1; border.color: tel.pal.bordo
                 Row {
                     anchors.fill: parent; anchors.margins: 4
                     Repeater {
@@ -68,9 +145,9 @@ Rectangle {
                         Rectangle {
                             required property var modelData
                             width: (parent.width) / 3; height: 40; radius: 20
-                            color: app.stato.visibilita === modelData.k ? tel.pal.pieno : "transparent"
+                            color: app.stato.visibilita === modelData.k ? (tel.solido ? "#C6F432" : tel.pal.pieno) : "transparent"
                             Behavior on color { ColorAnimation { duration: tel.tVeloce } }
-                            Text { anchors.centerIn: parent; text: parent.modelData.t; color: app.stato.visibilita === parent.modelData.k ? tel.pal.suPieno : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.DemiBold }
+                            Text { anchors.centerIn: parent; text: parent.modelData.t; color: app.stato.visibilita === parent.modelData.k ? (tel.solido ? "#141414" : "#FFFFFF") : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(14); font.weight: Font.DemiBold }
                             MouseArea { anchors.fill: parent; onClicked: { ponte.chiama("vicinaVisibilita", [parent.modelData.k]); app.stato = Object.assign({}, app.stato, { visibilita: parent.modelData.k }) } }
                         }
                     }
@@ -94,8 +171,8 @@ Rectangle {
                             width: colDisp.width; height: 62
                             Rectangle {
                                 x: 14; anchors.verticalCenter: parent.verticalCenter
-                                width: 40; height: 40; radius: 20; color: tel.pal.traccia
-                                IconaDispositivo { anchors.centerIn: parent; tipo: modelData.tipo === "telefono" ? "telefono" : "computer"; icona: "computer"; lato: 22; colore: tel.pal.testo }
+                                width: 40; height: 40; radius: tel.solido ? 13 : 20; color: tel.coloreDispositivo(modelData.tipo)
+                                IconaDispositivo { anchors.centerIn: parent; tipo: modelData.tipo === "telefono" ? "telefono" : "computer"; icona: "computer"; lato: 22; colore: tel.inchiostroDispositivo(modelData.tipo) }
                             }
                             Column {
                                 x: 66; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 80; spacing: 2

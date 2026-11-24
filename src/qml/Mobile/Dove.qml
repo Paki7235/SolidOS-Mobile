@@ -110,8 +110,8 @@ Rectangle {
         visible: app.collegato
         x: 16; y: 52
         width: titolo.implicitWidth + 28; height: 40; radius: 20
-        color: tel.chiaro ? Qt.rgba(1, 1, 1, 0.92) : Qt.rgba(0.11, 0.12, 0.17, 0.92)
-        Text { id: titolo; anchors.centerIn: parent; text: I18n.t("Dov'è"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(18); font.weight: Font.Bold }
+        color: tel.solido ? (tel.chiaro ? "#141414" : "#C6F432") : Qt.rgba(0.11, 0.12, 0.17, 0.92)
+        Text { id: titolo; anchors.centerIn: parent; text: I18n.t("Dov'è"); color: tel.solido && !tel.chiaro ? "#141414" : (tel.solido ? "#FFFFFF" : tel.pal.testo); font.family: Tema.font; font.pixelSize: tel.px(18); font.weight: tel.solido ? Font.Black : Font.Bold }
     }
 
     // ══ Pannello sotto la mappa ══════════════════════════════════════════
@@ -153,8 +153,8 @@ Rectangle {
                                 width: righe.width; height: 66
                                 Rectangle {
                                     x: 14; anchors.verticalCenter: parent.verticalCenter
-                                    width: 42; height: 42; radius: 21; color: tel.pal.traccia
-                                    IconaDispositivo { anchors.centerIn: parent; tipo: modelData.tipo; icona: modelData.icona; lato: 24; colore: tel.pal.testo }
+                                    width: 42; height: 42; radius: tel.solido ? 14 : 21; color: tel.coloreDispositivo(modelData.tipo)
+                                    IconaDispositivo { anchors.centerIn: parent; tipo: modelData.tipo; icona: modelData.icona; lato: 22; colore: tel.inchiostroDispositivo(modelData.tipo) }
                                 }
                                 Column {
                                     x: 68; anchors.verticalCenter: parent.verticalCenter
@@ -208,14 +208,14 @@ Rectangle {
                 width: parent.width
                 spacing: 10
                 Repeater {
-                    model: [{ k: "suona", t: I18n.t("Fai suonare"), i: "audio-volume-high-symbolic", c: "#3f7cf5" },
+                    model: [{ k: "suona", t: I18n.t("Fai suonare"), i: "audio-volume-high-symbolic", c: tel.solido ? "#FFB443" : "#F59E0B" },
                             { k: "blocca", t: app.dispositivo && app.dispositivo.tipo === "telefono" ? I18n.t("Smarrito") : I18n.t("Blocca"), i: "system-lock-screen-symbolic", c: tel.rosso },
-                            { k: "strada", t: I18n.t("Indicazioni"), i: "mark-location-symbolic", c: "#22c55e" }]
+                            { k: "strada", t: I18n.t("Indicazioni"), i: "mark-location-symbolic", c: tel.solido ? "#59C3FF" : "#3B82F6" }]
                     Rectangle {
                         required property var modelData
                         readonly property bool attivo: !!app.dispositivo && !app.dispositivo.questo && (modelData.k !== "strada" || app.dispositivo.posizione)
                         width: (parent.width - 20) / 3; height: 90; radius: 22
-                        border.width: 1; border.color: tel.pal.bordo
+                        border.width: tel.solido ? 0 : 1; border.color: tel.pal.bordo
                         color: app.sezione
                         opacity: attivo ? 1 : 0.4
                         Column {
@@ -223,8 +223,8 @@ Rectangle {
                             spacing: 8
                             Rectangle {
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                width: 40; height: 40; radius: 20; color: parent.parent.modelData.k === "blocca" ? tel.rosso : tel.pal.superficie2
-                                Icona { anchors.centerIn: parent; nome: parent.parent.parent.modelData.i; lato: 20; tema: parent.parent.parent.modelData.k === "blocca" ? "scuro" : "" }
+                                width: 44; height: 44; radius: 22; color: parent.parent.modelData.c
+                                Icona { anchors.centerIn: parent; nome: parent.parent.parent.modelData.i; lato: 20; tema: tel.solido && parent.parent.parent.modelData.k !== "blocca" ? "chiaro" : "scuro" }
                             }
                             Text { anchors.horizontalCenter: parent.horizontalCenter; text: parent.parent.modelData.t; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(13); font.weight: Font.DemiBold }
                         }
