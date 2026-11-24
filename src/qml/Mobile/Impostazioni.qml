@@ -78,10 +78,19 @@ Rectangle {
         id: r
         property string icona: ""
         // Colore del quadratino secondo l'argomento (come sul PC)
-        property color coloreIcona: ({ "network-wireless-symbolic": "#4C7DFF", "bluetooth-active-symbolic": "#4C7DFF", "network-cellular-symbolic": "#30A46C", "call-start-symbolic": "#30A46C",
-            "audio-volume-high-symbolic": "#E5484D", "preferences-system-notifications-symbolic": "#E5484D", "display-brightness-symbolic": "#4C7DFF",
-            "preferences-desktop-wallpaper-symbolic": "#8B5CF6", "battery-good-symbolic": "#30A46C", "system-lock-screen-symbolic": "#E5484D",
-            "help-about-symbolic": "#71717A", "avatar-default-symbolic": "#71717A" })[icona] || "#71717A"
+        // Colori dei quadratini: quelli di Aurora, oppure la tavolozza piena di Prisma
+        readonly property var tavolozza: tel.solido
+            ? ({ "network-wireless-symbolic": "#59C3FF", "bluetooth-active-symbolic": "#59C3FF", "network-cellular-symbolic": "#C6F432", "call-start-symbolic": "#C6F432",
+                 "audio-volume-high-symbolic": "#FF6B4A", "preferences-system-notifications-symbolic": "#FF6B4A", "display-brightness-symbolic": "#FFD84A",
+                 "preferences-desktop-wallpaper-symbolic": "#8B6CFF", "battery-good-symbolic": "#C6F432", "system-lock-screen-symbolic": "#FF6B4A",
+                 "help-about-symbolic": "#D9D4CA", "avatar-default-symbolic": "#D9D4CA" })
+            : ({ "network-wireless-symbolic": "#3B82F6", "bluetooth-active-symbolic": "#3B82F6", "network-cellular-symbolic": "#22C55E", "call-start-symbolic": "#22C55E",
+                 "audio-volume-high-symbolic": "#F43F5E", "preferences-system-notifications-symbolic": "#F43F5E", "display-brightness-symbolic": "#3B82F6",
+                 "preferences-desktop-wallpaper-symbolic": "#8B6CFF", "battery-good-symbolic": "#22C55E", "system-lock-screen-symbolic": "#F43F5E",
+                 "help-about-symbolic": "#71717A", "avatar-default-symbolic": "#71717A" })
+        property color coloreIcona: tavolozza[icona] || (tel.solido ? "#D9D4CA" : "#71717A")
+        // Sui colori chiari di Prisma il simbolo è scuro
+        readonly property bool iconaScura: tel.solido && ["#59C3FF", "#C6F432", "#FFD84A", "#D9D4CA"].indexOf(coloreIcona.toString().toUpperCase()) >= 0
         property string titolo: ""
         property color coloreTitolo: tel.pal.testo
         property string valore: ""
@@ -98,8 +107,8 @@ Rectangle {
         Rectangle {
             visible: r.icona !== ""
             x: 14; anchors.verticalCenter: parent.verticalCenter
-            width: 32; height: 32; radius: 9; color: r.coloreIcona
-            Icona { anchors.centerIn: parent; nome: r.icona; lato: 18; tema: "scuro" }
+            width: 32; height: 32; radius: tel.solido ? 11 : 9; color: r.coloreIcona
+            Icona { anchors.centerIn: parent; nome: r.icona; lato: 18; tema: r.iconaScura ? "chiaro" : "scuro" }
         }
         Text { x: r.icona !== "" ? 60 : 16; anchors.verticalCenter: parent.verticalCenter; text: r.titolo; color: r.coloreTitolo; font.family: Tema.font; font.pixelSize: tel.px(16) }
         Text {

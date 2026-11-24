@@ -140,8 +140,8 @@ Rectangle {
             visible: schedaContatto.vista
             width: parent.width; height: 440
             gradient: Gradient {
-                GradientStop { position: 0; color: "#8B5CF6" }
-                GradientStop { position: 0.6; color: "#4C7DFF" }
+                GradientStop { position: 0; color: tel.solido ? "#FF6B4A" : "#8B6CFF" }
+                GradientStop { position: 0.6; color: tel.solido ? "#FF6B4A" : "#3B82F6" }
                 GradientStop { position: 1; color: tel.pal.sfondo }
             }
             Avatar { id: copiaColori; visible: false; nome: app.scelto && app.scelto.nome ? app.scelto.nome : "" }

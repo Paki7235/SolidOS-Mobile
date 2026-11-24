@@ -10,10 +10,11 @@ Rectangle {
     id: app
     color: "#0B0E18"
     // Vetro: colori dei tasti sopra lo sfondo
-    readonly property color vetroCifra: Qt.rgba(1, 1, 1, tel.chiaro ? 0.45 : 0.10)
-    readonly property color vetroFunzione: Qt.rgba(1, 1, 1, tel.chiaro ? 0.70 : 0.22)
-    readonly property color vetroOperatore: Qt.rgba(0.47, 0.59, 1, tel.chiaro ? 0.55 : 0.35)
-    readonly property color bordoVetro: Qt.rgba(1, 1, 1, tel.chiaro ? 0.55 : 0.13)
+    // Prisma: cifre bianche (o grafite), funzioni nere, operazioni corallo e «=» lime
+    readonly property color vetroCifra: tel.solido ? tel.pal.superficie : Qt.rgba(1, 1, 1, tel.chiaro ? 0.45 : 0.10)
+    readonly property color vetroFunzione: tel.solido ? (tel.chiaro ? "#141414" : "#2A2A31") : Qt.rgba(1, 1, 1, tel.chiaro ? 0.70 : 0.22)
+    readonly property color vetroOperatore: tel.solido ? "#FF6B4A" : Qt.rgba(0.47, 0.59, 1, tel.chiaro ? 0.55 : 0.35)
+    readonly property color bordoVetro: tel.solido ? "transparent" : Qt.rgba(1, 1, 1, tel.chiaro ? 0.55 : 0.13)
     readonly property color testo: tel.chiaro ? "#1D1D1F" : "#FFFFFF"
     readonly property color testo2: tel.chiaro ? "#4A4A55" : "#B8BCCB"
     Sfondo { anchors.fill: parent }
@@ -295,20 +296,22 @@ Rectangle {
                 readonly property bool operatore: ["÷", "×", "−", "+", "="].indexOf(modelData) >= 0
                 readonly property bool funzione: ["AC", "⌫", "%"].indexOf(modelData) >= 0
                 width: tastiera.largo; height: tastiera.alto; radius: 24
-                color: k.modelData === "=" ? tel.accento : (operatore ? app.vetroOperatore : (funzione ? app.vetroFunzione : app.vetroCifra))
-                gradient: k.modelData === "=" ? sfumatura : null
-                border.width: 1; border.color: operatore ? Qt.rgba(1, 1, 1, 0.25) : app.bordoVetro
+                color: k.modelData === "=" ? (tel.solido ? "#C6F432" : tel.accento) : (operatore ? app.vetroOperatore : (funzione ? app.vetroFunzione : app.vetroCifra))
+                gradient: k.modelData === "=" && !tel.solido ? sfumatura : null
+                border.width: tel.solido ? 0 : 1; border.color: operatore ? Qt.rgba(1, 1, 1, 0.25) : app.bordoVetro
+                readonly property color scritta: k.modelData === "=" ? (tel.solido ? "#141414" : "#FFFFFF")
+                                                 : (tel.solido && (operatore || funzione) ? "#FFFFFF" : app.testo)
                 // luce in alto, come il vetro
-                Rectangle { anchors.fill: parent; anchors.margins: 1; radius: parent.radius - 1; color: "transparent"
+                Rectangle { anchors.fill: parent; anchors.margins: 1; radius: parent.radius - 1; color: "transparent"; visible: !tel.solido
                             gradient: Gradient { GradientStop { position: 0; color: Qt.rgba(1, 1, 1, 0.10) } GradientStop { position: 0.35; color: "transparent" } } }
                 Text {
                     visible: k.modelData !== "⌫"
                     anchors.centerIn: parent
                     text: k.modelData === "AC" && app.espressione && !app.fatta ? "C" : k.modelData
-                    color: k.modelData === "=" ? "#FFFFFF" : app.testo
-                    font.family: Tema.font; font.pixelSize: k.funzione ? 25 : 32; font.weight: k.funzione ? Font.Medium : Font.Normal
+                    color: k.scritta
+                    font.family: Tema.font; font.pixelSize: k.funzione ? 25 : 32; font.weight: tel.solido ? Font.DemiBold : (k.funzione ? Font.Medium : Font.Normal)
                 }
-                Icona { visible: k.modelData === "⌫"; anchors.centerIn: parent; nome: "linea-tasto-cancella"; lato: 26; colore: app.testo }
+                Icona { visible: k.modelData === "⌫"; anchors.centerIn: parent; nome: "linea-tasto-cancella"; lato: 26; colore: k.scritta }
                 MouseArea {
                     id: pk
                     anchors.fill: parent

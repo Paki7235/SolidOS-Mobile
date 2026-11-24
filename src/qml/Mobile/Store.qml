@@ -223,9 +223,13 @@ Rectangle {
             // ── Scopri: app della settimana ─────────────────────────────
             Rectangle {
                 visible: app.scheda === "scopri" && app.appDellaSettimana !== null
-                width: parent.width; height: 280; radius: 22; clip: true
-                gradient: Gradient { GradientStop { position: 0; color: "#2F5FD0" } GradientStop { position: 1; color: "#8B5CF6" } }
-                Rectangle { x: parent.width - 150; y: 90; width: 210; height: 210; radius: 105; color: "#14FFFFFF" }
+                width: parent.width; height: 280; radius: tel.solido ? 30 : 26; clip: true
+                // Aurora: sfumatura viola, rosa e azzurro. Prisma: viola pieno con il cerchio lime
+                color: "#8B6CFF"
+                gradient: tel.solido ? null : luceSettimana
+                Gradient { id: luceSettimana; orientation: Gradient.Horizontal
+                           GradientStop { position: 0; color: "#7B3CFF" } GradientStop { position: 0.6; color: "#D9368B" } GradientStop { position: 1; color: "#FF7A5C" } }
+                Rectangle { x: parent.width - 150; y: 90; width: 210; height: 210; radius: 105; color: tel.solido ? "#C6F432" : "#1FFFFFFF" }
                 MouseArea { anchors.fill: parent; onClicked: app.apriApp(app.appDellaSettimana) }
                 Column {
                     x: 20; y: 20; width: parent.width - 40; spacing: 6
