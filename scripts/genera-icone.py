@@ -107,6 +107,12 @@ def vicina(p, s, a, c):
             f'<circle cx="50" cy="50" r="7" fill="{a}"/>')
 
 
+def videochiamate(p, s, a, c):
+    return (f'<rect x="13" y="29" width="52" height="42" rx="13" fill="{p}"/>'
+            f'<path d="M69 45.5 84.5 34.5a2.5 2.5 0 0 1 4 2v27a2.5 2.5 0 0 1-4 2L69 54.5Z" fill="{s}"/>'
+            f'<circle cx="25" cy="40" r="4" fill="{a}"/>')
+
+
 def calcolatrice(p, s, a, c):
     return (f'<rect x="20" y="20" width="27" height="27" rx="8" fill="{p}"/>'
             f'<rect x="53" y="20" width="27" height="27" rx="8" fill="{s}"/>'
@@ -117,7 +123,7 @@ def calcolatrice(p, s, a, c):
 
 DISEGNI = dict(telefono=telefono, messaggi=messaggi, contatti=contatti, foto=foto, fotocamera=fotocamera,
                musica=musica, mappe=mappe, note=note, file=file, dove=dove, impostazioni=impostazioni,
-               store=store, vicina=vicina, calcolatrice=calcolatrice)
+               store=store, vicina=vicina, calcolatrice=calcolatrice, videochiamate=videochiamate)
 
 W, W5 = "#FFFFFF", "#FFFFFF8C"
 K, K4 = "#141414", "#14141459"
@@ -137,6 +143,7 @@ GEMME_COL = {
     "store": ("#B994FF", "#6232F5", W, W5, "#6232F5"),
     "vicina": ("#5EE6FF", "#0A8FC2", W, W5, W),
     "calcolatrice": ("#3A3A44", "#121216", W, "#FFFFFF40", "#FF8A2F"),
+    "videochiamate": ("#5CF0A8", "#0F9F6E", W, W5, "#0F9F6E"),
 }
 # Piene: (fondo, principale, secondario, accento)
 PIENE_COL = {
@@ -154,6 +161,7 @@ PIENE_COL = {
     "store": ("#A68CFF", W, K, "#A68CFF"),
     "vicina": ("#59C3FF", K, K4, W),
     "calcolatrice": ("#FFB443", K, K4, W),
+    "videochiamate": ("#3EE0B0", K, K4, "#3EE0B0"),
 }
 
 

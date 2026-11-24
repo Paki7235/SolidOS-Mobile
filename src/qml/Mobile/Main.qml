@@ -107,6 +107,9 @@ Window {
     property bool personalizza: false
     property string appInterna: ""               // telefono | messaggi (app dentro l'interfaccia)
     property var chiamataInfo: ({ attiva: false })
+    // Videochiamate (Solid ID): chiama una persona {id, nome, email}; la chiamata è a tutto schermo
+    property var videochiamateApp: null
+    function videochiama(p, video) { videoSov.chiama(p, video) }
     property bool chiamataRidotta: false
     // Blocco a distanza da «Dov'è»: messaggio del proprietario sulla schermata di blocco
     property string messaggioRemoto: ""
@@ -141,6 +144,7 @@ Window {
     Connections {
         target: ponte
         function onEvento(nome, d) {
+            if (nome === "videochiamata") { videoSov.arrivo(d); return }
             if (nome === "notifica") {
                 tel.aggiornaNotifiche()
                 if (d.mostra) { tel.banner = d.notifica; fineBanner.interval = d.notifica.scadenza > 0 ? d.notifica.scadenza : 6000; fineBanner.restart() }
@@ -208,7 +212,7 @@ Window {
         else if (a.schermata === "conversazione") { appInterna = "messaggi"; var c = ponte.chiama0("conversazioni"); if (c.length) messaggiApp.apri(c[0].numero) }
         else if (a.schermata === "contatti") appInterna = "contatti"
         else if (a.schermata === "dove") appInterna = "dove"
-        else if (["calcolatrice", "note", "file", "foto", "musica", "fotocamera", "store", "vicina", "mappe"].indexOf(a.schermata) >= 0) appInterna = a.schermata
+        else if (["calcolatrice", "note", "file", "foto", "musica", "fotocamera", "store", "vicina", "mappe", "videochiamate"].indexOf(a.schermata) >= 0) appInterna = a.schermata
         else if (a.schermata === "store-app" || a.schermata === "store-raccolta" || a.schermata === "store-mie" || a.schermata === "store-scarica") appInterna = "store"
         else if (a.schermata === "foto-account" || a.schermata === "foto-google" || a.schermata === "foto-casa" || a.schermata === "foto-una") appInterna = "foto"
         else if (a.schermata === "segreteria") { appInterna = "telefono"; telefonoApp.scheda = "segreteria" }
@@ -356,6 +360,7 @@ Window {
     PaginaApp { nome: "store"; source: "Store.qml" }
     PaginaApp { nome: "vicina"; source: "Vicina.qml" }
     PaginaApp { nome: "mappe"; source: "Mappe.qml" }
+    PaginaApp { nome: "videochiamate"; source: "Videochiamate.qml" }
 
     // Sotto le tendine: lo sfondo «sfocato» (le sue sfumature) con una velatura, che copre la Home
     Rectangle {
@@ -447,6 +452,8 @@ Window {
         info: tel.chiamataInfo
         visible: tel.chiamataInfo.attiva === true && (!tel.chiamataRidotta || tel.chiamataInfo.inArrivo === true)
     }
+    // ── Videochiamata: anch'essa sopra a tutto ──
+    VideoSovrapposta { id: videoSov; videochiamateApp: tel.videochiamateApp }
 
     // ── Navigazione: barretta dei gesti o tre tasti ───────────────────────
     Item {

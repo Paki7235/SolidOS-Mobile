@@ -1,0 +1,437 @@
+<!doctype html>
+<!-- Chiamata di SolidOS: audio e video diretti tra i dispositivi (WebRTC, cifrati DTLS-SRTP).
+     I messaggi per trovarsi passano da Solid ID (tabella chiamate_segnali, tempo reale).
+     L'app (QML) chiama avvia(conf, opzioni) e riceve gli eventi da window.solidos.evento(). -->
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+<style>
+  :root { --sfondo:#0B0C10; --testo:#F5F5F7; --sec:rgba(245,245,247,.68); --vetro:rgba(30,31,36,.62); --rosso:#EF4444; --verde:#22C55E; }
+  * { box-sizing: border-box; -webkit-user-select: none; user-select: none; }
+  html, body { margin:0; height:100%; background:var(--sfondo); color:var(--testo); font-family: Inter, "Noto Sans", sans-serif; overflow:hidden; }
+  #remoto.intero { object-fit:contain; }
+  #remoto { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#000; opacity:0; transition:opacity .4s; }
+  body.connessa.video-remoto #remoto { opacity:1; }
+  #locale { position:absolute; right:20px; top:20px; width:220px; aspect-ratio:16/10; object-fit:cover; border-radius:14px;
+            background:#1E1F24; box-shadow:0 8px 30px rgba(0,0,0,.45); transform:scaleX(-1); cursor:grab; transition:opacity .3s, width .3s; z-index:3; }
+  body:not(.connessa) #locale { width:100%; height:100%; inset:0; right:0; top:0; border-radius:0; aspect-ratio:auto; filter:blur(0); opacity:.55; }
+  body.senza-video #locale { opacity:0; pointer-events:none; }
+  #centro { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; z-index:2;
+            text-align:center; padding:24px; transition:opacity .3s; }
+  body.connessa.video-remoto #centro { opacity:0; pointer-events:none; }
+  #avatar { width:120px; height:120px; border-radius:60px; display:flex; align-items:center; justify-content:center; font-size:52px; font-weight:700;
+            background:linear-gradient(160deg,#60A5FA,#2563EB); box-shadow:0 0 0 0 rgba(96,165,250,.6); }
+  body.squilla #avatar { animation: onda 1.6s ease-out infinite; }
+  @keyframes onda { 0% { box-shadow:0 0 0 0 rgba(96,165,250,.55); } 100% { box-shadow:0 0 0 34px rgba(96,165,250,0); } }
+  #nome { font-size:30px; font-weight:700; margin-top:10px; }
+  #stato { font-size:15px; color:var(--sec); min-height:20px; font-variant-numeric: tabular-nums; }
+  #barra { position:absolute; left:50%; bottom:28px; transform:translateX(-50%); display:flex; gap:14px; padding:12px 16px; border-radius:22px;
+           background:var(--vetro); backdrop-filter:blur(18px); z-index:4; transition:opacity .3s, transform .3s; }
+  body.inattiva.connessa #barra { opacity:0; transform:translate(-50%, 20px); }
+  #sopra { position:absolute; left:24px; top:22px; z-index:4; font-size:14px; color:var(--sec); transition:opacity .3s; }
+  body:not(.connessa) #sopra, body.inattiva.connessa #sopra { opacity:0; }
+  #sopra b { color:var(--testo); font-size:16px; display:block; }
+  .tasto { width:56px; height:56px; border-radius:28px; border:0; display:flex; align-items:center; justify-content:center; cursor:pointer;
+           background:rgba(255,255,255,.14); color:#fff; transition:background .15s, transform .1s; }
+  .tasto:hover { background:rgba(255,255,255,.24); } .tasto:active { transform:scale(.94); }
+  .tasto.spento { background:#F5F5F7; color:#111; }
+  .tasto.rosso { background:var(--rosso); } .tasto.rosso:hover { background:#DC2626; }
+  .tasto.verde { background:var(--verde); } .tasto.verde:hover { background:#16A34A; }
+  .tasto svg { width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+  .tasto.grande { width:68px; height:68px; border-radius:34px; } .tasto.grande svg { width:30px; height:30px; }
+  #arrivo { display:none; gap:48px; margin-top:46px; }
+  body.in-arrivo #arrivo { display:flex; } body.in-arrivo #barra { display:none; }
+  .scelta { display:flex; flex-direction:column; align-items:center; gap:8px; font-size:13px; color:var(--sec); }
+  #avviso { position:absolute; left:50%; top:24px; transform:translateX(-50%); background:var(--vetro); backdrop-filter:blur(18px);
+            padding:8px 14px; border-radius:12px; font-size:13px; opacity:0; transition:opacity .3s; z-index:5; }
+  #avviso.visibile { opacity:1; }
+  #muto-remoto { display:none; position:absolute; left:24px; bottom:34px; z-index:4; font-size:13px; color:var(--sec); align-items:center; gap:6px; }
+  body.remoto-muto #muto-remoto { display:flex; }
+  /* telefono in verticale: riquadro piccolo alto, tasti in fondo sopra la barretta dei gesti */
+  @media (max-width: 600px) {
+    #locale { width:108px; aspect-ratio:3/4; top:58px; right:14px; border-radius:16px; }
+    #barra { bottom:40px; gap:16px; padding:12px 18px; border-radius:30px; }
+    .tasto { width:60px; height:60px; border-radius:30px; }
+    #arrivo { gap:34px; margin-top:auto; margin-bottom:70px; }
+    #centro { justify-content:flex-start; padding-top:110px; }
+    #nome { font-size:32px; }
+    #sopra { top:56px; left:18px; }
+    #schermo { display:none; }
+  }
+</style>
+</head>
+<body class="inattiva">
+<video id="remoto" autoplay playsinline></video>
+<video id="locale" autoplay playsinline muted></video>
+<div id="sopra"><b id="nomeSopra"></b><span id="tempo"></span></div>
+<div id="centro">
+  <div id="avatar"></div>
+  <div id="nome"></div>
+  <div id="stato"></div>
+  <div id="arrivo">
+    <div class="scelta"><button class="tasto grande rosso" id="rifiuta" title="Rifiuta">
+      <svg viewBox="0 0 24 24"><path d="M10.1 13.9a14 14 0 0 0 3.7 2.6l1.6-1.6a1 1 0 0 1 1-.25 11 11 0 0 0 3.5.56 1 1 0 0 1 1 1V19a1 1 0 0 1-1 1A17 17 0 0 1 3 3.9a1 1 0 0 1 1-1h2.9a1 1 0 0 1 1 1 11 11 0 0 0 .56 3.5 1 1 0 0 1-.25 1l-1.6 1.6" transform="rotate(135 12 12)"/></svg></button><span>Rifiuta</span></div>
+    <div class="scelta"><button class="tasto grande" id="soloAudio" title="Rispondi solo con l'audio">
+      <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button><span>Solo audio</span></div>
+    <div class="scelta"><button class="tasto grande verde" id="rispondi" title="Rispondi">
+      <svg viewBox="0 0 24 24"><path d="m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg></button><span>Rispondi</span></div>
+  </div>
+</div>
+<div id="muto-remoto"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="2" x2="22" y1="2" y2="22"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><line x1="12" x2="12" y1="19" y2="22"/></svg><span id="testoMuto"></span></div>
+<div id="barra">
+  <button class="tasto" id="microfono" title="Microfono">
+    <svg viewBox="0 0 24 24" class="acceso"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+  </button>
+  <button class="tasto" id="camera" title="Videocamera">
+    <svg viewBox="0 0 24 24"><path d="m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
+  </button>
+  <button class="tasto" id="schermo" title="Condividi lo schermo">
+    <svg viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+  </button>
+  <button class="tasto rosso" id="chiudi" title="Chiudi la chiamata">
+    <svg viewBox="0 0 24 24"><path d="M10.1 13.9a14 14 0 0 0 3.7 2.6l1.6-1.6a1 1 0 0 1 1-.25 11 11 0 0 0 3.5.56 1 1 0 0 1 1 1V19a1 1 0 0 1-1 1A17 17 0 0 1 3 3.9a1 1 0 0 1 1-1h2.9a1 1 0 0 1 1 1 11 11 0 0 0 .56 3.5 1 1 0 0 1-.25 1l-1.6 1.6" transform="rotate(135 12 12)"/></svg>
+  </button>
+</div>
+<div id="avviso"></div>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+let solidos = null;                       // oggetto dell'app (QWebChannel)
+let T = s => s;                           // traduzioni passate dall'app
+let conf = null, op = null, pc = null, ws = null, chiamata = "", altro = "", altroDisp = "", stato = "inizio";
+let flussoLocale = null, tracciaSchermo = null, videoAcceso = true, micAcceso = true, inizio = 0, timerTempo = null, timerSquillo = null;
+let candidatiInAttesa = [], visti = new Set(), battito = null, rif = 1, finito = false;
+let videoRemotoAcceso = true, tracciaVideoRemota = null;
+function aggiornaVideoRemoto() {
+  const si = videoRemotoAcceso && tracciaVideoRemota && !tracciaVideoRemota.muted;
+  document.body.classList.toggle("video-remoto", !!si);
+}
+
+if (window.qt && qt.webChannelTransport) new QWebChannel(qt.webChannelTransport, c => { solidos = c.objects.solidos; solidos.pronta(); });
+function evento(nome, dati) { if (solidos) solidos.evento(nome, JSON.stringify(dati || {})); }
+function avviso(t) { const a = $("avviso"); a.textContent = t; a.classList.add("visibile"); clearTimeout(a._t); a._t = setTimeout(() => a.classList.remove("visibile"), 3200); }
+function testoStato(t) { $("stato").textContent = t; }
+function iniziale(n) { return (n || "?").trim().charAt(0).toUpperCase(); }
+
+// ── Solid ID: messaggi per trovarsi ─────────────────────────────────────────
+async function manda(tipo, dati) {
+  const r = await fetch(conf.url + "/rest/v1/chiamate_segnali", {
+    method: "POST",
+    headers: { apikey: conf.chiave, Authorization: "Bearer " + conf.token, "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify({ chiamata, a: altro, dispositivo: conf.dispositivo, tipo, dati: dati || {} })
+  });
+  if (!r.ok) throw new Error((await r.text()).slice(0, 200));
+}
+async function leggiSegnali() {
+  const q = `chiamata=eq.${chiamata}&a=eq.${conf.io}&order=id.asc`;
+  const r = await fetch(conf.url + "/rest/v1/chiamate_segnali?" + q, { headers: { apikey: conf.chiave, Authorization: "Bearer " + conf.token } });
+  return r.ok ? r.json() : [];
+}
+function collega() {
+  return new Promise((pronto, errore) => {
+    ws = new WebSocket(conf.url.replace("https://", "wss://") + `/realtime/v1/websocket?apikey=${conf.chiave}&vsn=1.0.0`);
+    const argomento = "realtime:chiamata-" + chiamata.slice(0, 8) + "-" + conf.dispositivo.slice(0, 8);
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ topic: argomento, event: "phx_join", ref: String(rif++), join_ref: "1", payload: {
+        config: { broadcast: { self: false }, presence: { key: "" },
+                  postgres_changes: [{ event: "INSERT", schema: "public", table: "chiamate_segnali", filter: `a=eq.${conf.io}` }] },
+        access_token: conf.token } }));
+      battito = setInterval(() => {
+        ws.send(JSON.stringify({ topic: "phoenix", event: "heartbeat", payload: {}, ref: String(rif++) }));
+        ws.send(JSON.stringify({ topic: argomento, event: "access_token", payload: { access_token: conf.token }, ref: String(rif++) }));
+      }, 25000);
+    };
+    ws.onmessage = m => {
+      const d = JSON.parse(m.data);
+      if (d.event === "phx_reply" && d.payload && d.payload.status === "ok") pronto();
+      if (d.event === "phx_reply" && d.payload && d.payload.status === "error") errore(new Error("realtime"));
+      if (d.event === "postgres_changes") { const r = d.payload.data.record; if (r) ricevi(r); }
+    };
+    ws.onerror = () => errore(new Error("rete"));
+    ws.onclose = () => { clearInterval(battito); if (!finito) setTimeout(() => { if (!finito) collega().catch(() => {}); }, 3000); };
+    setTimeout(pronto, 4000);   // se il server non risponde subito si va avanti (i segnali si rileggono)
+  });
+}
+window.aggiornaToken = t => { if (conf) conf.token = t; };
+
+// ── WebRTC ──────────────────────────────────────────────────────────────────
+async function prendiMedia(video) {
+  try {
+    flussoLocale = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      video: video ? { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } } : false });
+  } catch (e) {
+    if (video) {                           // senza videocamera: solo audio
+      flussoLocale = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      avviso(T("Videocamera non disponibile: chiamata solo audio"));
+      video = false;
+    } else throw e;
+  }
+  videoAcceso = video;
+  $("locale").srcObject = flussoLocale;
+  aggiornaTasti();
+}
+function creaConnessione() {
+  pc = new RTCPeerConnection({ iceServers: conf.ice, bundlePolicy: "max-bundle" });
+  if (op.modo === "chiama") {
+    const audio = flussoLocale.getAudioTracks()[0];
+    const video = flussoLocale.getVideoTracks()[0];
+    pc.addTransceiver(audio, { direction: "sendrecv", streams: [flussoLocale] });
+    // sempre un canale video, così la videocamera si può accendere anche dopo senza rinegoziare
+    pc.addTransceiver(video || "video", { direction: "sendrecv", streams: [flussoLocale] });
+  }
+  const remoto = new MediaStream();
+  $("remoto").srcObject = remoto;
+  pc.ontrack = e => {
+    remoto.addTrack(e.track);
+    if (e.track.kind === "video") {
+      tracciaVideoRemota = e.track;
+      e.track.onmute = aggiornaVideoRemoto; e.track.onunmute = aggiornaVideoRemoto; aggiornaVideoRemoto();
+    }
+  };
+  pc.onicecandidate = e => { if (e.candidate && altroDisp !== null) manda("candidato", { candidato: e.candidate.toJSON() }).catch(() => {}); };
+  pc.onconnectionstatechange = () => {
+    const s = pc.connectionState;
+    if (s === "connected") connessa();
+    else if (s === "disconnected") testoStato(T("Connessione instabile…"));
+    else if (s === "failed") { avviso(T("Collegamento non riuscito")); termina("errore", true); }
+  };
+  // messaggi brevi (microfono spento, videocamera spenta) direttamente tra i due
+  const canale = pc.createDataChannel("stato", { negotiated: true, id: 0 });
+  canale.onmessage = m => {
+    const d = JSON.parse(m.data);
+    document.body.classList.toggle("remoto-muto", !d.mic);
+    videoRemotoAcceso = !!d.video; aggiornaVideoRemoto();
+    $("testoMuto").textContent = T("{n} ha spento il microfono").replace("{n}", op.nome);
+  };
+  pc._canale = canale;
+}
+function mandaStato() { if (pc && pc._canale && pc._canale.readyState === "open") pc._canale.send(JSON.stringify({ mic: micAcceso, video: videoAcceso || !!tracciaSchermo })); }
+async function aggiungiCandidato(c) {
+  if (!pc || !pc.remoteDescription) { candidatiInAttesa.push(c); return; }
+  try { await pc.addIceCandidate(c); } catch (e) {}
+}
+async function svuotaCandidati() { const l = candidatiInAttesa; candidatiInAttesa = []; for (const c of l) await aggiungiCandidato(c); }
+
+function connessa() {
+  if (stato === "connessa") return;
+  stato = "connessa";
+  clearTimeout(timerSquillo);
+  document.body.classList.remove("squilla", "in-arrivo");
+  document.body.classList.add("connessa");
+  evento("squillo", { attivo: false });
+  inizio = Date.now();
+  testoStato("0:00");
+  timerTempo = setInterval(() => {
+    const s = Math.floor((Date.now() - inizio) / 1000);
+    const t = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+    testoStato(t); $("tempo").textContent = t;
+  }, 1000);
+  mandaStato();
+  evento("connessa", {});
+}
+
+// ── Messaggi in arrivo ──────────────────────────────────────────────────────
+async function ricevi(r) {
+  if (r.chiamata !== chiamata || r.dispositivo === conf.dispositivo || visti.has(r.id)) return;
+  visti.add(r.id);
+  if (op.modo === "chiama") {
+    if (r.tipo === "risposta" && !altroDisp) {
+      altroDisp = r.dispositivo;
+      testoStato(T("Connessione…"));
+      await pc.setRemoteDescription(r.dati.sdp);
+      await svuotaCandidati();
+    } else if (r.tipo === "candidato") {
+      if (!altroDisp || r.dispositivo === altroDisp) aggiungiCandidato(r.dati.candidato);
+    } else if (r.tipo === "rifiuta" && !altroDisp) { testoStato(T("Non disponibile")); termina("rifiutata", false, 1800); }
+    else if (r.tipo === "occupato" && !altroDisp) { testoStato(T("Occupato")); termina("occupato", false, 1800); }
+    else if (r.tipo === "fine" && (!altroDisp || r.dispositivo === altroDisp)) termina("chiusa", false);
+  } else {
+    if (r.tipo === "candidato") aggiungiCandidato(r.dati.candidato);
+    else if (r.tipo === "fine") { if (stato === "squilla") { testoStato(T("Chiamata persa")); termina("persa", false, 1200); } else termina("chiusa", false); }
+    else if (r.tipo === "presa" && stato === "squilla") { testoStato(T("Hai risposto su un altro dispositivo")); termina("altrove", false, 1500); }
+  }
+}
+
+// ── Avvio ───────────────────────────────────────────────────────────────────
+window.avvia = async function (c, o, traduzioni) {
+  conf = c; op = o;
+  if (traduzioni) T = s => traduzioni[s] || s;
+  $("nome").textContent = op.nome; $("nomeSopra").textContent = op.nome; $("avatar").textContent = iniziale(op.nome);
+  aggiornaTasti();
+  try {
+    if (op.modo === "chiama") {
+      chiamata = crypto.randomUUID(); altro = op.a; altroDisp = "";
+      document.body.classList.add("squilla");
+      testoStato(T("Chiamata…"));
+      await prendiMedia(op.video !== false);
+      await collega();
+      creaConnessione();
+      altroDisp = "";
+      const offerta = await pc.createOffer();
+      await pc.setLocalDescription(offerta);
+      await manda("offerta", { sdp: pc.localDescription.toJSON(), nome: conf.nome, email: conf.email, video: videoAcceso });
+      evento("iniziata", { chiamata, video: videoAcceso });
+      testoStato(T("Squilla…"));
+      evento("squillo", { attivo: true, uscita: true });
+      timerSquillo = setTimeout(() => { if (stato !== "connessa") { testoStato(T("Nessuna risposta")); manda("fine").catch(() => {}); termina("nessuna", false, 1800); } }, conf.squillo * 1000);
+    } else {
+      const off = op.offerta;
+      chiamata = off.chiamata; altro = off.da; altroDisp = off.dispositivo;
+      stato = "squilla";
+      document.body.classList.add("squilla", "in-arrivo");
+      $("locale").style.display = "none";
+      testoStato(off.dati.video ? T("Videochiamata SolidOS") : T("Chiamata audio SolidOS"));
+      evento("squillo", { attivo: true });
+      await collega();
+      const gia = await leggiSegnali();
+      for (const r of gia) if (r.tipo === "fine" || r.tipo === "presa") { await ricevi(r); return; }
+      for (const r of gia) if (r.tipo === "candidato") { visti.add(r.id); candidatiInAttesa.push(r.dati.candidato); }
+      timerSquillo = setTimeout(() => { if (stato === "squilla") { testoStato(T("Chiamata persa")); termina("persa", false, 800); } }, conf.squillo * 1000);
+    }
+  } catch (e) {
+    avviso(T("Chiamata non riuscita") + ": " + (e.message || e));
+    termina("errore", true, 2500);
+  }
+};
+
+async function rispondi(video) {
+  if (stato !== "squilla") return;
+  stato = "risposta";
+  clearTimeout(timerSquillo);
+  evento("squillo", { attivo: false });
+  document.body.classList.remove("in-arrivo");
+  $("locale").style.display = "";
+  testoStato(T("Connessione…"));
+  try {
+    await prendiMedia(video);
+    creaConnessione();
+    await pc.setRemoteDescription(op.offerta.dati.sdp);
+    // chi risponde usa i canali dell'offerta (audio e video) e ci mette le sue tracce
+    const [ta, tv] = pc.getTransceivers();
+    if (ta) { ta.direction = "sendrecv"; await ta.sender.replaceTrack(flussoLocale.getAudioTracks()[0] || null); ta.sender.setStreams && ta.sender.setStreams(flussoLocale); }
+    if (tv) { tv.direction = "sendrecv"; await tv.sender.replaceTrack(flussoLocale.getVideoTracks()[0] || null); tv.sender.setStreams && tv.sender.setStreams(flussoLocale); }
+    await svuotaCandidati();
+    const risposta = await pc.createAnswer();
+    await pc.setLocalDescription(risposta);
+    await manda("risposta", { sdp: pc.localDescription.toJSON() });
+    // gli altri miei dispositivi smettono di squillare
+    const prima = altro; altro = conf.io; await manda("presa").catch(() => {}); altro = prima;
+  } catch (e) { avviso(T("Chiamata non riuscita") + ": " + (e.message || e)); termina("errore", true, 2500); }
+}
+$("rispondi").onclick = () => rispondi(true);
+$("soloAudio").onclick = () => rispondi(false);
+$("rifiuta").onclick = () => { manda("rifiuta").catch(() => {}); termina("rifiutata-da-me", false); };
+$("chiudi").onclick = () => { manda("fine").catch(() => {}); termina("chiusa", false); };
+
+function termina(motivo, errore, attesa) {
+  if (finito) return;
+  finito = true;
+  clearTimeout(timerSquillo); clearInterval(timerTempo); clearInterval(battito);
+  evento("squillo", { attivo: false });
+  const durata = inizio ? Math.round((Date.now() - inizio) / 1000) : 0;
+  setTimeout(() => {
+    try { if (pc) pc.close(); } catch (e) {}
+    if (flussoLocale) flussoLocale.getTracks().forEach(t => t.stop());
+    if (tracciaSchermo) tracciaSchermo.stop();
+    try { if (ws) ws.close(); } catch (e) {}
+    evento("fine", { motivo, durata, chiamata, video: videoAcceso, connessa: inizio > 0 });
+  }, attesa || 0);
+}
+window.chiudiDaFuori = () => { if (!finito) { if (stato === "squilla") manda("rifiuta").catch(() => {}); else manda("fine").catch(() => {}); termina("chiusa", false); } };
+
+// ── Comandi durante la chiamata ─────────────────────────────────────────────
+function aggiornaTasti() {
+  $("microfono").classList.toggle("spento", !micAcceso);
+  $("camera").classList.toggle("spento", !videoAcceso);
+  $("schermo").classList.toggle("spento", !!tracciaSchermo);
+  $("microfono").title = micAcceso ? T("Spegni il microfono") : T("Accendi il microfono");
+  $("camera").title = videoAcceso ? T("Spegni la videocamera") : T("Accendi la videocamera");
+  document.body.classList.toggle("senza-video", !videoAcceso && !tracciaSchermo);
+}
+$("microfono").onclick = () => {
+  micAcceso = !micAcceso;
+  if (flussoLocale) flussoLocale.getAudioTracks().forEach(t => t.enabled = micAcceso);
+  aggiornaTasti(); mandaStato();
+};
+$("camera").onclick = async () => {
+  if (!pc) return;
+  const mittente = pc.getTransceivers()[1].sender;
+  if (videoAcceso) {
+    flussoLocale.getVideoTracks().forEach(t => { t.stop(); flussoLocale.removeTrack(t); });
+    if (!tracciaSchermo) await mittente.replaceTrack(null);
+    videoAcceso = false;
+  } else {
+    try {
+      const v = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } } });
+      const t = v.getVideoTracks()[0];
+      flussoLocale.addTrack(t);
+      if (!tracciaSchermo) await mittente.replaceTrack(t);
+      $("locale").srcObject = flussoLocale;
+      videoAcceso = true;
+    } catch (e) { avviso(T("Videocamera non disponibile")); }
+  }
+  aggiornaTasti(); mandaStato();
+};
+$("schermo").onclick = async () => {
+  if (!pc) return;
+  const mittente = pc.getTransceivers()[1].sender;
+  if (tracciaSchermo) {
+    tracciaSchermo.stop(); tracciaSchermo = null;
+    await mittente.replaceTrack(flussoLocale.getVideoTracks()[0] || null);
+    $("locale").srcObject = flussoLocale; $("locale").style.transform = "";
+  } else {
+    try {
+      const s = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 15 }, audio: false });
+      tracciaSchermo = s.getVideoTracks()[0];
+      tracciaSchermo.onended = () => { if (tracciaSchermo) $("schermo").onclick(); };
+      await mittente.replaceTrack(tracciaSchermo);
+      $("locale").srcObject = s; $("locale").style.transform = "none";
+      avviso(T("Stai condividendo lo schermo"));
+    } catch (e) { return; }
+  }
+  aggiornaTasti(); mandaStato();
+};
+
+function adatta() {
+  const v = $("remoto");
+  if (!v.videoWidth) return;
+  const r = v.videoWidth / v.videoHeight, f = innerWidth / innerHeight;
+  v.classList.toggle("intero", Math.abs(r - f) / f > 0.25);
+}
+$("remoto").addEventListener("resize", adatta); addEventListener("resize", adatta);
+
+// la barra si nasconde se non si muove il mouse
+let fermo = null;
+function sveglia() { document.body.classList.remove("inattiva"); clearTimeout(fermo); fermo = setTimeout(() => document.body.classList.add("inattiva"), 3500); }
+document.addEventListener("mousemove", sveglia); document.addEventListener("keydown", e => {
+  sveglia();
+  if (e.key === "m" || e.key === "M") $("microfono").click();
+});
+sveglia();
+
+// il riquadro piccolo si sposta trascinandolo
+(() => {
+  const l = $("locale"); let da = null;
+  l.addEventListener("pointerdown", e => { if (!document.body.classList.contains("connessa")) return; da = { x: e.clientX, y: e.clientY, r: l.offsetLeft, t: l.offsetTop }; l.setPointerCapture(e.pointerId); });
+  l.addEventListener("pointermove", e => { if (!da) return; l.style.left = (da.r + e.clientX - da.x) + "px"; l.style.top = (da.t + e.clientY - da.y) + "px"; l.style.right = "auto"; });
+  l.addEventListener("pointerup", () => {
+    if (!da) return; da = null;
+    // si aggancia all'angolo più vicino
+    const w = innerWidth, h = innerHeight, x = l.offsetLeft + l.offsetWidth / 2, y = l.offsetTop + l.offsetHeight / 2;
+    l.style.left = (x < w / 2 ? 20 : w - l.offsetWidth - 20) + "px"; l.style.top = (y < h / 2 ? 20 : h - l.offsetHeight - 110) + "px";
+  });
+})();
+
+// prova senza Solid ID (#prova): due schede dello stesso browser si chiamano tra loro
+if (location.hash === "#prova") {
+  const bc = new BroadcastChannel("prova-chiamata");
+  window.fetch = async (u, o) => { if (o && o.method === "POST") bc.postMessage({ id: Math.random(), ...JSON.parse(o.body), creato: new Date().toISOString() }); return { ok: true, json: async () => [], text: async () => "" }; };
+  window.WebSocket = class { constructor() { setTimeout(() => this.onopen && this.onopen(), 10); bc.onmessage = m => this.onmessage({ data: JSON.stringify({ event: "postgres_changes", payload: { data: { record: m.data } } }) }); } send() {} close() {} };
+  window.provaConf = d => ({ url: "https://prova", chiave: "k", token: "t", io: "io", nome: "Prova", email: "p@p.it", dispositivo: d, ice: [], squillo: 45 });
+}
+</script>
+</body>
+</html>

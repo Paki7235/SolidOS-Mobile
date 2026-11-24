@@ -148,7 +148,29 @@ def aggiorna(forza: bool = False) -> str:
     shutil.rmtree(PRECEDENTE, ignore_errors=True)
     CARTELLA.rename(PRECEDENTE)
     NUOVA.rename(CARTELLA)
-    return f"Aggiornato alla versione {nuova} (si usa dal prossimo avvio)"
+    mancanti = _pacchetti_richiesti()
+    return f"Aggiornato alla versione {nuova} (si usa dal prossimo avvio)" + (f"; installati: {', '.join(mancanti)}" if mancanti else "")
+
+
+def _pacchetti_richiesti(cartella: Path = CARTELLA) -> list[str]:
+    """I programmi che servono alla versione nuova (dati/pacchetti-richiesti.txt), se mancano:
+    un telefono installato da un'immagine vecchia li riceve così (per esempio il motore web
+    delle videochiamate)."""
+    import re
+
+    f = cartella / "dati" / "pacchetti-richiesti.txt"
+    if not f.is_file() or not shutil.which("apk"):
+        return []
+    nomi = [r.strip() for r in f.read_text().splitlines() if r.strip() and not r.startswith("#")]
+    nomi = [n for n in nomi if re.fullmatch(r"[a-z0-9][a-z0-9.+_-]{1,80}", n)]
+    mancanti = [n for n in nomi if subprocess.run(["apk", "info", "-e", n], capture_output=True).returncode != 0]
+    if mancanti:
+        try:
+            subprocess.run(["apk", "add", "--no-interactive", *mancanti], capture_output=True, timeout=3600)
+        except (OSError, subprocess.TimeoutExpired):
+            return []
+        mancanti = [n for n in mancanti if subprocess.run(["apk", "info", "-e", n], capture_output=True).returncode == 0]
+    return mancanti
 
 
 def torna_indietro() -> str:

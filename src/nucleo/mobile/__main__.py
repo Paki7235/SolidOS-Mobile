@@ -78,6 +78,7 @@ IN_ARRIVO = {
     "contatti": {"id": "interno:contatti", "nome": T("Contatti"), "icona": "nucleo-contatti", "categorie": ["ContactManagement"]},
     "dove": {"id": "interno:dove", "nome": T("Dov'è"), "icona": "nucleo-dove", "categorie": ["Utility"]},
     "mappe": {"id": "interno:mappe", "nome": T("Mappe"), "icona": "nucleo-mappe", "categorie": ["Maps", "Utility"]},
+    "videochiamate": {"id": "interno:videochiamate", "nome": T("Videochiamate"), "icona": "nucleo-videochiamate", "categorie": ["Network", "VideoConference"]},
     "impostazioni": {"id": "interno:impostazioni", "nome": T("Impostazioni"), "icona": "nucleo-impostazioni", "categorie": ["Settings"]},
     "fotocamera": {"id": "interno:fotocamera", "nome": T("Fotocamera"), "icona": "nucleo-fotocamera", "categorie": ["Photography"]},
     "foto": {"id": "interno:foto", "nome": T("Foto"), "icona": "nucleo-foto", "categorie": ["Graphics", "Photography"]},
@@ -241,6 +242,7 @@ class BackendMobile(Backend):
         self.centro.non_disturbare = bool(self.impostazioni().get("non_disturbare"))
         from . import telefonia
 
+        self._ascolta_videochiamate()
         if telefonia.DEMO:
             self.centro.aggiungi(T("Messaggi"), "Mamma", "A che ora arrivi stasera? Ho preparato la cena", "nucleo-messaggi", "messaggi")
             self.centro.aggiungi(T("Telefono"), T("Chiamata persa"), "Giulia Rossi", "nucleo-telefono", "telefono")
@@ -345,7 +347,7 @@ class BackendMobile(Backend):
             a = next((x for x in self.app() if x["id"] == ident), None)
             if a and a["id"] not in nascoste and a not in risultato:
                 risultato.append(a)
-        ordine = ["fotocamera", "foto", "contatti", "note", "file", "dove", "mappe", "musica", "store", "vicina", "calcolatrice", "impostazioni"]
+        ordine = ["fotocamera", "foto", "contatti", "videochiamate", "note", "file", "dove", "mappe", "musica", "store", "vicina", "calcolatrice", "impostazioni"]
         for a in (self._per_id(x) for x in ordine):
             if a and a["id"] not in nascoste and a not in risultato:
                 risultato.append(a)
@@ -1113,6 +1115,55 @@ class BackendMobile(Backend):
     def tessere(self, elenco, stile: str = "chiaro") -> dict:
         return self._dove().tessere(elenco, stile)
 
+    # ── Videochiamate (nucleo/chiamate: lo stesso codice del PC) ─────────
+    def videochiamate(self, metodo: str, argomenti=None):
+        if not hasattr(self, "_video_b"):
+            from ..apps.videochiamate import BackendVideochiamate
+
+            self._video_b = BackendVideochiamate()
+        if str(metodo).startswith("_") or not hasattr(self._video_b, metodo):
+            return None
+        return getattr(self._video_b, metodo)(*(argomenti or []))
+
+    def _ascolta_videochiamate(self) -> None:
+        """Chiamate in arrivo dal Solid ID: la shell le mostra a tutto schermo (anche sul blocco)."""
+        import threading
+
+        def in_arrivo(r: dict) -> None:
+            from datetime import datetime
+
+            from .. import chiamate
+            from ..apps.videochiamate import file_occupato
+
+            try:
+                quando = datetime.fromisoformat(str(r.get("creato", "")).replace("Z", "+00:00")).timestamp()
+            except ValueError:
+                quando = time.time()
+            if time.time() - quando > chiamate.SQUILLO_MAX:
+                return
+            if file_occupato().exists():
+                try:
+                    from .. import solidid
+
+                    solidid.rest("POST", "chiamate_segnali", {"chiamata": r["chiamata"], "a": r["da"], "dispositivo": chiamate.dispositivo(),
+                                                              "tipo": "occupato", "dati": {}}, rappresenta=False)
+                except Exception:  # noqa: BLE001
+                    pass
+                return
+            self.emetti("videochiamata", r)
+
+        def ciclo() -> None:
+            import asyncio
+
+            try:
+                from .. import chiamate
+
+                asyncio.run(chiamate.ascolta(in_arrivo))
+            except Exception:  # noqa: BLE001 — senza aiohttp o Solid ID: niente chiamate in arrivo
+                pass
+
+        threading.Thread(target=ciclo, daemon=True).start()
+
     # ── Mappe e navigatore (nucleo/mappe: lo stesso codice del PC) ───────
     def mappe(self, metodo: str, argomenti=None):
         if not hasattr(self, "_mappe_b"):
@@ -1406,6 +1457,16 @@ def main() -> int:
         backend.centro.avvia()
         return {"ponte": ponte}
 
+    # Motore web per le videochiamate (se c'è): va preparato prima di creare l'app
+    try:
+        from PyQt6.QtCore import Qt
+        from PyQt6.QtGui import QGuiApplication
+        from PyQt6.QtWebEngineQuick import QtWebEngineQuick
+
+        QGuiApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
+        QtWebEngineQuick.initialize()
+    except ImportError:
+        pass
     return esegui_app("mobile", "Mobile/Main.qml", contesto)
 
 

@@ -13,6 +13,7 @@ cp -r "$RADICE/src/dati/font" "$ALBERO/font"
 cp -r "$RADICE/src/dati/sfondi" "$ALBERO/sfondi"
 cp -r "$RADICE/src/dati/icone" "$ALBERO/icone"
 cp "$RADICE/branding.env" "$ALBERO/branding.env"
+mkdir -p "$ALBERO/dati" && cp "$RADICE/src/dati/pacchetti-richiesti.txt" "$ALBERO/dati/"
 cp "$RADICE/telefono/solidos-mobile/chiave-aggiornamenti.pem" "$ALBERO/"
 printf '%s\n' "$N" > "$ALBERO/versione"
 find "$ALBERO" -name __pycache__ -prune -exec rm -rf {} +

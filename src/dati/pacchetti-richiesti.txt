@@ -1,0 +1,5 @@
+# Programmi che servono alle app di SolidOS Mobile: l'aggiornamento li installa se mancano
+# (un telefono installato da un'immagine vecchia li riceve così). Uno per riga.
+qt6-qtwebengine
+qt6-qtwebchannel
+py3-pyqt6-webengine

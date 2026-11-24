@@ -14,6 +14,7 @@ depends="
 	papirus-icon-theme font-inter font-noto
 	networkmanager networkmanager-cli networkmanager-wifi modemmanager pipewire-tools alsa-utils
 	bluez brightnessctl iw wpa_supplicant tzdata
+	qt6-qtwebengine qt6-qtwebchannel py3-pyqt6-webengine
 	"
 install="$pkgname.post-install"
 options="!check"
