@@ -163,11 +163,19 @@ async function prendiMedia(video) {
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       video: video ? { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } } : false });
   } catch (e) {
+    flussoLocale = null;
     if (video) {                           // senza videocamera: solo audio
-      flussoLocale = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      avviso(T("Videocamera non disponibile: chiamata solo audio"));
+      try {
+        flussoLocale = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        avviso(T("Videocamera non disponibile: chiamata solo audio"));
+      } catch (e2) {}
       video = false;
-    } else throw e;
+    }
+    if (!flussoLocale) {                   // né microfono né videocamera: si sente e si vede l'altro
+      flussoLocale = new MediaStream();
+      micAcceso = false;
+      avviso(T("Microfono non disponibile: vedi e senti l'altra persona, ma lei non sente te"));
+    }
   }
   videoAcceso = video;
   $("locale").srcObject = flussoLocale;
@@ -178,7 +186,7 @@ function creaConnessione() {
   if (op.modo === "chiama") {
     const audio = flussoLocale.getAudioTracks()[0];
     const video = flussoLocale.getVideoTracks()[0];
-    pc.addTransceiver(audio, { direction: "sendrecv", streams: [flussoLocale] });
+    pc.addTransceiver(audio || "audio", { direction: "sendrecv", streams: [flussoLocale] });
     // sempre un canale video, così la videocamera si può accendere anche dopo senza rinegoziare
     pc.addTransceiver(video || "video", { direction: "sendrecv", streams: [flussoLocale] });
   }

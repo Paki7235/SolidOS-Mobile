@@ -494,11 +494,13 @@ Rectangle {
                     id: tabF
                     required property var modelData
                     width: (app.width - 20) / 4; height: 50
+                    readonly property bool attiva: app.scheda === tabF.modelData.s
+                    PillolaScheda { attiva: tabF.attiva }
                     Column {
                         anchors.centerIn: parent; spacing: 3
-                        opacity: app.scheda === tabF.modelData.s ? 1 : 0.55
-                        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: tabF.modelData.i; lato: 22 }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: tabF.modelData.t; color: app.scheda === tabF.modelData.s ? tel.accento : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(11); font.weight: Font.DemiBold }
+                        opacity: tabF.attiva ? 1 : 0.55
+                        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: tabF.modelData.i; lato: 22; tema: tabF.attiva && tel.solido ? "chiaro" : "" }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: tabF.modelData.t; color: tabF.attiva && !tel.solido ? tel.accento : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(11); font.weight: tabF.attiva ? Font.Bold : Font.DemiBold }
                     }
                     MouseArea { anchors.fill: parent; onClicked: { app.scheda = tabF.modelData.s; if (tabF.modelData.s !== "libreria") app.filtro = "" } }
                 }

@@ -407,10 +407,12 @@ Rectangle {
                     id: tabF
                     required property var modelData
                     width: app.width / 3; height: 50
+                    readonly property bool attiva: app.scheda === tabF.modelData.s
+                    PillolaScheda { attiva: tabF.attiva }
                     Column {
                         anchors.centerIn: parent; spacing: 3
-                        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: tabF.modelData.i; lato: 24; colore: app.scheda === tabF.modelData.s ? tel.accento : tel.pal.testo2 }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: tabF.modelData.t; color: app.scheda === tabF.modelData.s ? tel.accento : tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(11); font.weight: Font.DemiBold }
+                        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: tabF.modelData.i; lato: 24; colore: tabF.attiva ? (tel.solido ? "#141414" : tel.accento) : tel.pal.testo2 }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: tabF.modelData.t; color: tabF.attiva ? (tel.solido ? tel.pal.testo : tel.accento) : tel.pal.testo2; font.family: Tema.font; font.pixelSize: tel.px(11); font.weight: tabF.attiva ? Font.Bold : Font.DemiBold }
                     }
                     MouseArea { anchors.fill: parent; onClicked: { if (app.scheda === tabF.modelData.s) { app.vista = "radice"; app.carica() } else app.scheda = tabF.modelData.s } }
                 }

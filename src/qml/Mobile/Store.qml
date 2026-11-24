@@ -425,11 +425,13 @@ Rectangle {
                     id: voceTab
                     required property var modelData
                     width: (app.width - 20) / 4; height: 50
+                    readonly property bool attiva: app.scheda === voceTab.modelData.s
+                    PillolaScheda { attiva: voceTab.attiva }
                     Column {
                         anchors.centerIn: parent; spacing: 3
-                        opacity: app.scheda === voceTab.modelData.s ? 1 : 0.55
-                        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: voceTab.modelData.i; lato: 22 }
-                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: voceTab.modelData.t; color: app.scheda === voceTab.modelData.s ? tel.accento : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(11); font.weight: Font.DemiBold }
+                        opacity: voceTab.attiva ? 1 : 0.55
+                        Icona { anchors.horizontalCenter: parent.horizontalCenter; nome: voceTab.modelData.i; lato: 22; tema: voceTab.attiva && tel.solido ? "chiaro" : "" }
+                        Text { anchors.horizontalCenter: parent.horizontalCenter; text: voceTab.modelData.t; color: voceTab.attiva && !tel.solido ? tel.accento : tel.pal.testo; font.family: Tema.font; font.pixelSize: tel.px(11); font.weight: voceTab.attiva ? Font.Bold : Font.DemiBold }
                     }
                     MouseArea { anchors.fill: parent; onClicked: { app.scheda = voceTab.modelData.s; app.raccolta = null; principale.contentY = 0 } }
                 }

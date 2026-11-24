@@ -23,7 +23,7 @@ from ..ponte import Backend, crea_ponte
 TESTI = ["Chiamata…", "Squilla…", "Connessione…", "Connessione instabile…", "Collegamento non riuscito", "Non disponibile",
          "Occupato", "Nessuna risposta", "Chiamata persa", "Hai risposto su un altro dispositivo", "Videochiamata SolidOS",
          "Chiamata audio SolidOS", "Chiamata non riuscita", "Videocamera non disponibile: chiamata solo audio",
-         "Videocamera non disponibile", "Stai condividendo lo schermo", "{n} ha spento il microfono", "Spegni il microfono",
+         "Videocamera non disponibile", "Microfono non disponibile: vedi e senti l'altra persona, ma lei non sente te", "Stai condividendo lo schermo", "{n} ha spento il microfono", "Spegni il microfono",
          "Accendi il microfono", "Spegni la videocamera", "Accendi la videocamera"]
 
 
