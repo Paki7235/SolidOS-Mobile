@@ -808,6 +808,96 @@ class BackendMobile(Backend):
             cache[chiave] = _colori_sfondo(indirizzo, float(proporzione))
         return cache[chiave]
 
+    # ── Archiviazione, Data e ora (Impostazioni) ─────────────────────────
+    def archiviazione(self) -> dict:
+        """Quanto occupa ogni tipo di file (come Impostazioni › Archiviazione del PC)."""
+        import shutil
+
+        from ..sistema import cartella_utente
+
+        def peso(c: Path) -> int:
+            tot = 0
+            for radice, _, files in os.walk(c):
+                for f in files:
+                    try:
+                        tot += os.lstat(os.path.join(radice, f)).st_size
+                    except OSError:
+                        pass
+            return tot
+        disco = shutil.disk_usage(Path.home())
+        voci = [(T("Foto e video"), "#FF9F0A", [cartella_utente("PICTURES", "Immagini"), cartella_utente("VIDEOS", "Video")]),
+                (T("Musica"), "#FF375F", [cartella_utente("MUSIC", "Musica")]),
+                (T("Documenti e download"), "#0A84FF", [cartella_utente("DOCUMENTS", "Documenti"), cartella_utente("DOWNLOAD", "Scaricati")]),
+                (T("App"), "#BF5AF2", [Path.home() / ".local/share/flatpak", Path("/var/lib/flatpak")])]
+        out, somma = [], 0
+        for nome, colore, cartelle in voci:
+            b = sum(peso(c) for c in cartelle if c.is_dir())
+            somma += b
+            out.append({"nome": nome, "colore": colore, "byte": b})
+        usato = disco.total - disco.free
+        out.append({"nome": T("Sistema e dati"), "colore": "#8E8E93", "byte": max(0, usato - somma)})
+        return {"totale": disco.total, "usato": usato, "libero": disco.free, "voci": out}
+
+    def dataOra(self) -> dict:
+        import subprocess
+
+        fuso = ""
+        try:
+            fuso = os.readlink("/etc/localtime").split("zoneinfo/")[-1]
+        except OSError:
+            fuso = time.tzname[0]
+        auto = ""
+        try:
+            auto = subprocess.run(["timedatectl", "show", "-p", "NTP", "--value"], capture_output=True, text=True, timeout=3).stdout.strip()
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        return {"fuso": fuso, "automatica": auto != "no"}
+
+    # ── Aggiornamento software (Impostazioni) ────────────────────────────
+    def aggiornamentoCerca(self) -> dict:
+        """La versione nuova pubblicata (firmata) e le sue novità, senza installarla."""
+        import json
+
+        from . import aggiornamento
+
+        st = aggiornamento.stato()
+        try:
+            grezza, firma = aggiornamento._scarica("versione.json"), aggiornamento._scarica("versione.json.firma")
+        except OSError:
+            return {**st, "ok": False, "messaggio": T("Server degli aggiornamenti non raggiungibile")}
+        try:
+            if not aggiornamento.firma_valida(grezza, firma):
+                return {**st, "ok": False, "messaggio": T("Aggiornamento rifiutato: la firma non è di SolidOS")}
+        except Exception:  # noqa: BLE001 — senza la chiave (anteprima sul PC) si mostra comunque
+            pass
+        scheda = json.loads(grezza)
+        nuova = int(scheda.get("versione", 0))
+        return {**st, "ok": True, "disponibile": nuova, "nuova": nuova > int(st.get("versione") or 0),
+                "novita": scheda.get("novita", "")}
+
+    def aggiornamentoAvvia(self) -> dict:
+        """Chiede al servizio di sistema di scaricare, provare e installare la versione nuova."""
+        from pathlib import Path
+
+        richiesta = Path("/var/lib/solidos-mobile/richieste/aggiorna-ora")
+        try:
+            richiesta.write_text(str(time.time()))
+        except OSError:
+            return {"ok": False, "messaggio": T("Questo telefono si aggiorna da solo entro 10 minuti dall'accensione: "
+                                                "la richiesta manuale arriva con il prossimo aggiornamento")}
+        return {"ok": True}
+
+    def aggiornamentoStato(self) -> dict:
+        from . import aggiornamento
+
+        return aggiornamento.stato()
+
+    def riavviaInterfaccia(self) -> None:
+        """Si chiude l'interfaccia: il sistema la riapre subito, con la versione nuova."""
+        from PyQt6.QtCore import QCoreApplication
+
+        QCoreApplication.quit()
+
     def infoTelefono(self) -> dict:
         from . import aggiornamento, impostazioni
 

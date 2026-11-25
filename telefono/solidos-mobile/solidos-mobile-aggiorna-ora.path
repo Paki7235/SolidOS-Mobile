@@ -1,0 +1,10 @@
+[Unit]
+Description=Aggiornamento di SolidOS Mobile chiesto da Impostazioni
+
+[Path]
+# Impostazioni › Aggiornamento software crea questo file: parte subito il controllo firmato
+PathExists=/var/lib/solidos-mobile/richieste/aggiorna-ora
+Unit=solidos-mobile-aggiornamenti.service
+
+[Install]
+WantedBy=paths.target

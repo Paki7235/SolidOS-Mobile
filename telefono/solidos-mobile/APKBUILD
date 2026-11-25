@@ -27,6 +27,8 @@ source="
 	solidos-mobile-aggiorna
 	solidos-mobile-aggiornamenti.service
 	solidos-mobile-aggiornamenti.timer
+	solidos-mobile-aggiorna-ora.path
+	solidos-mobile.tmpfiles
 	chiave-aggiornamenti.pem
 	"
 builddir="$srcdir"
@@ -52,6 +54,10 @@ package() {
 	install -Dm644 "$srcdir"/solidos-mobile-aggiornamenti.timer "$pkgdir"/usr/lib/systemd/system/solidos-mobile-aggiornamenti.timer
 	mkdir -p "$pkgdir"/usr/lib/systemd/system/timers.target.wants
 	ln -s ../solidos-mobile-aggiornamenti.timer "$pkgdir"/usr/lib/systemd/system/timers.target.wants/solidos-mobile-aggiornamenti.timer
+	install -Dm644 "$srcdir"/solidos-mobile-aggiorna-ora.path "$pkgdir"/usr/lib/systemd/system/solidos-mobile-aggiorna-ora.path
+	mkdir -p "$pkgdir"/usr/lib/systemd/system/paths.target.wants
+	ln -s ../solidos-mobile-aggiorna-ora.path "$pkgdir"/usr/lib/systemd/system/paths.target.wants/solidos-mobile-aggiorna-ora.path
+	install -Dm644 "$srcdir"/solidos-mobile.tmpfiles "$pkgdir"/usr/lib/tmpfiles.d/solidos-mobile.conf
 	install -Dm755 "$srcdir"/solidos-mobile-sessione "$pkgdir"/usr/bin/solidos-mobile-sessione
 	install -Dm755 "$srcdir"/solidos-mobile-prepara "$pkgdir"/usr/libexec/solidos-mobile-prepara
 	install -Dm755 "$srcdir"/solidos-mobile.initd "$pkgdir"/etc/init.d/solidos-mobile

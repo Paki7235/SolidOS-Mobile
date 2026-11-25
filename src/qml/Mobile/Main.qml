@@ -233,7 +233,7 @@ Window {
         else if (a.schermata === "segreteria") { appInterna = "telefono"; telefonoApp.scheda = "segreteria" }
         else if (a.schermata === "condividi") condividi(ponte.chiama0("foto").slice(0, 2).map(function (f) { return f.percorso }))
         else if (a.schermata === "impostazioni") appInterna = "impostazioni"
-        else if (["wifi", "bluetooth", "rete", "suoni", "schermo", "batteria", "info", "solidid", "sicurezza"].indexOf(a.schermata) >= 0) { appInterna = "impostazioni"; impostazioniApp.apri(a.schermata) }
+        else if (["wifi", "bluetooth", "rete", "suoni", "schermo", "batteria", "info", "solidid", "sicurezza", "aggiornamento", "archiviazione", "dataora", "lingua", "accessibilita", "privacy"].indexOf(a.schermata) >= 0) { appInterna = "impostazioni"; impostazioniApp.apri(a.schermata) }
         else if (a.schermata === "home-widget") { imp = Object.assign({}, imp, { widget: [{ tipo: "meteo", misura: "piccolo" }, { tipo: "oggi", misura: "piccolo" }, { tipo: "musica", misura: "medio" }] }) }
         else if (a.schermata === "home-modifica") { imp = Object.assign({}, imp, { widget: [{ tipo: "meteo", misura: "piccolo" }, { tipo: "oggi", misura: "piccolo" }] }); modificaHome = true }
         else if (a.schermata === "home-galleria") { modificaHome = true; galleriaWidget.apri() }

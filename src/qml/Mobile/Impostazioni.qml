@@ -31,6 +31,13 @@ Rectangle {
     property int volume: 50
     property int luce: 70
     property bool codice: false         // c'è un codice di sblocco
+    property var agg: ({})               // Aggiornamento software
+    property bool aggInCorso: false
+    property var spazio: ({})            // Archiviazione
+    property var dataora: ({})
+    function gb(b) { return (b / 1e9).toFixed(b >= 1e10 ? 0 : 1).replace(".", ",") + " GB" }
+    Timer { interval: 2000; repeat: true; running: imp.pagina === "aggiornamento" && imp.aggInCorso
+            onTriggered: { imp.agg = Object.assign({}, imp.agg, ponte.chiama0("aggiornamentoStato")); if (imp.agg.esito && imp.agg.esito !== "In corso") imp.aggInCorso = false } }
 
     function apri(p) {
         pagina = p
@@ -41,6 +48,10 @@ Rectangle {
         else if (p === "schermo") luce = ponte.chiama0("luminosita")
         else if (p === "batteria") batteria = ponte.chiama0("batteriaInfo")
         else if (p === "info") info = ponte.chiama0("infoTelefono")
+        else if (p === "aggiornamento") { agg = ponte.chiama0("aggiornamentoStato"); ponte.avvia("aggiornamentoCerca", [], "imp-agg") }
+        else if (p === "archiviazione") { spazio = ({}); ponte.avvia("archiviazione", [], "imp-spazio") }
+        else if (p === "dataora") dataora = ponte.chiama0("dataOra")
+        else if (p === "privacy") account = ponte.chiama0("solidId")
         else if (p === "solidid") account = ponte.chiama0("solidId")
         else if (p === "sicurezza") { codice = ponte.chiama0("haCodice"); furto = ponte.chiama0("protezioneFurto") }
         else if (p === "chiamate") { voip = ponte.chiama0("voipAccount"); campiSip = { nome: voip.nome || "", utente: voip.utente || "", dominio: voip.dominio || "", server: voip.server || "", password: "" } }
@@ -59,6 +70,8 @@ Rectangle {
     Connections {
         target: ponte
         function onCompletato(id, r) {
+            if (id === "imp-agg") imp.agg = r || {}
+            else if (id === "imp-spazio") imp.spazio = r || {}
             if (id === "imp-wifi") imp.wifi = r
             else if (id === "imp-bt-cerca") { imp.trovatiBt = r; cercaBt.attivo = false }
             else if (id === "imp-wifi-connetti") { attesa.visible = false; tel.avviso(r.messaggio); ponte.avvia("wifiStato", [false], "imp-wifi") }
@@ -191,7 +204,9 @@ Rectangle {
     Text {
         x: 20; y: imp.pagina === "" ? 60 : 86
         text: ({ "": I18n.t("Impostazioni"), wifi: "Wi-Fi", bluetooth: "Bluetooth", rete: I18n.t("Rete mobile"), suoni: I18n.t("Suoni e vibrazione"),
-                 schermo: I18n.t("Schermo"), notifiche: I18n.t("Notifiche"), batteria: I18n.t("Batteria"), solidid: "Solid ID", chiamate: I18n.t("Chiamate via Internet"), sicurezza: I18n.t("Codice di sblocco"), info: I18n.t("Info sul telefono") })[imp.pagina]
+                 schermo: I18n.t("Schermo"), notifiche: I18n.t("Notifiche"), batteria: I18n.t("Batteria"), solidid: "Solid ID", chiamate: I18n.t("Chiamate via Internet"), sicurezza: I18n.t("Codice di sblocco"), info: I18n.t("Info sul telefono"),
+                 aggiornamento: I18n.t("Aggiornamento software"), archiviazione: I18n.t("Archiviazione"), dataora: I18n.t("Data e ora"),
+                 lingua: I18n.t("Lingua e regione"), accessibilita: I18n.t("Accessibilità"), privacy: I18n.t("Privacy") })[imp.pagina]
         color: tel.pal.testo; font.family: Tema.font; font.pixelSize: imp.pagina === "" ? 32 : 28; font.weight: Font.Bold; font.letterSpacing: -0.6
         width: parent.width - 40; elide: Text.ElideRight
     }
@@ -237,6 +252,141 @@ Rectangle {
                     Riga { icona: "system-lock-screen-symbolic"; titolo: I18n.t("Codice di sblocco"); valore: imp.codice ? I18n.t("Sì") : I18n.t("No"); onScelta: imp.apri("sicurezza") }
                     Riga { icona: "help-about-symbolic"; titolo: I18n.t("Info sul telefono"); ultima: true; onScelta: imp.apri("info") }
                 }
+                // Generali (come sul PC)
+                Gruppo {
+                    Riga { icona: "software-update-available-symbolic"; titolo: I18n.t("Aggiornamento software"); onScelta: imp.apri("aggiornamento") }
+                    Riga { icona: "drive-harddisk-symbolic"; titolo: I18n.t("Archiviazione"); onScelta: imp.apri("archiviazione") }
+                    Riga { icona: "preferences-system-time-symbolic"; titolo: I18n.t("Data e ora"); onScelta: imp.apri("dataora") }
+                    Riga { icona: "preferences-desktop-locale-symbolic"; titolo: I18n.t("Lingua e regione"); valore: "Italiano"; onScelta: imp.apri("lingua") }
+                    Riga { icona: "preferences-desktop-accessibility-symbolic"; titolo: I18n.t("Accessibilità"); onScelta: imp.apri("accessibilita") }
+                    Riga { icona: "security-high-symbolic"; titolo: I18n.t("Privacy e localizzazione"); onScelta: imp.apri("privacy") }
+                    Riga { icona: "network-transmit-receive-symbolic"; titolo: I18n.t("Condivisione Vicina"); ultima: true; onScelta: tel.appInterna = "vicina" }
+                }
+            }
+
+            // ══ Aggiornamento software ═══════════════════════════════════
+            Column {
+                visible: imp.pagina === "aggiornamento"
+                width: parent.width; spacing: 4
+                Item { width: parent.width; height: 150
+                    Rectangle { anchors.horizontalCenter: parent.horizontalCenter; y: 10; width: 78; height: 78; radius: 22; color: "#8E8E93"
+                                Icona { anchors.centerIn: parent; nome: "linea-freccia-giro"; lato: 40; colore: "#FFFFFF" } }
+                    Text { anchors.horizontalCenter: parent.horizontalCenter; y: 100; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 17; font.weight: Font.Bold
+                           text: "SolidOS " + (imp.agg.versione || "—") }
+                    Text { anchors.horizontalCenter: parent.horizontalCenter; y: 124; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: 13
+                           text: imp.aggInCorso || imp.agg.esito === "In corso" ? I18n.t("Scarico, controllo e provo la versione nuova…")
+                                 : (imp.agg.nuova ? I18n.t("È disponibile la versione") + " " + imp.agg.disponibile : (imp.agg.ok === false ? (imp.agg.messaggio || "") : (imp.agg.disponibile ? I18n.t("SolidOS è aggiornato") : I18n.t("Controllo…")))) }
+                }
+                Gruppo {
+                    visible: !!imp.agg.nuova && !!imp.agg.novita
+                    Item { width: parent.width; height: novitaT.implicitHeight + 28
+                           Text { id: novitaT; x: 16; y: 14; width: parent.width - 32; wrapMode: Text.Wrap; text: imp.agg.novita || ""; color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 14 } }
+                }
+                Item { width: 1; height: 8 }
+                Pulsante {
+                    visible: !!imp.agg.nuova && !imp.aggInCorso && !(imp.agg.esito || "").startsWith("Aggiornato")
+                    x: 16; width: parent.width - 32; principale: true; text: I18n.t("Scarica e installa")
+                    onClicked: { var r = ponte.chiama0("aggiornamentoAvvia"); if (r.ok) imp.aggInCorso = true; else tel.avviso(r.messaggio) }
+                }
+                Pulsante {
+                    visible: (imp.agg.esito || "").startsWith("Aggiornato")
+                    x: 16; width: parent.width - 32; principale: true; text: I18n.t("Riavvia per usarla")
+                    onClicked: ponte.chiama0("riavviaInterfaccia")
+                }
+                Pulsante { visible: !imp.agg.nuova && !imp.aggInCorso; x: 16; width: parent.width - 32; text: I18n.t("Controlla di nuovo"); onClicked: ponte.avvia("aggiornamentoCerca", [], "imp-agg") }
+                Nota { text: (imp.agg.ultimo ? I18n.t("Ultimo controllo") + ": " + imp.agg.ultimo + (imp.agg.esito && imp.agg.esito !== "In corso" ? " · " + imp.agg.esito : "") + ". " : "")
+                             + I18n.t("Il telefono cerca gli aggiornamenti anche da solo ogni giorno e installa solo quelli firmati da SolidOS, dopo averli provati. Se qualcosa non va torna alla versione di prima.") }
+            }
+
+            // ══ Archiviazione ════════════════════════════════════════════
+            Column {
+                visible: imp.pagina === "archiviazione"
+                width: parent.width; spacing: 4
+                Gruppo {
+                    Item {
+                        width: parent.width; height: 120
+                        Text { x: 16; y: 14; text: imp.spazio.totale ? imp.gb(imp.spazio.usato) + " " + I18n.t("usati su") + " " + imp.gb(imp.spazio.totale) : I18n.t("Calcolo…"); color: tel.pal.testo; font.family: Tema.font; font.pixelSize: 16; font.weight: Font.DemiBold }
+                        Row {   // barra a colori
+                            x: 16; y: 48; width: parent.width - 32; height: 14; clip: true
+                            Repeater { model: imp.spazio.voci || []
+                                       Rectangle { required property var modelData; height: 14; color: modelData.colore; width: Math.max(2, (parent.width) * modelData.byte / Math.max(1, imp.spazio.totale)) } }
+                            Rectangle { height: 14; color: tel.pal.traccia; width: parent.width }
+                        }
+                        Flow { x: 16; y: 76; width: parent.width - 32; spacing: 12
+                               Repeater { model: imp.spazio.voci || []
+                                          Row { required property var modelData; spacing: 5
+                                                Rectangle { width: 9; height: 9; radius: 5; color: parent.modelData.colore; anchors.verticalCenter: parent.verticalCenter }
+                                                Text { text: parent.modelData.nome; color: tel.pal.testo2; font.family: Tema.font; font.pixelSize: 12 } } } }
+                    }
+                }
+                Item { width: 1; height: 8 }
+                Gruppo {
+                    Repeater { model: imp.spazio.voci || []
+                               Riga { required property var modelData; required property int index; titolo: modelData.nome; valore: imp.gb(modelData.byte); freccia: false; ultima: index === (imp.spazio.voci || []).length - 1 } }
+                }
+                Nota { visible: !!imp.spazio.libero; text: I18n.t("Liberi") + ": " + imp.gb(imp.spazio.libero || 0) + ". " + I18n.t("Per fare spazio: togli le app che non usi dallo Store, sposta foto e video sul PC con Vicina o nel server di casa.") }
+            }
+
+            // ══ Data e ora ═══════════════════════════════════════════════
+            Column {
+                visible: imp.pagina === "dataora"
+                width: parent.width; spacing: 4
+                Gruppo {
+                    Riga { titolo: I18n.t("Data"); valore: tel.adesso.toLocaleDateString(Qt.locale("it_IT"), "dddd d MMMM yyyy"); freccia: false }
+                    Riga { titolo: I18n.t("Ora"); valore: Qt.formatTime(tel.adesso, "HH:mm"); freccia: false }
+                    Riga { titolo: I18n.t("Fuso orario"); valore: (imp.dataora.fuso || "").replace("_", " "); freccia: false }
+                    Riga { titolo: I18n.t("Imposta automaticamente"); valore: imp.dataora.automatica ? I18n.t("Sì") : I18n.t("No"); freccia: false; ultima: true }
+                }
+                Nota { text: I18n.t("Data, ora e fuso orario arrivano dalla rete: si aggiornano da soli quando viaggi e con l'ora legale.") }
+            }
+
+            // ══ Lingua e regione ═════════════════════════════════════════
+            Column {
+                visible: imp.pagina === "lingua"
+                width: parent.width; spacing: 4
+                Gruppo {
+                    Riga { titolo: I18n.t("Lingua del telefono"); valore: "Italiano"; freccia: false }
+                    Riga { titolo: I18n.t("Regione"); valore: "Italia"; freccia: false }
+                    Riga { titolo: I18n.t("Calendario"); valore: I18n.t("Gregoriano, settimana da lunedì"); freccia: false }
+                    Riga { titolo: I18n.t("Formati"); valore: Qt.formatDate(tel.adesso, "dd/MM/yyyy") + " · 1.234,56 €"; freccia: false; ultima: true }
+                }
+                Nota { text: I18n.t("Le altre lingue arrivano con un prossimo aggiornamento, come sul PC.") }
+            }
+
+            // ══ Accessibilità ════════════════════════════════════════════
+            Column {
+                visible: imp.pagina === "accessibilita"
+                width: parent.width; spacing: 4
+                Titoletto { text: I18n.t("Vista") }
+                Gruppo {
+                    Riga { titolo: I18n.t("Grandezza del testo"); valore: [I18n.t("Piccolo"), I18n.t("Normale"), I18n.t("Grande")][tel.imp.testo] || ""; onScelta: tel.imposta("testo", ((tel.imp.testo || 0) + 1) % 3) }
+                    Riga { titolo: I18n.t("Icone grandi"); interruttore: true; acceso: tel.imp.icone === 2; freccia: false; onCambiato: function (si) { tel.imposta("icone", si ? 2 : 1) } }
+                    Riga { titolo: I18n.t("Tema scuro"); interruttore: true; acceso: !tel.chiaro; freccia: false; ultima: true; onCambiato: function (si) { tel.scegliVeste(si ? "aurora" : "prisma") } }
+                }
+                Titoletto { text: I18n.t("Movimento e tocco") }
+                Gruppo {
+                    Riga { titolo: I18n.t("Riduci animazioni"); interruttore: true; acceso: tel.imp.riduci_movimento === true; freccia: false; onCambiato: function (si) { tel.imposta("riduci_movimento", si) } }
+                    Riga { titolo: I18n.t("Navigazione con tre tasti"); interruttore: true; acceso: tel.imp.navigazione === "tasti"; freccia: false; onCambiato: function (si) { tel.imposta("navigazione", si ? "tasti" : "gesti") } }
+                    Riga { titolo: I18n.t("Vibrazione"); interruttore: true; acceso: tel.imp.vibrazione !== false; freccia: false; ultima: true; onCambiato: function (si) { tel.imposta("vibrazione", si) } }
+                }
+            }
+
+            // ══ Privacy e localizzazione ═════════════════════════════════
+            Column {
+                visible: imp.pagina === "privacy"
+                width: parent.width; spacing: 4
+                Gruppo {
+                    Riga { titolo: I18n.t("Trova il mio telefono (Dov'è)"); interruttore: true; acceso: imp.account.trova !== false; freccia: false; ultima: true
+                           onCambiato: function (si) { var r = ponte.chiama("sidTrova", [si, ""]); if (r && r.messaggio) tel.avviso(r.messaggio); imp.account = ponte.chiama0("solidId") } }
+                }
+                Nota { text: I18n.t("Con Dov'è acceso il telefono manda la sua posizione solo al tuo Solid ID, per ritrovarlo, farlo suonare o bloccarlo se lo perdi.") }
+                Titoletto { text: I18n.t("I tuoi dati") }
+                Gruppo {
+                    Riga { titolo: I18n.t("Pubblicità e tracciamento"); valore: I18n.t("Mai"); freccia: false }
+                    Riga { titolo: I18n.t("Dati inviati a SolidOS"); valore: I18n.t("Nessuno"); freccia: false }
+                    Riga { titolo: I18n.t("Sincronia con il PC"); valore: imp.account.collegato ? I18n.t("Attiva") : I18n.t("Accedi al Solid ID"); freccia: false; ultima: true }
+                }
+                Nota { text: I18n.t("SolidOS non raccoglie e non vende dati. Contatti, calendari, promemoria e note passano tra i tuoi dispositivi solo attraverso il tuo Solid ID, visibili solo a te.") }
             }
 
             // ══ Wi-Fi ════════════════════════════════════════════════════

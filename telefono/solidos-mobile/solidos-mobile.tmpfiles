@@ -1,0 +1,4 @@
+# Cartella dove l'interfaccia (utente «solid») chiede l'aggiornamento: solo un segnale,
+# l'aggiornamento resta firmato e lo fa il servizio di sistema
+d /var/lib/solidos-mobile 0755 root root -
+d /var/lib/solidos-mobile/richieste 1777 root root -

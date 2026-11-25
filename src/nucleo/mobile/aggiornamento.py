@@ -148,8 +148,34 @@ def aggiorna(forza: bool = False) -> str:
     shutil.rmtree(PRECEDENTE, ignore_errors=True)
     CARTELLA.rename(PRECEDENTE)
     NUOVA.rename(CARTELLA)
+    _file_di_sistema()
     mancanti = _pacchetti_richiesti()
     return f"Aggiornato alla versione {nuova} (si usa dal prossimo avvio)" + (f"; installati: {', '.join(mancanti)}" if mancanti else "")
+
+
+def _file_di_sistema(cartella: Path = CARTELLA) -> None:
+    """Servizi e cartelle di sistema arrivati con l'aggiornamento (cartella «sistema»): si
+    installano se sono nuovi o cambiati, poi si attivano (es. la richiesta «Aggiorna ora»)."""
+    sorgente = cartella / "sistema"
+    if not sorgente.is_dir() or not shutil.which("systemctl"):
+        return
+    cambiati = []
+    for f in sorgente.iterdir():
+        dest = Path("/usr/lib/tmpfiles.d") / f.name if f.suffix == ".conf" else Path("/usr/lib/systemd/system") / f.name
+        try:
+            if not dest.exists() or dest.read_bytes() != f.read_bytes():
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(f, dest)
+                cambiati.append(dest)
+        except OSError:
+            continue
+    if not cambiati:
+        return
+    subprocess.run(["systemd-tmpfiles", "--create"], capture_output=True)
+    subprocess.run(["systemctl", "daemon-reload"], capture_output=True)
+    for d in cambiati:
+        if d.suffix == ".path":
+            subprocess.run(["systemctl", "enable", "--now", d.name], capture_output=True)
 
 
 def _pacchetti_richiesti(cartella: Path = CARTELLA) -> list[str]:
@@ -188,6 +214,7 @@ def main() -> None:
     if os.geteuid() != 0:
         print("Serve l'amministratore")
         sys.exit(1)
+    _scrivi_stato("In corso")          # Impostazioni mostra «Scarico e controllo…»
     esito = torna_indietro() if "--torna-indietro" in sys.argv else aggiorna("--forza" in sys.argv)
     _scrivi_stato(esito)
     print(esito)

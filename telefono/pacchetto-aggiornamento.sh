@@ -15,6 +15,11 @@ cp -r "$RADICE/src/dati/icone" "$ALBERO/icone"
 cp "$RADICE/branding.env" "$ALBERO/branding.env"
 mkdir -p "$ALBERO/dati" && cp "$RADICE/src/dati/pacchetti-richiesti.txt" "$ALBERO/dati/"
 cp "$RADICE/telefono/solidos-mobile/chiave-aggiornamenti.pem" "$ALBERO/"
+# File di sistema (servizi, cartelle): li installa l'aggiornamento stesso, così anche i
+# telefoni già installati ricevono i servizi nuovi (es. «Aggiorna ora» da Impostazioni)
+mkdir -p "$ALBERO/sistema"
+cp "$RADICE"/telefono/solidos-mobile/*.service "$RADICE"/telefono/solidos-mobile/*.timer "$RADICE"/telefono/solidos-mobile/*.path "$ALBERO/sistema/"
+cp "$RADICE/telefono/solidos-mobile/solidos-mobile.tmpfiles" "$ALBERO/sistema/solidos-mobile.conf"
 printf '%s\n' "$N" > "$ALBERO/versione"
 find "$ALBERO" -name __pycache__ -prune -exec rm -rf {} +
 FILE="solidos-mobile-aggiornamento-$N.tar.xz"

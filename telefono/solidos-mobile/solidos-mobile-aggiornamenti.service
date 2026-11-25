@@ -5,6 +5,7 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
+ExecStartPre=/bin/rm -f /var/lib/solidos-mobile/richieste/aggiorna-ora
 ExecStart=/usr/libexec/solidos-mobile-aggiorna
 Nice=10
 IOSchedulingClass=idle
