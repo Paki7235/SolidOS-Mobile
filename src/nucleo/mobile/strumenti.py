@@ -271,7 +271,7 @@ def note(cerca: str = "") -> list:
     elenco = []
     for f in _cartella_note().glob("*.json"):
         n = leggi_json(f, {})
-        if not n.get("id"):
+        if not n.get("id") or n.get("eliminata"):   # nel cestino delle Note del PC
             continue
         if cerca and cerca.lower() not in n.get("testo", "").lower():
             continue

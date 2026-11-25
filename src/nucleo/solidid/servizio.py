@@ -125,6 +125,17 @@ class Servizio:
         except Exception:  # noqa: BLE001 — il servizio non deve cadere per un comando
             await self.esegui(self._segna, ident, "errore")
 
+    # ── Sincronia dei dati (contatti, calendari, promemoria, note) con gli altri dispositivi ──
+    async def ciclo_sincronia(self):
+        from .. import sincronia
+
+        while True:
+            try:
+                await self.esegui(sincronia.sincronizza, True)
+            except Exception:  # noqa: BLE001 — senza rete si riprova al giro dopo
+                pass
+            await asyncio.sleep(60)
+
     async def ciclo_comandi(self):
         while True:
             try:
@@ -239,7 +250,7 @@ class Servizio:
             self.dispositivo = ""
         if not self.dispositivo:
             return 1   # nessuna rete o accesso scaduto: systemd riprova più tardi
-        await asyncio.gather(self.ciclo_stato(), self.ciclo_comandi(), self.tempo_reale())
+        await asyncio.gather(self.ciclo_stato(), self.ciclo_comandi(), self.tempo_reale(), self.ciclo_sincronia())
         return 0
 
 
